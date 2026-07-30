@@ -9,14 +9,14 @@
  *     товар недоступным для заказов, пока сам ничего не производит.
  */
 
-import { GOODS, harvestQty, FACTORY_OUTPUT_QTY } from './config/goods';
 import {
+  isPlantingSoftlocked,
   PRODUCTION_XP_K,
   plantingCost,
-  isPlantingSoftlocked,
   SELL_PRICE_RATIO,
 } from './config/economy';
-import type { GoodId, BuildingType } from './types';
+import { FACTORY_OUTPUT_QTY, GOODS, harvestQty } from './config/goods';
+import type { BuildingType, GoodId } from './types';
 import {
   availableOf,
   canAccept,
@@ -196,9 +196,7 @@ export function enqueue(
 function tryStart(slot: FactorySlot, ctx: ProductionContext): boolean {
   if (!slot.good_id) return false;
   const good = GOODS[slot.good_id];
-  const enough = good.inputs.every(
-    (inp) => availableOf(ctx.warehouse, inp.good_id) >= inp.qty,
-  );
+  const enough = good.inputs.every((inp) => availableOf(ctx.warehouse, inp.good_id) >= inp.qty);
   if (!enough) return false;
 
   for (const inp of good.inputs) consume(ctx.warehouse, inp.good_id, inp.qty);

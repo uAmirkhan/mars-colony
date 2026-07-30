@@ -4,34 +4,34 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest';
+import { CREDITS_START, plantingCost, WAREHOUSE_MAX_CAPACITY } from '../config/economy';
+import { GOODS, harvestQty } from '../config/goods';
 import {
+  collectFactory,
+  collectField,
+  createFactorySlot,
+  createField,
+  enqueue,
+  onWarehouseStockIncreased,
+  type ProductionContext,
+  plant,
+  refreshField,
+  sell,
+} from '../production';
+import {
+  availableOf,
+  consume,
   createWarehouse,
   deposit,
-  consume,
-  reserve,
-  unreserve,
-  shipReserved,
-  availableOf,
-  qtyOf,
-  totalQty,
   freeSpace,
+  qtyOf,
+  reserve,
+  shipReserved,
+  totalQty,
+  unreserve,
   upgradeCapacity,
   type WarehouseState,
 } from '../warehouse';
-import {
-  createField,
-  createFactorySlot,
-  plant,
-  collectField,
-  enqueue,
-  collectFactory,
-  onWarehouseStockIncreased,
-  refreshField,
-  sell,
-  type ProductionContext,
-} from '../production';
-import { CREDITS_START, WAREHOUSE_MAX_CAPACITY, plantingCost } from '../config/economy';
-import { GOODS, harvestQty } from '../config/goods';
 
 let w: WarehouseState;
 let ctx: ProductionContext;

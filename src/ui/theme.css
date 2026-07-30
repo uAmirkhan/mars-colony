@@ -36,7 +36,7 @@
   --radius-button: 18px;
   --radius-slot: 20px;
 
-  font-family: system-ui, 'Segoe UI', sans-serif;
+  font-family: system-ui, "Segoe UI", sans-serif;
 }
 
 * {
@@ -86,7 +86,9 @@ body {
   color: #fff;
   cursor: pointer;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
-  transition: transform 90ms ease, filter 90ms ease;
+  transition:
+    transform 90ms ease,
+    filter 90ms ease;
 }
 
 .btn:active:not(:disabled) {

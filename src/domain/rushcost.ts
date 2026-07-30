@@ -6,8 +6,8 @@
  * Если у докупки появится второй расчет где-то еще, это баг реализации.
  */
 
-import { GOODS } from './config/goods';
 import { SPEEDUP_RATE_ISOTOPES_PER_MIN } from './config/economy';
+import { GOODS } from './config/goods';
 import type { GoodId } from './types';
 
 export const BUYOUT_MARKUP = 1.2;
@@ -32,7 +32,9 @@ export function roundToShowcase(value: number): number {
 export function rushCost(good_id: GoodId): number {
   const good = GOODS[good_id];
   const rate =
-    good.kind === 'crop' ? SPEEDUP_RATE_ISOTOPES_PER_MIN.crop : SPEEDUP_RATE_ISOTOPES_PER_MIN.factory;
+    good.kind === 'crop'
+      ? SPEEDUP_RATE_ISOTOPES_PER_MIN.crop
+      : SPEEDUP_RATE_ISOTOPES_PER_MIN.factory;
   const own = (good.prod_time_sec / 60) * rate;
   const inputs = good.inputs.reduce(
     (sum, input) => sum + rushCost(input.good_id) * input.qty,

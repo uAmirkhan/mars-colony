@@ -14,48 +14,48 @@
  * поэтому темп выше пятого уровня симулятор занижает.
  */
 
-import { GOODS, ALL_GOOD_IDS, slotQuantity } from '../domain/config/goods';
 import {
-  TRANSPORT_XP_K,
+  CREDITS_START,
   DRONE_PREMIUM_RANGE,
+  FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
   plantingCost,
-  CREDITS_START,
-  FACTORY_PRICES,
+  TRANSPORT_XP_K,
 } from '../domain/config/economy';
+import { ALL_GOOD_IDS, GOODS, slotQuantity } from '../domain/config/goods';
 import {
-  xpToNext,
   levelUpReward,
   MAX_LEVEL_MVP,
   MECHANIC_UNLOCK_LEVEL,
+  xpToNext,
 } from '../domain/config/levels';
 import {
-  createWarehouse,
-  totalQty,
-  occupiedGoods,
-  qtyOf,
-  availableOf,
-  consume,
-  type WarehouseState,
-} from '../domain/warehouse';
-import {
-  createField,
-  createFactorySlot,
-  plant,
-  collectField,
-  collectFactory,
-  enqueue,
-  onWarehouseStockIncreased,
-  refreshField,
-  refreshFactorySlot,
-  sell,
   cheapestPlantingCost,
-  type FieldSlot,
+  collectFactory,
+  collectField,
+  createFactorySlot,
+  createField,
+  enqueue,
   type FactorySlot,
+  type FieldSlot,
+  onWarehouseStockIncreased,
   type ProductionContext,
+  plant,
+  refreshFactorySlot,
+  refreshField,
+  sell,
 } from '../domain/production';
 import type { GoodId } from '../domain/types';
+import {
+  availableOf,
+  consume,
+  createWarehouse,
+  occupiedGoods,
+  qtyOf,
+  totalQty,
+  type WarehouseState,
+} from '../domain/warehouse';
 import { makeRng, pick } from './rng';
 
 export interface SimConfig {

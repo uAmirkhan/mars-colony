@@ -15,7 +15,7 @@ export const XP_CURVE_ROUND_STEP = 10;
 
 /** XP_to_next(N) = round(120 x N^1.35 / 10) x 10. */
 export function xpToNext(level: number): number {
-  const raw = XP_CURVE_BASE_COEF * Math.pow(level, XP_CURVE_EXPONENT);
+  const raw = XP_CURVE_BASE_COEF * level ** XP_CURVE_EXPONENT;
   return Math.round(raw / XP_CURVE_ROUND_STEP) * XP_CURVE_ROUND_STEP;
 }
 
@@ -49,7 +49,7 @@ export const LEVEL_UP_CREDITS_ROUND_STEP = 10;
  */
 export function levelUpReward(level: number): LevelUpReward {
   const is_empty = EMPTY_LEVELS.includes(level);
-  const raw_credits = LEVEL_UP_CREDITS_COEF * Math.pow(level, LEVEL_UP_CREDITS_EXPONENT);
+  const raw_credits = LEVEL_UP_CREDITS_COEF * level ** LEVEL_UP_CREDITS_EXPONENT;
   return {
     credits:
       Math.round(raw_credits / LEVEL_UP_CREDITS_ROUND_STEP) * LEVEL_UP_CREDITS_ROUND_STEP,
