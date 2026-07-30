@@ -130,7 +130,9 @@ export const useGame = create<GameState>((set, get) => {
 
     plant: (idx, good_id) => {
       const fields = get().fields.map((f) => ({ ...f }));
-      const result = domainPlant(fields[idx], good_id, ctx(), fields);
+      const field = fields[idx];
+      if (!field) return; // тап по несуществующей грядке — не ошибка, просто ничего
+      const result = domainPlant(field, good_id, ctx(), fields);
       if (!result.ok) {
         if (result.reason === 'insufficient_balance') pushToast('Не хватает кредитов', 'warn');
         return;
@@ -141,7 +143,9 @@ export const useGame = create<GameState>((set, get) => {
 
     collectField: (idx) => {
       const fields = get().fields.map((f) => ({ ...f }));
-      const result = domainCollectField(fields[idx], ctx());
+      const field = fields[idx];
+      if (!field) return;
+      const result = domainCollectField(field, ctx());
       if (!result.ok) {
         if (result.reason === 'warehouse_full') pushToast('Склад полон — продай излишки', 'warn');
         return;
@@ -153,7 +157,9 @@ export const useGame = create<GameState>((set, get) => {
 
     enqueue: (idx, good_id) => {
       const slots = get().factory_slots.map((s) => ({ ...s }));
-      const result = domainEnqueue(slots[idx], good_id, ctx());
+      const slot = slots[idx];
+      if (!slot) return;
+      const result = domainEnqueue(slot, good_id, ctx());
       if (!result.ok) return;
       set({ factory_slots: slots, warehouse: { ...get().warehouse } });
       if (result.reason === 'no_inputs') pushToast('Ждет сырье на складе', 'info');
@@ -161,7 +167,9 @@ export const useGame = create<GameState>((set, get) => {
 
     collectFactory: (idx) => {
       const slots = get().factory_slots.map((s) => ({ ...s }));
-      const result = domainCollectFactory(slots[idx], ctx());
+      const slot = slots[idx];
+      if (!slot) return;
+      const result = domainCollectFactory(slot, ctx());
       if (!result.ok) {
         if (result.reason === 'warehouse_full') pushToast('Склад полон — продай излишки', 'warn');
         return;

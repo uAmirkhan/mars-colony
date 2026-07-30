@@ -39,6 +39,17 @@ import {
 } from '../config/levels';
 import { rushCost, buyoutPrice } from '../rushcost';
 
+/**
+ * Доступ к элементу массива с проверкой. Строгий режим требует явности,
+ * и это правильно: молчаливый undefined в сравнении дает ложно зеленый тест.
+ */
+function at(arr: readonly number[], i: number): number {
+  const v = arr[i];
+  if (v === undefined) throw new Error(`нет элемента ${i} в массиве длины ${arr.length}`);
+  return v;
+}
+
+
 describe('И-2: XP фабричных товаров пропорционален цене (~0.43)', () => {
   it.each(goodsOfKind('factory'))('$name держит пропорцию', (good) => {
     const ratio = good.base_xp / good.price;
@@ -95,7 +106,7 @@ describe('И-6: цена скипа шаттла', () => {
   it('цена монотонно падает по мере рейса', () => {
     const prices = [90, 60, 30, 10, 1].map((r) => shuttleSkipPrice(r, 90, 4));
     for (let i = 1; i < prices.length; i++) {
-      expect(prices[i]).toBeLessThanOrEqual(prices[i - 1]);
+      expect(at(prices, i)).toBeLessThanOrEqual(at(prices, i - 1));
     }
   });
 });
@@ -229,7 +240,7 @@ describe('Дрон: выброс и рефреш', () => {
     // По одной точке на ступень: две точки внутри одной ступени дадут равные цены.
     const prices = [22, 12, 5, 1].map((m) => droneRefreshPrice(m * 60));
     for (let i = 1; i < prices.length; i++) {
-      expect(prices[i]).toBeLessThan(prices[i - 1]);
+      expect(at(prices, i)).toBeLessThan(at(prices, i - 1));
     }
   });
 

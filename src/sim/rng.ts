@@ -9,6 +9,9 @@ export function makeRng(seed: number): () => number {
   };
 }
 
-export function pick<T>(rng: () => number, items: T[]): T {
-  return items[Math.floor(rng() * items.length)];
+export function pick<T>(rng: () => number, items: readonly T[]): T {
+  if (items.length === 0) throw new Error('pick: список пуст');
+  // Клемп на случай, когда генератор вернет ровно 1.0 и индекс уедет за границу.
+  const idx = Math.min(items.length - 1, Math.floor(rng() * items.length));
+  return items[idx]!;
 }

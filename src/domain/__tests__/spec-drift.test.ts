@@ -83,7 +83,7 @@ function readAllCode(dir: string): string {
 /** Имена параметров из спеки: UPPER_SNAKE в обратных кавычках, минимум 4 символа. */
 function specParameterNames(spec: string): string[] {
   const found = spec.match(/`([A-Z][A-Z0-9_]{3,}(?:\[[a-z_]+\])?)`/g) ?? [];
-  const names = found.map((m) => m.replace(/`/g, '').split('[')[0]);
+  const names = found.map((m) => m.replace(/`/g, '').split('[')[0] ?? '').filter(Boolean);
   return [...new Set(names)].sort();
 }
 
