@@ -234,22 +234,38 @@
 
     <div class="panel modal-panel">
       <div class="panel-title-plate">
-        <div class="panel-title-text">Ж/Д станция</div>
+        <div class="panel-title-text">Посадочная площадка</div>
         <div class="brace left"><span class="rivet top"></span><span class="rivet bottom"></span></div>
         <div class="brace right"><span class="rivet top"></span><span class="rivet bottom"></span></div>
       </div>
       <button class="btn btn-close panel-close" aria-label="Закрыть">✕</button>
 
-      <p class="body-text" style="margin:6px 0 20px;">Загрузите вагоны, чтобы отправить состав и получить награду.</p>
+      <p class="body-text" style="margin:6px 0 18px;">Погрузите отсеки, и шаттл улетит за модулями.</p>
 
-      <div style="display:flex;gap:14px;align-items:center;">
-        <button class="btn btn-secondary">Запрос</button>
-        <button class="btn btn-primary">Загрузить</button>
+      <div class="bay-row">
+        <div class="item-slot collected">
+          <div class="item-icon" style="background:#7fae4a;">Вд</div>
+          <div class="slot-check"><svg><use href="#i-check"/></svg></div>
+        </div>
+        <div class="bay-anchor">
+          <div class="item-slot complete">
+            <div class="item-icon" style="background:#e0603c;">Тм</div>
+            <div class="slot-fraction">4/4</div>
+          </div>
+          <div class="nested-popup has-tail">
+            <svg style="width:20px;height:20px;color:var(--xp);"><use href="#i-star-flag"/></svg>
+            +40 XP за отсек
+          </div>
+        </div>
+        <div class="item-slot filled">
+          <div class="item-icon" style="background:#b98cc4;">Тк</div>
+          <div class="slot-fraction deficit">1/3</div>
+        </div>
       </div>
 
-      <div class="nested-popup" style="top:-8px;right:10px;">
-        <svg style="width:20px;height:20px;color:var(--xp);"><use href="#i-star-flag"/></svg>
-        Награда: 240
+      <div style="display:flex;gap:14px;align-items:center;">
+        <button class="btn btn-secondary">Докупить 2 за 12</button>
+        <button class="btn btn-primary">Погрузить</button>
       </div>
     </div>
   </div>
@@ -258,7 +274,7 @@
     выступает за верхнюю грань панели и держится латунными скобами с
     заклепками — марсианская замена деревянных ламелей Township
     (artlanguage §7.10, таблица). Крестик закрытия сидит на шве панели и
-    плашки. Пара «Запрос / Загрузить» разнесена на 14px (&gt; минимальных 8px).
+    плашки. Вложенный попап центрирован над тем отсеком, который его вызвал, и несет хвостик-указатель на него (component-library §4, artlanguage §5: иерархия мир, панель, попап читается без объяснений). Пара «Докупить / Погрузить» разнесена на 14px (&gt; минимальных 8px).
     Вложенный попап награды — второй, более светлый и меньший слой глубины.
   </p>
 </section>
@@ -314,23 +330,23 @@
   </div>
   <div class="gallery">
     <div class="spec">
-      <button class="btn btn-primary">Загрузить</button>
+      <button class="btn btn-primary">Погрузить</button>
       <span class="cap"><b>Главное действие</b> — обычное</span>
     </div>
     <div class="spec">
-      <button class="btn btn-primary is-pressed">Загрузить</button>
+      <button class="btn btn-primary is-pressed">Погрузить</button>
       <span class="cap">Нажатое <span class="warn">⚠ гипотеза жанра</span> — сплющивание + уход тени</span>
     </div>
     <div class="spec">
-      <button class="btn is-disabled">Загрузить</button>
+      <button class="btn is-disabled">Погрузить</button>
       <span class="cap">Задизейбленное — серое, ~45% непрозрачности заливки</span>
     </div>
     <div class="spec">
-      <button class="btn btn-secondary">Запрос</button>
+      <button class="btn btn-secondary">Докупить 2 за 12</button>
       <span class="cap"><b>Второстепенное действие</b> — обычное</span>
     </div>
     <div class="spec">
-      <button class="btn btn-secondary is-pressed">Запрос</button>
+      <button class="btn btn-secondary is-pressed">Докупить 2 за 12</button>
       <span class="cap">Нажатое <span class="warn">⚠ гипотеза жанра</span></span>
     </div>
     <div class="spec">
@@ -365,9 +381,9 @@
     </div>
     <div class="spec">
       <div style="display:flex;align-items:center;">
-        <button class="btn btn-secondary">Запрос</button>
+        <button class="btn btn-secondary">Докупить 2 за 12</button>
         <div class="gap-guide" style="width:14px;height:62px;"></div>
-        <button class="btn btn-primary">Купить</button>
+        <button class="btn btn-primary">Погрузить</button>
       </div>
       <span class="cap">Отступ между «главная / тратит валюту» — 14px (мин. 8px)</span>
     </div>
@@ -390,14 +406,14 @@
     </div>
     <div class="spec">
       <div class="item-slot filled" style="margin-bottom:22px;">
-        <div class="item-icon" style="background:#c8895a;">Мл</div>
+        <div class="item-icon" style="background:#7fae4a;">Вд</div>
         <div class="slot-fraction deficit">3/4</div>
       </div>
       <span class="cap">Частично заполнен — дробь есть/нужно, красная при дефиците</span>
     </div>
     <div class="spec">
       <div class="item-slot complete" style="margin-bottom:22px;">
-        <div class="item-icon" style="background:#5fbf4a;">Ф</div>
+        <div class="item-icon" style="background:#e0603c;">Тм</div>
         <div class="slot-qty">x6</div>
         <div class="slot-fraction">4/4</div>
       </div>
@@ -405,14 +421,14 @@
     </div>
     <div class="spec">
       <div class="item-slot collected">
-        <div class="item-icon" style="background:#5fbf4a;opacity:.55;">Ф</div>
+        <div class="item-icon" style="background:#e0603c;opacity:.55;">Тм</div>
         <div class="slot-check"><svg><use href="#i-check"/></svg></div>
       </div>
       <span class="cap">Закрыт — готов к сбору, зеленая галочка поверх слота</span>
     </div>
     <div class="spec">
       <div class="item-slot filled">
-        <div class="item-icon" style="background:#f5901e;">Й</div>
+        <div class="item-icon" style="background:#b98cc4;">Тк</div>
         <div class="slot-badge-ally"><svg><use href="#i-handshake"/></svg></div>
       </div>
       <span class="cap">С бейджем-рукопожатием — помощь союзника <span class="warn">⚠ гипотеза</span></span>
@@ -425,7 +441,7 @@
     </div>
     <div class="spec">
       <div class="item-slot filled">
-        <div class="item-icon" style="background:#c8895a;">Мл</div>
+        <div class="item-icon" style="background:#7fae4a;">Вд</div>
         <div class="slot-timer-corner"><svg><use href="#i-clock"/></svg>13м 34с</div>
       </div>
       <span class="cap">В производстве — таймер-пилюля в углу (см. также блок 7)</span>
@@ -585,7 +601,7 @@
         </div>
       </div>
       <div class="reward-receipt" style="position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);">
-        <svg><use href="#i-star-flag"/></svg>Награда: 240
+        <svg><use href="#i-star-flag"/></svg>Награда: +2 модуля
       </div>
     </div>
   </div>
@@ -613,9 +629,8 @@
     <li><b>Точные размеры и цвета</b> — все числа источника сняты на глаз с одного разрешения (~1280×600) и помечены в самих документах как оценочные; здесь взяты без изменений, отклонений в сторону «более точных» цифр не вносилось.</li>
   </ul>
   <p>
-    Размер тайла хаба в этой витрине — 84×84 (спека дает 90×90 при радиусе
-    18-20px — взят ближайший по внутренней сетке 4px, чтобы не плодить
-    произвольное третье число). Высота кнопок — 62px (спека: 60-70px).
+    Размер тайла хаба — 90×90 при радиусе 18-20px, наблюдаемое значение
+    разбора, взято без округления. Высота кнопок — 62px (спека: 60-70px).
     Панель — border 4px, radius 28px (внутри диапазона 24-32px). Все
     остальные числа — прямые цитаты таблиц §1-§10 component-library.
   </p>

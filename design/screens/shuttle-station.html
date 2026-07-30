@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Mars Colony — экран станции шаттла и лист погрузки</title>
+<link rel="stylesheet" href="../ui-kit/ui-kit.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5.5 5.5L20 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-handshake" viewBox="0 0 24 24"><path d="M3 12l3-3 4 3 2-2 2 2 4-3 3 3-5 6-4-3-4 3z" fill="currentColor"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5.5l3.5 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="i-atom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="4" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="12" cy="12" rx="4" ry="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-shuttle" viewBox="0 0 24 24"><path d="M3 12.5c0-2.5 3-4.5 8-4.5h6c2.5 0 4 1.6 4 4.5s-1.5 4.5-4 4.5h-6c-5 0-8-2-8-4.5z" fill="currentColor"/><path d="M5 9.6L2.4 6.4h3L7.4 9zM5 15.4l-2.6 3.2h3l2-2.6z" fill="currentColor"/><circle cx="7.5" cy="12.5" r="1.5" fill="var(--panel)"/><circle cx="12" cy="12.5" r="1.5" fill="var(--panel)"/><circle cx="16.5" cy="12.5" r="1.5" fill="var(--panel)"/></symbol>
+  <symbol id="i-drone" viewBox="0 0 24 24"><rect x="8.5" y="9" width="7" height="6" rx="2.6" fill="currentColor"/><path d="M9 10L5.4 6.4M15 10l3.6-3.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><ellipse cx="4.6" cy="5.6" rx="3.2" ry="1.3" fill="currentColor"/><ellipse cx="19.4" cy="5.6" rx="3.2" ry="1.3" fill="currentColor"/><rect x="10" y="15.4" width="4" height="3.6" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-helmet" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0114 0v3H5z" fill="currentColor"/><path d="M2.5 18h19v3h-19z" fill="currentColor"/><path d="M9 14.6a3.4 3.4 0 016 0z" fill="var(--panel)"/></symbol>
+  <symbol id="i-scroll" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2.5" fill="currentColor"/><path d="M8 9h8M8 13h8M8 17h5" stroke="var(--panel)" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z" fill="currentColor"/><path d="M11 14h2v4h-2zM8 18h8v2H8z" fill="currentColor"/></symbol>
+  <symbol id="i-liner" viewBox="0 0 24 24"><path d="M3 14h18l-2 4H5z" fill="currentColor"/><path d="M6 13V8h12v5z" fill="currentColor"/><circle cx="9" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="12" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="15" cy="10.5" r="1.1" fill="var(--panel)"/></symbol>
+</svg>
+
+<header class="page-head">
+  <h1>Экран станции шаттла и лист погрузки</h1>
+  <p>
+    Собрано из витрины компонентов, ничего не нарисовано заново.
+    Источник композиции, состояний и текстов — <b>tz-shuttle-mars.md разделы 6.1 и 6.2</b>;
+    сетка, тап-таргеты и анатомия деталей — <b>ux-component-library.md</b>.
+    Мировые объекты — цветные плейсхолдеры: их место займут сгенерированные ассеты.
+  </p>
+</header>
+
+<!-- =========================================================
+     1. Экран станции, состояние ЗАКАЗ
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">1</span> Станция, состояние ЗАКАЗ <span class="src">tz-shuttle §6.1</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:880px;top:210px;"></div>
+      <div class="world-block c-red" style="width:120px;height:90px;left:150px;top:300px;"></div>
+      <div class="world-block c-mustard" style="width:100px;height:96px;left:300px;top:280px;"></div>
+      <div class="world-block c-blue" style="width:96px;height:88px;left:1090px;top:320px;"></div>
+      <!-- Шаттл: место сгенерированного ассета, пока плейсхолдер -->
+      <div style="position:absolute;left:520px;top:250px;width:290px;height:120px;border-radius:60px/50px;background:linear-gradient(180deg,#fbf0dc,#dcc49c);box-shadow:0 14px 0 rgba(122,83,48,.18);"></div>
+      <div style="position:absolute;left:545px;top:270px;width:60px;height:44px;border-radius:26px 14px 14px 26px;background:linear-gradient(180deg,#7fd0c4,#3f9d92);"></div>
+      <div class="world-figure" style="left:620px;top:392px;"></div>
+      <div class="world-figure" style="left:660px;top:398px;"></div>
+    </div>
+
+    <!-- Верхний HUD -->
+    <div class="hud-row">
+      <div class="hud-capsule"><span class="hud-medal medal-star"></span><span class="hud-num">24</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+      <button class="btn hud-plus" aria-label="Пополнить">+</button>
+    </div>
+
+    <!-- Табло станции: некликабельно, микро-CTA -->
+    <div class="board">Погрузка: 2/4 отсеков</div>
+
+    <!-- Лента отсеков: паттерн «вагоны поезда» -->
+    <div class="lenta">
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#e0603c;">Тм</div><span class="bay-fraction deficit">2/4</span></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#b98cc4;">Тк</div><span class="bay-fraction deficit">0/3</span><span class="bay-ally"><svg><use href="#i-handshake"/></svg></span></div>
+    </div>
+
+    <!-- Нижний хаб: центр кромки свободен, там лента и мир -->
+    <div class="hub-cluster left">
+      <button class="hub-tile" aria-label="Стройка"><svg><use href="#i-helmet"/></svg></button>
+      <button class="hub-tile" aria-label="Задания"><svg><use href="#i-scroll"/></svg><span class="tile-badge">2</span></button>
+      <button class="hub-tile" aria-label="Достижения"><svg><use href="#i-trophy"/></svg></button>
+    </div>
+    <div class="hub-cluster right">
+      <button class="hub-tile" aria-label="Дрон"><svg><use href="#i-drone"/></svg></button>
+      <button class="hub-tile" aria-label="Шаттл"><svg><use href="#i-shuttle"/></svg><span class="tile-badge check"><svg><use href="#i-check"/></svg></span></button>
+      <button class="hub-tile" aria-label="Лайнер"><svg><use href="#i-liner"/></svg></button>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Кнопки «Отправить» на экране нет и не будет: заполнение последнего отсека стартует рейс
+    автоматически (tz-shuttle §2.3). Это осознанный анти-скип, расхождение с паттерном поезда
+    Township зафиксировано в ТЗ отдельной строкой. Отсек — тап-таргет 84x84 при минимуме 44x44,
+    зазор 12px при минимуме 8px. Табло некликабельно. Два первых отсека погружены и закрыты
+    люками, третий ждет товар, четвертый помечен бейджем-рукопожатием — он открыт для помощи
+    союзника, и такой отсек в заказе всегда ровно один (tz-shuttle §2.2).
+  </p>
+</section>
+
+<!-- =========================================================
+     2. Лист погрузки, состояние covered_by_stock
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">2</span> Лист погрузки — на складе хватает <span class="src">tz-shuttle §6.2, covered_by_stock</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
+      <div class="world-block c-red" style="width:120px;height:90px;left:150px;top:200px;"></div>
+      <div style="position:absolute;left:520px;top:150px;width:290px;height:120px;border-radius:60px/50px;background:linear-gradient(180deg,#fbf0dc,#dcc49c);"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-capsule"><span class="hud-medal medal-star"></span><span class="hud-num">24</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:58%;"></div>
+
+    <div class="lenta" style="bottom:auto;top:214px;">
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay covered"><div class="bay-icon" style="background:#e0603c;">Тм</div></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#b98cc4;">Тк</div><span class="bay-ally"><svg><use href="#i-handshake"/></svg></span></div>
+    </div>
+
+    <div class="panel bottom-sheet load-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-24px;right:-4px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#e0603c;">Тм</div>
+        <div class="sheet-title">Томаты-гидро</div>
+        <button class="btn btn-magnifier" title="Где произвести"><svg><use href="#i-search"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter"><span class="have">6</span> <span class="need">/ 4</span></div>
+        <div class="sheet-xp">+40 XP за отсек</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-primary">Погрузить</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Лист, а не модалка: лента отсеков остается видна сверху, игрок не теряет контекст
+    «сколько еще осталось». Докупки в этом состоянии нет — незачем, товар на складе есть.
+    Лупа ведет к зданию-производителю: бесплатный путь всегда виден первым.
+  </p>
+</section>
+
+<!-- =========================================================
+     3. Лист погрузки, состояние partial
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">3</span> Лист погрузки — частично, есть дефицит <span class="src">tz-shuttle §6.2, partial</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
+      <div class="world-block c-mustard" style="width:100px;height:96px;left:260px;top:180px;"></div>
+      <div style="position:absolute;left:520px;top:150px;width:290px;height:120px;border-radius:60px/50px;background:linear-gradient(180deg,#fbf0dc,#dcc49c);"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-capsule"><span class="hud-medal medal-star"></span><span class="hud-num">24</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:58%;"></div>
+
+    <div class="lenta" style="bottom:auto;top:214px;">
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#e0603c;">Тм</div><span class="bay-fraction deficit">2/4</span></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#b98cc4;">Тк</div><span class="bay-ally"><svg><use href="#i-handshake"/></svg></span></div>
+    </div>
+
+    <div class="panel bottom-sheet load-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-24px;right:-4px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#e0603c;">Тм</div>
+        <div class="sheet-title">Томаты-гидро</div>
+        <button class="btn btn-magnifier" title="Где произвести"><svg><use href="#i-search"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter deficit"><span class="have">2</span> <span class="need">/ 4</span></div>
+        <div class="sheet-xp">+40 XP за отсек</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary">Докупить 2 за <span class="btn-price-icon hex"></span>12</button>
+        <button class="btn btn-primary">Погрузить 2</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Частичная погрузка допустима: «Погрузить 2» списывает наличное, счетчик обновляется,
+    отсек остается открытым до догрузки. Кнопка, тратящая валюту, стоит слева и отделена
+    зазором 14px — она не должна ловить тап, предназначенный главному действию.
+    Цена показана всегда, даже если изотопов не хватает: тап ведет в магазин, а не в тихий отказ.
+  </p>
+</section>
+
+<!-- =========================================================
+     4. Лист погрузки, состояние empty + открыт для коопа
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">4</span> Лист погрузки — пусто, отсек открыт для помощи <span class="src">tz-shuttle §6.2, empty + кооп</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
+      <div class="world-block c-sage" style="width:110px;height:86px;left:180px;top:190px;"></div>
+      <div style="position:absolute;left:520px;top:150px;width:290px;height:120px;border-radius:60px/50px;background:linear-gradient(180deg,#fbf0dc,#dcc49c);"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-capsule"><span class="hud-medal medal-star"></span><span class="hud-num">24</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:58%;"></div>
+
+    <div class="lenta" style="bottom:auto;top:214px;">
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay waiting"><div class="bay-icon" style="background:#b98cc4;">Тк</div><span class="bay-fraction deficit">0/3</span><span class="bay-ally"><svg><use href="#i-handshake"/></svg></span></div>
+    </div>
+
+    <div class="panel bottom-sheet load-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-24px;right:-4px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#b98cc4;">Тк</div>
+        <div class="sheet-title">Ткань-синт</div>
+        <button class="btn btn-magnifier" title="Где произвести"><svg><use href="#i-search"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter deficit"><span class="have">0</span> <span class="need">/ 3</span></div>
+        <div class="sheet-xp">+66 XP за отсек</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn is-disabled" title="Нет на складе">Погрузить</button>
+        <button class="btn btn-secondary">Докупить 3 за <span class="btn-price-icon hex"></span>21</button>
+        <button class="btn btn-secondary">Позвать союзника</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Третья кнопка появляется только на дефицитном отсеке, помеченном открытым для коопа,
+    и такой отсек в заказе один. «Погрузить» задизейблена, потому что на складе ноль —
+    но она остается на месте, а не исчезает: игрок должен видеть, что бесплатный путь
+    существует и почему он сейчас закрыт.
+  </p>
+</section>
+
+<!-- =========================================================
+     5. Лист погрузки, состояние filled_by_ally
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">5</span> Лист погрузки — закрыт союзником <span class="src">tz-shuttle §6.2, filled_by_ally</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
+      <div style="position:absolute;left:520px;top:150px;width:290px;height:120px;border-radius:60px/50px;background:linear-gradient(180deg,#fbf0dc,#dcc49c);"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-capsule"><span class="hud-medal medal-star"></span><span class="hud-num">24</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:58%;"></div>
+    <div class="lenta" style="bottom:auto;top:214px;">
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-check"><svg><use href="#i-check"/></svg></span></div>
+      <div class="bay closed"><div class="bay-hatch"></div><span class="bay-ally"><svg><use href="#i-handshake"/></svg></span></div>
+    </div>
+
+    <div class="panel bottom-sheet load-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-24px;right:-4px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#b98cc4;">Тк</div>
+        <div class="sheet-title">Ткань-синт</div>
+        <button class="btn btn-magnifier" title="Где произвести"><svg><use href="#i-search"/></svg></button>
+      </div>
+      <div class="sheet-body" style="padding-top:22px;">
+        <div class="sheet-readonly"><span class="ally-avatar"></span> Погружено другом: Марина</div>
+        <div class="sheet-xp" style="margin-top:14px;">Отсек закрыт, изотопы не потрачены</div>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Состояние read-only: кнопок действия нет, остается только лупа для справки.
+    Хозяин ничего не платит за закрытый помощью отсек, и это сказано прямо на листе —
+    иначе игрок будет искать, где списалось.
+  </p>
+</section>
+
+<!-- =========================================================
+     6. Состояния табло
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="num">6</span> Табло станции — все состояния <span class="src">tz-shuttle §6.1</span></h2>
+  <div class="gallery">
+    <div class="spec">
+      <div class="board-states">
+        <div class="board">Погрузка: 2/4 отсеков</div>
+        <div class="board">Отправка...</div>
+        <div class="board"><svg><use href="#i-clock"/></svg>В пути: 00:47 до прибытия</div>
+        <div class="board urgent"><svg><use href="#i-clock"/></svg>Скоро прибудет</div>
+        <div class="board arrived"><svg><use href="#i-check"/></svg>Прибыл! Тап для разгрузки</div>
+        <div class="board">Новый рейс через 04:12</div>
+      </div>
+      <span class="cap">Шесть текстов из ТЗ дословно. Меньше пяти минут до прибытия — табло меняет цвет; прибытие — зеленое и пульсирует</span>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Табло — единственное место экрана, где написано, что сейчас происходит с механикой.
+    Оно некликабельно намеренно: тап адресован отсеку или шаттлу, а не тексту.
+  </p>
+</section>
+
+<footer>
+  <h3>Что здесь взято из ТЗ, а что достроено</h3>
+  <ul>
+    <li><b>Из ТЗ дословно:</b> состав и состояния отсеков, тексты табло, набор и порядок кнопок в каждом состоянии листа, отсутствие кнопки «Отправить», правило «дефицитный отсек в заказе один», read-only при закрытии союзником.</li>
+    <li><b>Из компонентной библиотеки:</b> сетка, безопасные зоны, тап-таргеты, анатомия кнопки, слота, капсулы, таймера, положение крестика, затемнение мира.</li>
+    <li><b>Достроено дизайн-дорожкой (нет ни в ТЗ, ни в разборе):</b> визуальный вид закрытого люка, цвет и форма плашки-табло, компоновка шапки листа с лупой справа от названия, вид строки «Погружено другом» с аватаром. Все это решения композиции, а не механики: они не меняют ни одного правила игры и правятся свободно.</li>
+    <li><b>Плейсхолдеры:</b> шаттл, купол и модули — цветные фигуры. На их место встают сгенерированные ассеты по контракту передачи, композиция от этого не меняется.</li>
+    <li><b>Иконки товаров</b> заменены двухбуквенными плашками до готовности набора из двенадцати иконок.</li>
+  </ul>
+</footer>
+
+</body>
+</html>

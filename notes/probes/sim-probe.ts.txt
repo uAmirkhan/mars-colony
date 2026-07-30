@@ -1,0 +1,79 @@
+import fc from 'fast-check';
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_TUNING, TUNING_RANGES, type Tuning } from '../../domain/tuning';
+import { DEFAULT_SIM, simulate } from '../simulate';
+
+function starts(count: number): number[] {
+  const first = 8 * 60;
+  const last = 22 * 60;
+  if (count <= 1) return [first];
+  const gap = (last - first) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(first + gap * i));
+}
+
+describe('probe sim', () => {
+  it('милстоун 12 при days=60', () => {
+    const out: string[] = [];
+    for (const days of [30, 45, 60]) {
+      const r = simulate({
+        days,
+        session_starts_min: starts(4),
+        session_length_min: 20,
+        orders_per_session: 3,
+        seed: DEFAULT_SIM.seed,
+        tuning: DEFAULT_TUNING,
+      });
+      out.push(
+        `days=${days} lvl=${r.final_level} ms12=${r.milestones[12]} ms5=${r.milestones[5]}`,
+      );
+    }
+    throw new Error(JSON.stringify(out));
+  });
+
+  it('можно ли вообще уронить анти-софтлок ползунками', () => {
+    const keys = Object.keys(TUNING_RANGES) as Array<keyof Tuning>;
+    let maxRescues = 0;
+    let best = '';
+    fc.assert(
+      fc.property(
+        fc.record(
+          Object.fromEntries(
+            keys.map((k) => [
+              k,
+              fc.double({
+                min: TUNING_RANGES[k].min,
+                max: TUNING_RANGES[k].max,
+                noNaN: true,
+              }),
+            ]),
+          ) as never,
+        ),
+        fc.integer({ min: 1, max: 8 }),
+        fc.integer({ min: 3, max: 40 }),
+        fc.integer({ min: 0, max: 8 }),
+        fc.integer({ min: 7, max: 60 }),
+        (t, sessions, len, orders, days) => {
+          const r = simulate({
+            days,
+            session_starts_min: starts(sessions),
+            session_length_min: len,
+            orders_per_session: orders,
+            seed: DEFAULT_SIM.seed,
+            tuning: t as Tuning,
+          });
+          if (r.softlock_rescues > maxRescues) {
+            maxRescues = r.softlock_rescues;
+            best = JSON.stringify({ t, sessions, len, orders, days });
+          }
+          return true;
+        },
+      ),
+      { numRuns: 250 },
+    );
+    throw new Error(JSON.stringify({ maxRescues, best }));
+  });
+
+  it('заглушка', () => {
+    expect(1).toBe(1);
+  });
+});

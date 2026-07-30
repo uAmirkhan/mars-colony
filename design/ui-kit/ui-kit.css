@@ -1066,8 +1066,8 @@ body {
 
 .badge-host {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 90px;
+  height: 90px;
   border-radius: 20px;
   background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
   border: 3px solid var(--panel-border);
@@ -1218,4 +1218,71 @@ body {
 
 .gap-report b {
   color: #e8b34b;
+}
+
+
+/* ============================================================
+   Ряд отсеков в модалке и привязка вложенного попапа
+   Попап второго уровня центрируется НАД вызвавшим его элементом
+   и несет хвостик-указатель (component-library §4, artlanguage §5).
+   ============================================================ */
+
+.bay-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  margin: 0 0 22px;
+}
+
+.bay-anchor {
+  position: relative;
+}
+
+.nested-popup.has-tail {
+  position: absolute;
+  bottom: calc(100% + 16px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* Хвостик: треугольник того же материала, с той же обводкой.
+   Рисуется двумя слоями, чтобы обводка попапа не рвалась. */
+.nested-popup.has-tail::before,
+.nested-popup.has-tail::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+}
+
+.nested-popup.has-tail::before {
+  bottom: -14px;
+  border-top: 14px solid var(--panel-border);
+}
+
+.nested-popup.has-tail::after {
+  bottom: -8px;
+  border-top: 11px solid var(--panel-warm);
+}
+
+/* Крестик закрытия: правый верхний угол, на шве панели и плашки.
+   Правило .btn (position: relative) объявлено ниже .panel-close и с той же
+   специфичностью, поэтому перебивало позиционирование, и крестик уезжал
+   влево. Держим переопределение здесь, в конце файла, с большей
+   специфичностью. */
+.btn.panel-close {
+  position: absolute;
+  top: -22px;
+  right: -16px;
+}
+
+/* Ряд отсеков отодвинут вниз, чтобы вложенный попап с хвостиком
+   не наезжал на текст панели. */
+.bay-row {
+  margin-top: 62px;
 }

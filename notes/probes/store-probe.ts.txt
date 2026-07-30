@@ -1,0 +1,113 @@
+import fc from 'fast-check';
+import { describe, expect, it } from 'vitest';
+import {
+  CREDITS_START,
+  FACTORY_QUEUE_BASE_SLOTS,
+  fieldsAtLevel,
+} from '../../domain/config/economy';
+import { createFactorySlot, createField } from '../../domain/production';
+import { createWarehouse, totalQty } from '../../domain/warehouse';
+import { useGame } from '../gameStore';
+
+function reset(now = 1_000_000) {
+  useGame.setState({
+    now,
+    level: 1,
+    xp_into_level: 0,
+    credits: CREDITS_START,
+    isotopes: 0,
+    warehouse: createWarehouse(),
+    fields: Array.from({ length: fieldsAtLevel(1) }, (_, i) => createField(i)),
+    factory_slots: Array.from({ length: FACTORY_QUEUE_BASE_SLOTS }, (_, i) =>
+      createFactorySlot(i, 'food_module'),
+    ),
+    has_food_module: false,
+    toasts: [],
+  });
+}
+
+describe('probe store', () => {
+  it('enqueue без построенного модуля', () => {
+    reset();
+    const s = useGame.getState();
+    useGame.setState({ level: 5 });
+    s.enqueue(0, 'protein_bar');
+    const after = useGame.getState();
+    throw new Error(
+      JSON.stringify({
+        has_food_module: after.has_food_module,
+        slot: after.factory_slots[0],
+        warehouse: after.warehouse.cells,
+        credits: after.credits,
+      }),
+    );
+  });
+
+  it('buyFoodModule дважды', () => {
+    reset();
+    useGame.setState({ level: 5, credits: 2000 });
+    useGame.getState().buyFoodModule();
+    const mid = useGame.getState().credits;
+    useGame.getState().buyFoodModule();
+    const after = useGame.getState().credits;
+    throw new Error(JSON.stringify({ mid, after }));
+  });
+
+  it('свойство: случайные действия не ломают инварианты', () => {
+    const action = fc.oneof(
+      fc.record({ t: fc.constant('plant' as const), i: fc.integer({ min: 0, max: 5 }) }),
+      fc.record({ t: fc.constant('collectField' as const), i: fc.integer({ min: 0, max: 5 }) }),
+      fc.record({ t: fc.constant('enqueue' as const), i: fc.integer({ min: 0, max: 2 }) }),
+      fc.record({
+        t: fc.constant('collectFactory' as const),
+        i: fc.integer({ min: 0, max: 2 }),
+      }),
+      fc.record({ t: fc.constant('sell' as const), i: fc.integer({ min: 0, max: 5 }) }),
+      fc.record({ t: fc.constant('tick' as const), i: fc.integer({ min: 0, max: 4000 }) }),
+      fc.record({ t: fc.constant('buy' as const), i: fc.constant(0) }),
+    );
+
+    const problems: string[] = [];
+    fc.assert(
+      fc.property(fc.array(action, { minLength: 1, maxLength: 60 }), (acts) => {
+        reset();
+        let now = 1_000_000;
+        for (const a of acts) {
+          const g = useGame.getState();
+          if (a.t === 'tick') {
+            now += a.i;
+            g.tick(now);
+          } else if (a.t === 'plant') {
+            g.plant(a.i, 'algae');
+          } else if (a.t === 'collectField') {
+            g.collectField(a.i);
+          } else if (a.t === 'enqueue') {
+            g.enqueue(a.i, 'protein_bar');
+          } else if (a.t === 'collectFactory') {
+            g.collectFactory(a.i);
+          } else if (a.t === 'sell') {
+            g.sell('algae', a.i);
+          } else {
+            g.buyFoodModule();
+          }
+          const s = useGame.getState();
+          if (s.credits < 0) problems.push(`credits<0: ${s.credits}`);
+          if (totalQty(s.warehouse) > s.warehouse.capacity)
+            problems.push(`cap: ${totalQty(s.warehouse)}>${s.warehouse.capacity}`);
+          for (const [id, c] of Object.entries(s.warehouse.cells)) {
+            if (c.reserved > c.qty) problems.push(`res>qty ${id}`);
+            if (c.qty < 0) problems.push(`qty<0 ${id}`);
+          }
+          if (s.fields.length !== fieldsAtLevel(s.level))
+            problems.push(
+              `fields ${s.fields.length} != ${fieldsAtLevel(s.level)} at lvl ${s.level}`,
+            );
+        }
+        return problems.length === 0;
+      }),
+      { numRuns: 300 },
+    );
+    if (problems.length) throw new Error(JSON.stringify(problems.slice(0, 10)));
+    expect(problems).toEqual([]);
+  });
+});

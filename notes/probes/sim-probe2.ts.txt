@@ -1,0 +1,51 @@
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../domain/config/goods', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../../domain/config/goods')>();
+  return {
+    ...orig,
+    GOODS: {
+      ...orig.GOODS,
+      // Помидоры убраны из игры целиком: открываются позже потолка MVP.
+      tomatoes: { ...orig.GOODS.tomatoes, unlock_level: 99 },
+    },
+  };
+});
+
+const { DEFAULT_SIM, simulate } = await import('../simulate');
+const { DEFAULT_TUNING } = await import('../../domain/tuning');
+
+function starts(count: number): number[] {
+  const first = 8 * 60;
+  const last = 22 * 60;
+  if (count <= 1) return [first];
+  const gap = (last - first) / (count - 1);
+  return Array.from({ length: count }, (_, i) => Math.round(first + gap * i));
+}
+
+describe('probe: монотонность по каталогу', () => {
+  it('без помидоров', () => {
+    const out: string[] = [];
+    for (const [n, len] of [
+      [3, 12],
+      [4, 20],
+    ] as const) {
+      const r = simulate({
+        days: 30,
+        session_starts_min: starts(n),
+        session_length_min: len,
+        orders_per_session: 3,
+        seed: DEFAULT_SIM.seed,
+        tuning: DEFAULT_TUNING,
+      });
+      out.push(
+        `n=${n} len=${len} lvl=${r.final_level} ms12=${r.milestones[12]} cr=${r.rows.at(-1)?.credits}`,
+      );
+    }
+    throw new Error(JSON.stringify(out));
+  });
+
+  it('zzz', () => {
+    expect(1).toBe(1);
+  });
+});
