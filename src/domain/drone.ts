@@ -238,6 +238,49 @@ export function orderReward(
   return { credits: roundToShowcase(market_sum * premium), xp, premium };
 }
 
+/**
+ * Хватает ли склада на конкретную позицию. Ровно это и красит счетчик «3/5»
+ * на карточке: зеленый — хватает, приглушенный — нет.
+ *
+ * Отдельная функция, а не сравнение по месту в верстке: правило одно, и оно
+ * обязано жить в одном месте. Счетчик, покрашенный по своей формуле, рано или
+ * поздно разойдется с кнопкой «Погрузить», которая рядом.
+ */
+export function positionCovered(position: OrderPosition, warehouse: WarehouseState): boolean {
+  if (position.filled) return true;
+  return availableOf(warehouse, position.good_id) >= position.qty;
+}
+
+/**
+ * Может ли игрок закрыть заказ прямо сейчас: склад покрывает все непогруженные
+ * позиции. Это подсказка доски, а не состояние слота.
+ *
+ * Без нее игроку пришлось бы открывать все девять карточек, чтобы понять, какую
+ * он способен выполнить. Референс подсвечивает такие заказы именно для этого —
+ * доска обязана отвечать на вопрос «куда смотреть» без единого тапа.
+ *
+ * Не путать с состоянием `ready`: `ready` — все уже погружено и ждет отправки,
+ * а это — «еще ничего не грузил, но хватит на все». Разные смыслы и разные
+ * визуальные состояния карточки.
+ */
+export function canFulfillNow(slot: OrderSlot, warehouse: WarehouseState): boolean {
+  if (slot.state === 'empty_cooldown') return false;
+  if (slot.positions.length === 0) return false;
+
+  // Считаем суммарную потребность по товару: две позиции одного товара внутри
+  // заказа должны покрываться вместе, а не каждая по отдельности.
+  const needed = new Map<GoodId, number>();
+  for (const position of slot.positions) {
+    if (position.filled) continue;
+    needed.set(position.good_id, (needed.get(position.good_id) ?? 0) + position.qty);
+  }
+
+  for (const [good_id, qty] of needed) {
+    if (availableOf(warehouse, good_id) < qty) return false;
+  }
+  return true;
+}
+
 /** Погрузка одной позиции: резерв со склада в слот заказа. */
 export function loadPosition(
   slot: OrderSlot,
