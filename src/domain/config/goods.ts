@@ -146,6 +146,42 @@ export const GOODS: Record<GoodId, Good> = {
     inputs: [{ good_id: 'algae', qty: 3 }],
     required_building: 'atmospheric_module',
   },
+
+  // --- Добыча (буровая площадка) ---
+  //
+  // Появились 2026-07-31: панорама колонии показывала ледяной карьер и буровую,
+  // а в экономике добываемых ресурсов не было вообще. Мир обещал производство,
+  // которого нет, — игрок видит технику и ждет, что она что-то дает.
+  //
+  // Технически это фабрика с пустыми входами: движок очереди переиспользуется
+  // без единой новой функции. Ключевое ограничение — И-1: строй-модули приходят
+  // ТОЛЬКО шаттлом. Поэтому реголит не превращается в модули, иначе шаттл теряет
+  // роль гейта прогрессии. Добытое идет в заказы и на продажу, как культуры.
+  //
+  // Числа подобраны так, чтобы попасть в И-2 (XP около 0.43 от цены) без
+  // исключения из инварианта: 2/5 = 0.40 и 6/14 = 0.43.
+  regolith: {
+    id: 'regolith',
+    name: 'Реголит',
+    kind: 'factory',
+    unlock_level: 6,
+    price: 5,
+    base_xp: 2,
+    prod_time_sec: 240,
+    inputs: [],
+    required_building: 'mining_site',
+  },
+  water_ice: {
+    id: 'water_ice',
+    name: 'Водяной лед',
+    kind: 'factory',
+    unlock_level: 6,
+    price: 14,
+    base_xp: 6,
+    prod_time_sec: 600,
+    inputs: [],
+    required_building: 'mining_site',
+  },
 };
 
 export const ALL_GOOD_IDS = Object.keys(GOODS) as GoodId[];
@@ -175,6 +211,8 @@ export const FACTORY_OUTPUT_QTY = 1;
 
 /** Каркас 3.1: базовые количества на один слот заказа. */
 export const GOOD_BASE_QTY: Record<GoodId, { min: number; max: number }> = {
+  regolith: { min: 3, max: 7 },
+  water_ice: { min: 2, max: 4 },
   algae: { min: 5, max: 9 },
   soy: { min: 4, max: 8 },
   mushrooms: { min: 3, max: 6 },

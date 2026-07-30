@@ -1,0 +1,460 @@
+ГЕРОЙ-КАДР, ВЕРСИЯ 6. ПОЛНАЯ ПЕРЕГЕНЕРАЦИЯ СЦЕНЫ.
+
+ПОЧЕМУ ПЕРЕГЕНЕРАЦИЯ, А НЕ ПРАВКА. Космопорт лайнера и стройплощадку пытались
+добавить правкой три раза. Первый раз они просто не появились. Второй раз
+космопорт появился, но снес правую треть кадра вместе с текстильным и
+атмосферным модулями. Третий раз, уже на отдаленном кадре со свободным местом,
+они опять не появились. Гипотеза «мешала теснота» проверена и опровергнута.
+Вывод: правка целого кадра надежно дописывает мелочь, распределенную по
+площади (дорожки, трубы, флажки, лотки, колонисты), и не строит крупное
+составное сооружение ни при каких формулировках.
+
+ГЛАВНОЕ ИЗМЕНЕНИЕ ЭТОЙ ВЕРСИИ — ПОРЯДОК. Раньше лайнер и стройка стояли в
+конце длинного списка, ровно там, где генератор теряет содержание. Теперь они
+идут ПЕРВЫМИ и расписаны подробнее всего остального. Купола, шаттл и жилые
+модели уходят в конец: их модель рисует уверенно и без напоминаний, они не
+нуждаются в защите позицией.
+
+ГДЕ: Gemini, генерация с нуля. СООТНОШЕНИЕ СТОРОН: 16:9.
+ЧТО ПРИЛОЖИТЬ: лучший принятый кадр колонии — ради рендера, плотности цвета и
+преемственности стиля. Композиция берется из текста, а не из картинки.
+ВАРИАНТОВ: четыре, если инструмент дает выбор.
+
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Match the rendering, the colour density and the prop density of the attached reference
+image, but build the composition and the contents entirely from the description below.
+Do not copy the layout of the attached image.
+
+=== NON-NEGOTIABLE RENDER RULES. These override everything else in this prompt. ===
+
+1. NO OUTLINES. No contour line, no ink line, no edge stroke, no dark rim on any object
+   at any thickness. Objects separate from each other through colour and value contrast
+   and through silhouette alone, the way a painted volume does.
+2. VOLUME, NOT FLAT FILL. Every single surface carries a two-step gradient from a
+   lighter lit facet flowing into a darker shaded facet, with a gentle darkening in deep
+   seams and where two surfaces meet. Not one wall, roof, deck or prop is a single flat
+   tone anywhere in the picture.
+3. NO CUBES, NO BOXES. Every structure is a soft rounded volume with very large corner
+   radii: barrel vaults, true hemispheres, capsules, drums, cylinders with rounded caps.
+   Nothing reads as a shipping crate or a rounded-off box.
+4. EVERY STRUCTURE A DIFFERENT SILHOUETTE. No shell is ever repeated in another colour.
+5. ONE KEY LIGHT from the upper left at 55 degrees above the horizon. Every object casts
+   one soft blurred shadow offset toward the lower right, visibly extending past its own
+   footprint, so nothing looks pasted onto the sand.
+6. EVERY BUILDING STANDS ALONE, with clear air and visible ground around it. Nothing is
+   fused into a shared mass, nothing is joined by tube corridors or connecting walkways.
+   Structures are linked only by thin ground-level pipes and painted paths on the sand.
+
+Soft volumetric shading baked into a 2D mobile game asset, in the rendering language of
+Township and Hay Day. Stylized toy-like light falloff, not physically realistic lighting.
+Semi-gloss painted metal and ceramic composite with a soft sheen, the polished look of a
+premium mobile city-builder. Every structure is squat, its height roughly equal to its
+own footprint width, with large rounded corners and no sharp edges.
+
+A three-quarter aerial view at roughly 45 degrees over a large, busy, prosperous Mars
+colony at midday. The horizon sits about a fifth of the way down from the top of the
+frame, with a band of pale rosy haze over low rounded hills and a peach-pale sky above.
+
+=== PRIORITY ONE. THE TWO STRUCTURES THAT MUST BE IN THE PICTURE. ===
+=== If anything in this description has to be sacrificed, sacrifice ===
+=== something else. These two are the reason the picture exists.    ===
+
+--- STRUCTURE A: THE INTERPLANETARY LINER SPACEPORT ---
+
+It occupies the whole upper right quarter of the frame and it is the largest built thing
+in the picture by a wide margin. It must read at a glance as a completely different kind
+of place from the small round shuttle pad elsewhere in the colony: that one is a modest
+disc for a delivery truck, this one is the colony's gateway to other worlds.
+
+THE APRON. A long, wide rectangular platform with generously rounded corners, laid out
+lengthwise across the upper right of the frame, running diagonally away from the camera.
+Its surface is ribbed metal decking in warm cream-white, the ribs reading as soft
+parallel grooves catching the light along their upper edges. The whole apron is raised
+about half a storey above the sand on a low rounded rim of pale concrete with brass
+edging capping it. Three short rounded ramps with brass handrails run down from the
+apron to the sand at different points along its length. Painted flat onto the decking:
+a long soft-orange centre line running the length of the apron, two rows of soft-orange
+dashes marking parking bays either side of it, and one large rounded circle painted in
+soft orange near the middle where a liner would settle. These are decorative painted
+markings only, in soft orange on cream, never hazard hatching, never yellow-and-black.
+A dozen short rounded bollard lamps with brass caps and small teal lenses line the apron
+edge at regular intervals.
+
+THE CONTROL TOWER. Standing at the near end of the apron, it is the only tall object in
+the entire picture and it anchors the whole composition. A smooth cream-white cylinder,
+softly tapering as it rises, banded at two heights by brass rings. Near the top it
+widens into a broad observation deck that overhangs the shaft all the way around, its
+walls glazed with tinted teal glass in a continuous band held by slim brass mullions,
+warm light glowing softly behind the glass. Above the observation deck sits a low domed
+roof in cream-white with a brass finial. On the roof: one radar antenna dish in brass and
+cream, tilted and turned to one side, mounted on a short rounded pedestal; one slim
+rounded mast beside it carrying a blue-green beacon lamp at its tip; and two small
+rounded ventilation caps. At the foot of the tower, a rounded entrance porch with a brass
+door frame and a soft-orange awning over it, and a cluster of three teal equipment
+cabinets against the wall. The tower is rounded and friendly throughout — never a sharp
+angular structure, never a military installation, never a lattice mast.
+
+THE CONTAINER YARD. Along the far edge of the apron, two long rows of cargo containers
+stacked two high, running parallel to the apron. Each container is a rounded box with
+softly filleted edges and brass corner fittings, and each is painted in one of three
+schemes: terracotta with a wide cream band, mustard yellow with a cream band, or cream
+with a terracotta band. The stacking is slightly irregular — a few containers sit alone,
+a couple sit at a small angle, one row is a container shorter than the other — so the
+yard reads as a working place rather than a wall. Between the two rows runs a narrow
+service lane of dark basalt gravel.
+
+THE CRANE. Beside the container rows, a rounded gantry crane in cream-white with a
+soft-orange boom and brass fittings, standing on two short rails laid on the apron. It
+is caught in the middle of work: its boom is extended over the near container row, its
+brass hook is lowered on a cable, and one terracotta container hangs from the hook in
+mid-air a little above the stack it is being lifted from. The crane's operator cabin is a
+small rounded pod in cream with a teal glass window.
+
+SERVICE EQUIPMENT ON THE APRON, all of it small, rounded and toy-like: a cream-white
+fuel bowser on four fat rounded wheels with a brass filler nozzle and a coiled hose; two
+flat cargo carts loaded with amber crates, one of them hitched to a small rounded tug
+vehicle; a mobile boarding stair on wheels with a soft-orange handrail, parked and
+unused; a stack of four brass-rimmed fuel drums; two large cable spools wound with
+coloured cable; and a rack of pale filter panels leaning against the tower base.
+
+PEOPLE AT WORK. Six colonists in light pastel suits are busy around the spaceport, and
+they must be doing things rather than standing: two walking together along the apron
+centre line, one pushing a loaded cart toward the containers, one standing beside the
+crane with a raised arm as if signalling the operator, one crouched by the fuel bowser
+checking a gauge, and one at the tower porch holding a rolled plan. They are the same
+size and drawn in the same style as the colonists elsewhere in the colony.
+
+THE APRON STANDS READY AND EMPTY. There is NO liner, NO rocket, NO spacecraft and NO
+vehicle of any kind parked on the apron itself. The painted circle is bare. This matters:
+the liner is drawn separately and placed by the game, and a ship painted into the scene
+could never depart.
+
+CONNECTION TO THE COLONY. A wide painted road in warm cream, edged with low rounded kerbs
+and a line of small route flag markers on thin masts, runs from the foot of the spaceport
+ramps across the open sand and joins the colony's main path network. A thin ground-level
+pipe and a bundle of soft cables run alongside the road on the sand, never strung
+overhead. The spaceport stands well clear of every other building, with open ground all
+around it, touching nothing.
+
+--- STRUCTURE B: THE BUILDING SITE UNDER CONSTRUCTION ---
+
+It sits in open ground in the lower left quarter of the frame, in its own clearing, and
+it must read instantly and unmistakably as a building that is only half finished with
+work going on around it. A finished building here is a failure: the whole point of this
+part of the picture is to show that the colony is being built.
+
+THE FOUNDATION. A rounded platform of pale painted concrete with a brass rim, sitting
+flat on the compacted ochre sand, one step high, its surface smooth and clean.
+
+THE HALF-BUILT MODULE. Rising from the platform, a new habitat module caught exactly
+halfway through construction. Its lower half is already complete: a curved shell in
+saturated mustard yellow, glossy and finished, with a brass band running around its base,
+one rounded window already glazed in tinted teal, and a rounded door opening still
+missing its door. Its upper half is an OPEN SKELETON: eight rounded cream-white ribs
+curving up from the finished shell and meeting at a brass ring at the top, like the
+frame of a lantern, with nothing but open air in the gaps between them, so the empty
+silhouette of the future dome roof is completely obvious against the sky and the ground
+behind it shows through. Two of the gaps between ribs are already filled with curved
+mustard wall panels bolted to the ribs by brass fittings; the remaining six gaps are
+open. Where the finished shell meets the open ribs, a narrow working ledge with a brass
+handrail runs around the module.
+
+THE CRANE, CAUGHT MID-LIFT. A small rounded mobile crane in cream-white with a
+soft-orange telescopic boom and brass fittings stands on the sand beside the platform, on
+four fat rounded outriggers with soft pads. Its brass hook hangs from a cable and holds
+one more curved mustard wall panel in the air, tilted slightly, hovering just above and
+beside the open gap it is about to fill, with two thin guide ropes trailing down from its
+lower corners to a colonist below. The crane's cabin is a rounded pod in cream with a
+teal glass window and a small amber beacon on its roof.
+
+THE MATERIAL STACKS. Arranged neatly on the sand around the platform, five separate
+stacks, each a clearly different colour and shape so that a player reads them as five
+different building materials rather than as generic crates:
+- a bundle of flat cream-white wall panels lying stacked and tied with brass straps;
+- a rack of curved cream-white ribs standing on end in a rounded cradle, fanned slightly
+  apart so their curve is visible;
+- three thick rolls of teal sealant sheeting lying on their sides, brass caps on the ends;
+- an open-topped rounded crate holding a dozen pale blue-white filter discs standing on
+  edge like records in a box;
+- two large coils of cable, one wound with amber cable and one with teal, resting on
+  low rounded pallets.
+Beside the stacks, a small rounded tool chest in terracotta with a brass latch, and a
+folding table of pale cream holding an unrolled plan weighted at the corners with
+small stones.
+
+THE BARRIER. A low decorative boundary rings the site: short rounded posts in cream with
+brass caps, joined by a slack soft-orange rope hanging in gentle curves between them. It
+is a polite marker, never hazard tape, never yellow-and-black striping, never a fence.
+One gap in the rope serves as the entrance, with a small rounded route flag beside it.
+
+PEOPLE AT WORK, four of them, each visibly doing something: one standing on the working
+ledge with both arms raised, guiding the hanging panel into place; one at the foot of the
+crane holding one of the guide ropes taut; one at the rib rack lifting a rib onto his
+shoulder; one at the plan table pointing at the drawing while a fifth walks toward the
+site along the path carrying a small crate. Same size and style as every other colonist
+in the colony.
+
+THE GROUND AROUND IT. The clearing floor is compacted pale ochre sand with faint cart
+tracks curving in from the path, a few small heaps of clean pale sand, and a short stretch
+of new cream kerb already laid along one side and not yet closed, showing that the plot
+itself is still being prepared. Everything is clean: no rubble, no debris, no dust cloud,
+no excavation pit, no mud.
+
+A short painted path in warm cream runs from the barrier entrance to join the colony's
+main path network, with a thin ground-level pipe beside it.
+
+=== PRIORITY TWO. THE REST OF THE COLONY. ===
+
+THE HYDROPONIC DOMES, in the centre of the frame, the heart of the colony: two domes of
+clearly different diameters and heights, standing apart from each other. Each is a true
+hemisphere shaded with a smooth radial gradient, brightest near the crown and darker
+toward the base rim, never a boxy greenhouse and never a faceted geodesic cage. Their
+shells are pale blue-green, held by curved ribs painted saturated green-teal running from
+crown to base like meridians, each rib a rounded raised strip with its own light and
+shade rather than a drawn line. Through the shells, dense rows of vivid emerald crop beds
+are clearly visible on two stepped tiers, and this emerald is the single most saturated
+green anywhere in the picture. Each dome sits on a wide rounded base ring in warm cream
+with brass trim, has a small rounded airlock porch with a saturated teal frame at its
+front, and a ring of painted tile around its base. A slim weather mast on a tripod with a
+small brass dish stands beside the nearer dome's entrance, and a planter trough of muted
+sage-green moss behind a low glass rim runs along its base.
+
+THE SHUTTLE STATION, on the left of the frame: a low circular landing pad read as a wide
+flat disc seen at 45 degrees, its deck of ribbed metal decking in cream-white with brass
+edging on a softly rounded rim, a ring of soft-orange guide stripes painted around the
+outer edge and a rounded landing cross painted in the centre. Four short rounded corner
+posts stand on the rim, one carrying a small brass radar dish, another a rounded
+soft-orange beacon lamp. Resting on it on three short landing legs with thick rounded
+pads: a chubby friendly cargo shuttle, its hull lying HORIZONTALLY and roughly twice as
+long as it is tall, never an upright rocket and never a tank. Its nose is softly rounded
+and lifted slightly, with one wide curved cockpit windscreen of tinted teal glass wrapping
+around it under a brass frame. At the rear, two short rounded stabiliser fins with soft
+tips and two round engine nozzles with brass rims, cold and unlit. Along its side runs a
+row of four cargo hatch doors, each a rounded square door recessed into the hull with a
+raised brass frame, two hinges on one edge and a chunky brass latch handle on the other,
+the panel painted solid soft terracotta — they read as doors that open, never as round
+portholes. One door stands open showing a shallow empty bay. A thin soft-orange stripe
+runs above the row. Beside the pad: two stacked cargo pallets in terracotta and cream and
+a coiled fuel hose on a brass reel, with two colonists loading a pallet.
+
+THE DRONE STATION, in the right foreground: a small compact courier drone pad, a squat
+HEXAGONAL pedestal about as tall as it is wide in cream-white, with brass corner strips
+running up each edge and a brass ring around its base — emphatically not a flat disc, so
+it can never be confused with the shuttle pad. On top, a shallow recessed hexagonal cradle
+in muted teal with four small rounded contact pads and a brass charging contact in the
+centre. At its back corner a slim mast carries a rounded amber beacon. On its front face,
+a rounded brass-framed parcel hatch with a chunky latch, and above it one oversized
+three-dimensional emblem of a parcel tied with a soft-orange ribbon. A short stack of
+three small parcel containers striped in terracotta and cream leans against its base.
+Hovering level just above the cradle: a little courier drone, wider than it is tall — a
+fat rounded cream-white capsule body with brass rivets along a seam around its middle, one
+large round lens of tinted teal glass in a brass ring at the front reading clearly as an
+eye, a small teal beacon on top, four short thick arms each ending in a full CLOSED RING
+housing around its rotor in muted terracotta rather than a bare propeller, a hexagonal
+cargo pod in warm amber with a brass rim slung underneath and hanging clearly below the
+body in two small grippers, and four short rounded landing skids. The rotors are still:
+no motion blur, no spin arcs, no glow trail.
+
+THE RESIDENTIAL ROW, on the right: five habitat modules, each a clearly different rounded
+shape and no two alike — a brick red barrel vault lying on its side with rounded ends; a
+mustard yellow two-storey shell with a domed roof cap and a curved outside stair; a
+terracotta low capsule with a curved porch canopy over its door; a teal blue upright
+cylinder with a rounded cap and a ring walkway around it; a sage green wide low shell
+with a soft rounded ridge along its roof. Three of them form a tight row sharing the warm
+red-terracotta family, still with separate silhouettes and a visible gap between them.
+Every module has a coloured lamp beside its door, a small brass number plate and a planter
+of bright succulents at the threshold. Only one small cream pill-shaped module appears in
+the whole picture; every other habitat hull is painted a saturated colour.
+
+THE FACTORY QUARTER, in the background between the domes and the spaceport, four separate
+buildings standing apart on a dark basalt gravel apron:
+- THE WAREHOUSE: a wide low barrel-vault shell in muted ochre with a soft rounded roof
+  ridge, a wide arched gate in saturated brown as its accent, one oversized
+  three-dimensional emblem of a stacked pallet of crates above the gate, numbered
+  containers striped in two warm colours against its side wall, two rounded barrels and a
+  loading cart docked at the gate.
+- THE FOOD MODULE: a terracotta barrel-vault shell wrapped by a saturated orange-red
+  collar band following the curve of the vault exactly, an oversized three-dimensional
+  fork-and-tray emblem on its roof ridge, a striped fabric awning in terracotta and cream
+  over its rounded door with a bench beneath it, and a stack of marked canisters at the
+  wall.
+- THE TEXTILE MODULE: a wide low drum in muted rust-violet with a softly domed roof,
+  wrapped by a saturated pink-magenta collar band, one oversized three-dimensional thread
+  spool wound with pink-magenta thread standing on the roof, three rolls of folded fabric
+  in lilac, cream and soft teal leaning by the door, and a line strung between two posts
+  carrying five small coloured cloth swatches.
+- THE ATMOSPHERE MODULE: a muted cyan barrel-vault shell on ribbed metal decking, wrapped
+  by a saturated teal collar band, with a large pale blue-green sphere like a soft glass
+  globe on its roof beside a rounded ventilation fan housing whose three thick curved
+  blades turn inside a circular guard, a row of small blue-green indicator lights along
+  its base, a tall teal coolant tank with a brass level gauge and two large cable spools
+  against its side wall.
+
+THE POWER STATION AND SOLAR FIELD, at the right edge: a squat cream-white cylinder with a
+softly domed roof cap and a saturated amber collar band, brass trim at its base, three
+short rounded heat-exchanger fins and an amber beacon on its roof, two rounded accumulator
+tanks in muted teal with brass caps and glowing amber level windows against its wall, and
+a bank of cable spools. Thick soft cables run from it along the ground, never overhead, to
+a field of solar panels behind it whose glass carries a cold blue-grey sheen.
+
+THE ICE QUARRY, at the left edge: a shallow open pit cut into a low rounded rise, its
+terraced walls showing pale blue-white frost and salt crust lying in the shade, the coldest
+and palest area of the picture. A rounded pump housing in cream-white with a saturated teal
+collar band stands at the pit edge, and from it a glazed channel of large diameter carrying
+visibly bluish fluid runs across the ground toward the domes. Two rounded ice bins with
+brass rims stand beside the pump, one heaped with pale blue ice blocks, and a small rounded
+cutting machine with a soft drum head sits on the lowest terrace. No jagged rock, no rubble,
+no blasting.
+
+THE REGOLITH EXTRACTION SITE, in the far background: a squat rounded drill rig in muted
+ochre with a saturated mustard collar band and a soft rounded drill housing on a dark basalt
+apron, three rounded ore hoppers with brass rims beside it, one heaped with rust-red ore, a
+short conveyor with rounded end drums feeding them, a small cream-white rover with fat
+rounded wheels parked at the loading point, and colour-coded canisters against the rig — a
+blue drop for water, a rust-red box for ore, an amber one for fuel.
+
+=== PRIORITY THREE. THE EDGE OF THE DEVELOPED AREA. ===
+
+A clear boundary separates the colony's prepared ground from the raw terrain beyond it: a
+low rounded kerb of pale cream painted concrete following an irregular rounded outline
+around the built area, never a straight line and never a rectangle, with short rounded
+marker posts in cream and brass along it joined by a slack soft-orange cord.
+
+Outside the kerb lie five separate plots of unclaimed land, roughly similar in size,
+arranged loosely side by side, their edges soft and irregular, separated from each other by
+shallow furrows and low rounded boundary stones. Each has a different filling so they never
+look like repeated tiles: one scattered with large rounded boulders in warm grey-brown; one
+holding a low softly rounded rocky outcrop in terracotta tones; one with a shallow patch of
+pale blue-white frost crust in its own shade; one of low rippled rust-red dust dunes; one of
+dark basalt gravel with small stone clusters. On each plot stands one marker sign on a short
+rounded post with a brass cap: a small rounded plaque in warm cream with a brass frame,
+tilted slightly toward the camera, its face completely BLANK with no text, numbers, letters
+or symbols of any kind. The signs are identical on every plot and are the cleanest, brightest
+objects out there.
+
+Beyond the plots, a wide band of plain open Martian ground runs out to the horizon with only
+a few scattered rounded boulders and gentle rises. The colony must still look like it has
+room to grow.
+
+=== PRIORITY FOUR. COLOUR, GROUND, SKY, DENSITY. ===
+
+COLOUR: at least four colour families are visible at once and exactly one of them is cool
+technological teal-cyan, filling roughly a tenth of the frame — the ice quarry, the glazed
+channel, the coolant tanks, the dome ribs, the drone cradle and lens, the shuttle windscreen,
+the atmosphere module, the tower glazing, the solar glass. Pure clean blue appears on no
+object anywhere. No colour family except the ground covers more than 40 percent of the frame.
+Painted structures and decorative props read clearly more saturated than the sand and the sky
+behind them, by a wide and obvious margin.
+
+GREEN: the emerald crop rows inside the domes stay the single most saturated green in the
+picture. The sage-green moss in the planter troughs is visibly duller and always sits behind
+a low glass rim or under a partial transparent canopy, never growing loose in open sand.
+
+GROUND: warm ochre sand as the base; dark basalt gravel on the aprons under the landing pad,
+the factory quarter, the spaceport and the drill rig; a paler trodden dust path along the
+walking routes; a rust-red dust band at the outer edge of the built area; painted tile at the
+dome entrances; pale frost crust at the ice quarry. Never one flat orange fill.
+
+SKY: peach-pale Martian daytime graduating to muted blue-grey higher up, with a band of pale
+rosy haze over low rounded hills at the horizon. The sky occupies only the top fifth of the
+frame and never spills below the horizon line.
+
+DENSITY: the ground between structures is never empty. Small saturated props stay pressed
+against specific buildings rather than scattered on bare sand: striped cargo containers,
+cable spools, route flags on thin masts, docked carts, planters of bright succulents,
+benches under striped awnings, colour-coded canisters, weather masts. Painted paths connect
+every zone to every other, with thin ground-level pipes running beside them. At least
+eighteen small colonists in light pastel suits populate the colony, walking the paths in
+twos and threes and working at the spaceport, the building site, the shuttle pad and the
+domes. Nobody stands alone doing nothing.
+
+MOOD: sunny midday in a colony that is doing well and getting bigger. Busy, lived-in, calm
+optimism, a place someone would want to move to. Not survival, not a frontier outpost,
+nothing hostile, nothing dangerous.
+
+=== NEGATIVE. None of the following appears anywhere in the picture. ===
+
+any outline, contour line, ink line or dark edge stroke on any object;
+flat single-tone fill with no gradient on any surface;
+hard-edged two-tone shading with a sharp light and shadow cutoff;
+objects with no cast shadow, shadows hidden directly underneath their objects;
+a completed finished building on the construction foundation;
+a liner, rocket, spacecraft or any vehicle parked on the spaceport apron;
+scaffolding poles, lattice towers, angular steel frameworks;
+boxy angular crate buildings, square-cornered domes, faceted geodesic domes, sharp edges;
+identical repeated shells, the same building copied in another colour;
+buildings fused into one mass, tube corridors, shared walls, connecting walkways;
+tall thin tower-like proportions on anything except the spaceport control tower;
+upright rocket pose, a shuttle standing on its tail, tank or silo shapes, pointed nose
+cones, swept wings, round portholes along the shuttle side;
+exposed bare propellers, motion blur, speed lines, glow trails, exhaust, flame, smoke;
+moss or plants growing loose in open sand with no glass rim or canopy;
+pure clean blue on world objects;
+yellow-and-black hazard hatching, warning tape, safety cones, alarm markings, radiation
+symbols, red danger signage, skulls;
+straight rectangular grid lines drawn on the ground, a chessboard or tile pattern, glowing
+outlines or coloured translucent overlays on the land plots;
+fences, walls, barbed wire;
+craters, canyons, cracks, chasms, rubble, debris, wreckage, ruins, abandonment;
+dust storm, dust clouds, mud, rust, soot, grime, scorch marks, wear;
+photorealistic lighting, long sunset shadows, night, dark starry sky, blue Earth sky;
+overhead cables strung through the air;
+sparkles, glints, lens flare, decorative flecks;
+text, numbers, letters, labels, signage lettering, UI overlay, watermark.
+
+=== FINAL CHECK BEFORE FINISHING THE IMAGE ===
+
+Confirm that all of the following are present and individually recognisable. If any is
+missing, add it before finishing:
+1. The liner spaceport with its long apron, its tall rounded control tower with teal
+   observation glazing and radar dish, its two rows of striped containers, and its crane
+   holding a container in mid-air.
+2. The building site with a HALF-FINISHED module whose upper half is an open skeleton of
+   ribs, a crane holding a panel in the air, five different material stacks and workers.
+3. Two hydroponic domes with emerald crops inside.
+4. The cargo shuttle lying horizontally on its round landing pad.
+5. The courier drone hovering above its hexagonal pedestal pad.
+6. Five painted habitat modules, each a different shape.
+7. Warehouse, food module, textile module, atmosphere module.
+8. Power station with solar field.
+9. Ice quarry with its bluish channel.
+10. Regolith drill rig with ore hoppers.
+11. The kerb boundary and five unclaimed land plots with blank marker signs.
+
+================ ДО СЮДА ================
+
+
+ФОРМА ПРИЕМКИ
+
+Сначала два пункта, ради которых версия и делалась. Если провалены — все
+остальное неважно, гнать заново:
+  1. Космопорт есть, у него есть высокая круглая башня с бирюзовым остеклением,
+     длинный перрон и кран. Перрон пустой, корабля на нем нет.
+  2. Стройка есть, и здание НЕДОСТРОЕНО: верх — открытый каркас из ребер, сквозь
+     который видно фон. Вышло готовое здание — узел потерян.
+
+Дальше форма:
+  3. Обводки нет ни на одном объекте.
+  4. Плоских заливок нет, на каждой стене виден переход от света к тени.
+  5. Тени смещены вправо-вниз и выходят за габарит.
+  6. Постройки стоят раздельно, не слиплись.
+
+Дальше состав:
+  7. Все одиннадцать пунктов финального списка на месте.
+  8. Космопорт не спутан с площадкой шаттла, площадка дрона не спутана ни с чем:
+     длинный перрон, круглый диск, шестиугольная тумба — три разных силуэта.
+  9. Участки под выкуп есть, у каждого свое наполнение, таблички пустые.
+
+И цвет:
+ 10. Холодное семейство на месте, примерно десятая часть кадра, и это не небо.
+ 11. Купол — самый насыщенный зеленый объект.
+ 12. Небо в верхней пятой части, ниже горизонта не расползлось.
+ 13. Сигнальной раскраски опасности нет нигде.
+
+ЕСЛИ КОСМОПОРТ ИЛИ СТРОЙКА СНОВА НЕ ПОЯВЯТСЯ — при том, что они стоят первыми и
+расписаны подробнее всего остального, — значит дело не в промпте и не в порядке,
+а в том, что модель не удерживает сцену такой сложности целиком. Тогда идем
+коллажем: оба узла генерируются отдельными спрайтами на зеленом фоне по
+art-prompts-assets.md и ставятся в кадр. Для билда это все равно предстоит.

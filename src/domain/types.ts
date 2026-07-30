@@ -8,6 +8,7 @@ export type GoodKind = 'crop' | 'factory';
 
 export type BuildingType =
   | 'hydroponics'
+  | 'mining_site'
   | 'food_module'
   | 'atmospheric_module'
   | 'textile_module'
@@ -44,7 +45,10 @@ export type GoodId =
   | 'fabric'
   | 'jumpsuit'
   | 'coffee_ration'
-  | 'oxygen_tank';
+  | 'oxygen_tank'
+  // Добываемые: у них нет входов, их не выращивают и не перерабатывают.
+  | 'regolith'
+  | 'water_ice';
 
 export interface Good {
   id: GoodId;
