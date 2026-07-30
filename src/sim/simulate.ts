@@ -46,6 +46,7 @@ import {
   refreshField,
   sell,
 } from '../domain/production';
+import { DEFAULT_TUNING, type Tuning } from '../domain/tuning';
 import type { GoodId } from '../domain/types';
 import {
   availableOf,
@@ -66,6 +67,8 @@ export interface SimConfig {
   /** Сколько заказов дрона игрок пытается закрыть за сессию. */
   orders_per_session: number;
   seed: number;
+  /** Отклонения от конфига. По умолчанию — ровно значения конфига. */
+  tuning?: Tuning;
 }
 
 export const DEFAULT_SIM: SimConfig = {
@@ -96,6 +99,15 @@ export interface SimResult {
   orders_done: number;
   /** Сколько раз сработал анти-софтлок И-15. Больше нуля = экономика у тупика. */
   softlock_rescues: number;
+  /**
+   * Сколько раз игрок хотел посеять и не смог из-за нехватки кредитов.
+   *
+   * Отдельная метрика от анти-софтлока не по прихоти: И-15 срабатывает только
+   * в полном тупике, когда ничего не растет и продать нечего. Экономика, где
+   * каждый цикл убыточен, формально тупиком не является — что-то всегда растет,
+   * — но играть в нее нельзя. Без этого счетчика такая поломка не видна вообще.
+   */
+  planting_starved: number;
 }
 
 const MILESTONE_LEVELS = [5, 8, 12, 21];
@@ -103,6 +115,7 @@ const MINUTE = 60;
 
 export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
   const rng = makeRng(config.seed);
+  const tuning: Tuning = config.tuning ?? DEFAULT_TUNING;
 
   let level = 1;
   let xp_total = 0;
@@ -110,9 +123,10 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
   let credits = CREDITS_START;
   let isotopes = 0;
   let softlock_rescues = 0;
+  let planting_starved = 0;
   let current_day = 0;
 
-  const warehouse: WarehouseState = createWarehouse();
+  const warehouse: WarehouseState = createWarehouse(tuning.warehouse_start_capacity);
   let fields: FieldSlot[] = Array.from({ length: fieldsAtLevel(level) }, (_, i) =>
     createField(i),
   );
@@ -129,7 +143,13 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
   let warehouse_blocks_total = 0;
 
   /** Контекст для доменных вызовов. Пересобирается каждый шаг — состояние меняется. */
-  const ctx = (now: number): ProductionContext => ({ now, warehouse, credits, level });
+  const ctx = (now: number): ProductionContext => ({
+    now,
+    warehouse,
+    credits,
+    level,
+    tuning,
+  });
 
   const unlockedCrops = (): GoodId[] =>
     ALL_GOOD_IDS.filter((id) => GOODS[id].kind === 'crop' && GOODS[id].unlock_level <= level);
@@ -147,10 +167,17 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
   function gainXp(amount: number) {
     xp_total += amount;
     xp_into_level += amount;
-    while (level < MAX_LEVEL_MVP && xp_into_level >= xpToNext(level)) {
-      xp_into_level -= xpToNext(level);
+    const xpNeeded = (lvl: number) =>
+      xpToNext(lvl, tuning.xp_curve_base_coef, tuning.xp_curve_exponent);
+
+    while (level < MAX_LEVEL_MVP && xp_into_level >= xpNeeded(level)) {
+      xp_into_level -= xpNeeded(level);
       level += 1;
-      const reward = levelUpReward(level);
+      const reward = levelUpReward(
+        level,
+        tuning.level_up_credits_coef,
+        tuning.level_up_credits_exponent,
+      );
       credits += reward.credits;
       isotopes += reward.isotopes;
       if (MILESTONE_LEVELS.includes(level) && milestones[level] === null) {
@@ -243,14 +270,32 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
         for (const field of fields) {
           if (field.state !== 'EMPTY') continue;
           const choice =
-            crops.find((id) => credits >= plantingCost(GOODS[id].price)) ??
+            crops.find(
+              (id) =>
+                credits >=
+                plantingCost(
+                  GOODS[id].price,
+                  tuning.plant_cost_price_share,
+                  tuning.plant_cost_floor,
+                ),
+            ) ??
             // Кредитов не хватает ни на что: пробуем самую дешевую — домен решит,
             // тупик это (И-15, посев бесплатен) или обычный отказ.
-            crops.find((id) => plantingCost(GOODS[id].price) === cheapestPlantingCost(level));
+            crops.find(
+              (id) =>
+                plantingCost(
+                  GOODS[id].price,
+                  tuning.plant_cost_price_share,
+                  tuning.plant_cost_floor,
+                ) === cheapestPlantingCost(level, tuning),
+            );
           if (!choice) break;
 
           const result = plant(field, choice, ctx(now), fields);
-          if (!result.ok) break;
+          if (!result.ok) {
+            if (result.reason === 'insufficient_balance') planting_starved += 1;
+            break;
+          }
           credits += result.credits_delta ?? 0;
           if (result.softlock_rescued) softlock_rescues += 1;
         }
@@ -318,5 +363,6 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
     warehouse_blocks: warehouse_blocks_total,
     orders_done: orders_done_total,
     softlock_rescues,
+    planting_starved,
   };
 }

@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Mars Colony — витрина компонентов UI</title>
+<link rel="stylesheet" href="ui-kit.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     Спрайт иконок. Все иконки нарисованы вручную, инлайн, без
+     внешних файлов и шрифтов. currentColor — цвет задает контекст.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/>
+      <path d="M12 7v5.2l3.4 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-helmet" viewBox="0 0 24 24">
+      <path d="M3 16a9 9 0 0 1 18 0z" fill="currentColor"/>
+      <rect x="1.5" y="16" width="21" height="3" rx="1.5" fill="currentColor"/>
+      <rect x="11" y="4" width="2" height="4.4" rx="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24">
+      <path d="M6 4h12v4.2a6 6 0 0 1-12 0z" fill="currentColor"/>
+      <path d="M6 5H3.2a3.4 3.4 0 0 0 3.4 5.6" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M18 5h2.8a3.4 3.4 0 0 1-3.4 5.6" fill="none" stroke="currentColor" stroke-width="2"/>
+      <rect x="10" y="13.6" width="4" height="4" fill="currentColor"/>
+      <rect x="6.5" y="18.4" width="11" height="2.6" rx="1.3" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <rect x="4" y="3" width="16" height="18" rx="2.5" fill="currentColor"/>
+      <rect x="7" y="7.2" width="10" height="1.6" fill="rgba(0,0,0,.25)"/>
+      <rect x="7" y="11" width="10" height="1.6" fill="rgba(0,0,0,.25)"/>
+      <rect x="7" y="14.8" width="6" height="1.6" fill="rgba(0,0,0,.25)"/>
+    </symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24">
+      <rect x="2.5" y="7" width="12" height="15" rx="2.4" fill="currentColor" opacity=".65" transform="rotate(-10 8.5 14.5)"/>
+      <rect x="8" y="4" width="13" height="16" rx="2.4" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-scroll" viewBox="0 0 24 24">
+      <rect x="4.2" y="8" width="15.6" height="8" fill="currentColor"/>
+      <circle cx="4.2" cy="12" r="3.2" fill="currentColor"/>
+      <circle cx="19.8" cy="12" r="3.2" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-drone" viewBox="0 0 24 24">
+      <circle cx="4.5" cy="4.5" r="2.2" fill="currentColor"/>
+      <circle cx="19.5" cy="4.5" r="2.2" fill="currentColor"/>
+      <circle cx="4.5" cy="19.5" r="2.2" fill="currentColor"/>
+      <circle cx="19.5" cy="19.5" r="2.2" fill="currentColor"/>
+      <line x1="6" y1="6" x2="9.6" y2="9.6" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="18" y1="6" x2="14.4" y2="9.6" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="6" y1="18" x2="9.6" y2="14.4" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="18" y1="18" x2="14.4" y2="14.4" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="8.6" y="8.6" width="6.8" height="6.8" rx="2" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-train" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="11" rx="3.4" fill="currentColor"/>
+      <rect x="6" y="8" width="5.4" height="4" rx="1" fill="rgba(0,0,0,.25)"/>
+      <circle cx="7.4" cy="18.2" r="2.1" fill="currentColor"/>
+      <circle cx="17" cy="18.2" r="2.1" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-handshake" viewBox="0 0 24 24">
+      <path d="M2 12.5l4.6-4 3 2.1 2.4-2.1 2.4 2.1 3-2.1 4.6 4-3 3-2-1.2-3 2.1-3-2.1-2 1.2-3-3z" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-atom" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="12" rx="9.2" ry="4" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      <ellipse cx="12" cy="12" rx="9.2" ry="4" fill="none" stroke="currentColor" stroke-width="1.7" transform="rotate(60 12 12)"/>
+      <ellipse cx="12" cy="12" rx="9.2" ry="4" fill="none" stroke="currentColor" stroke-width="1.7" transform="rotate(120 12 12)"/>
+      <circle cx="12" cy="12" r="2.1" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="M4 12.5l5 5L20 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h13M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-chest" viewBox="0 0 24 24">
+      <rect x="3" y="11" width="18" height="9.5" rx="2.2" fill="currentColor"/>
+      <path d="M3 11a9 5.4 0 0 1 18 0z" fill="currentColor"/>
+      <rect x="10.4" y="9.6" width="3.2" height="5.4" rx="1.2" fill="rgba(0,0,0,.28)"/>
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="2.4" fill="currentColor"/>
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    </symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24">
+      <path d="M12 3a5 5 0 0 0-5 5v2.6c0 2.2-2 3.2-2 4.4h14c0-1.2-2-2.2-2-4.4V8a5 5 0 0 0-5-5z" fill="currentColor"/>
+      <circle cx="12" cy="19.4" r="1.7" fill="currentColor"/>
+    </symbol>
+    <symbol id="i-star-flag" viewBox="0 0 24 24">
+      <path d="M12 2l2.4 5 5.5.6-4.1 3.8 1.1 5.4L12 14l-4.9 2.8 1.1-5.4-4.1-3.8L9.6 7z" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="page-head">
+  <h1>Mars Colony — витрина компонентов интерфейса</h1>
+  <p>
+    Статичная страница-каталог: анатомия и состояния UI-компонентов по
+    <code>ux-component-library.md</code>, палитра и материалы по
+    <code>ux-township-artlanguage.md</code> (разделы 1-5), тайминги и
+    состояние нажатия по <code>ux-motion-spec.md</code>. Открывается двойным
+    кликом, без сети и сборки. Мелкий серый текст под каждым элементом — это
+    подпись витрины, не часть игрового интерфейса.
+  </p>
+  <p>
+    <span class="legend">⚠ желтым — места, где источники ничего не
+    зафиксировали, и решение принято как гипотеза жанра. Полный список — в
+    подвале страницы.</span>
+  </p>
+</header>
+
+<!-- ============================================================
+     1. Главный экран: верхний HUD + нижний хаб
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">1</span>
+    <h2>Верхний HUD и нижний хаб — главный экран города</h2>
+    <span class="sub">component-library §1, §5, §8, §9</span>
+  </div>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:150px;height:150px;left:560px;top:210px;"></div>
+      <div class="world-dome" style="width:90px;height:90px;left:730px;top:270px;"></div>
+      <div class="world-block c-red" style="width:70px;height:56px;left:200px;top:330px;"></div>
+      <div class="world-block c-blue" style="width:60px;height:50px;left:300px;top:360px;"></div>
+      <div class="world-block c-mustard" style="width:64px;height:52px;left:960px;top:340px;"></div>
+      <div class="world-block c-sage" style="width:56px;height:46px;left:1050px;top:370px;"></div>
+      <div class="world-figure" style="left:640px;top:470px;"></div>
+      <div class="world-figure" style="left:660px;top:480px;"></div>
+    </div>
+
+    <div class="hud-row">
+      <div class="hud-capsule">
+        <div class="hud-medal medal-star"></div>
+        <span class="hud-num">24</span>
+      </div>
+      <div class="hud-capsule">
+        <div class="hud-medal medal-coin"></div>
+        <span class="hud-num">7119</span>
+      </div>
+      <div class="hud-capsule">
+        <div class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></div>
+        <span class="hud-num">116</span>
+      </div>
+      <div class="hud-plus"><svg><use href="#i-plus"/></svg></div>
+    </div>
+
+    <div class="hub-cluster left">
+      <div class="spec">
+        <div class="hub-tile"><svg><use href="#i-helmet"/></svg></div>
+        <span class="cap">Стройка</span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile">
+          <svg><use href="#i-trophy"/></svg>
+          <span class="tile-badge">2</span>
+        </div>
+        <span class="cap">Достижения, бейдж-счетчик</span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile"><svg><use href="#i-book"/></svg></div>
+        <span class="cap">Задания</span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile">
+          <svg><use href="#i-cards"/></svg>
+          <span class="tile-badge check"><svg><use href="#i-check"/></svg></span>
+        </div>
+        <span class="cap">Коллекции — тот же сокет, глиф «галочка»</span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile">
+          <svg><use href="#i-scroll"/></svg>
+          <span class="tile-ribbon">SALE</span>
+          <span class="tile-timer"><svg><use href="#i-clock"/></svg>5Д 13Ч</span>
+        </div>
+        <span class="cap">Сезонное событие: лента + таймер-пилюля</span>
+      </div>
+    </div>
+
+    <div class="hub-cluster right">
+      <div class="spec">
+        <div class="hub-tile">
+          <svg><use href="#i-drone"/></svg>
+          <span class="pulse-dot" style="position:absolute;top:-6px;right:-6px;"></span>
+        </div>
+        <span class="cap">Дрон — пульсирующий индикатор (единственный «горящий»)</span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile">
+          <svg><use href="#i-train"/></svg>
+          <span class="tile-badge ally"><svg><use href="#i-handshake"/></svg></span>
+        </div>
+        <span class="cap">Ж/д — бейдж-рукопожатие <span class="warn">⚠ гипотеза</span></span>
+      </div>
+      <div class="spec">
+        <div class="hub-tile big"><span class="hub-num">45</span></div>
+        <span class="cap">Круглая — выделена формой и цветом</span>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Тайл хаба 84×84 (спека: 90×90, радиус 18-20 — взят ближний размер сетки).
+    Капсулы валют: круг (кредиты), шестигранник с иконкой атома (изотопы —
+    премиум), звезда (опыт); «+» пристыкован только к премиум-валюте.
+    Середина нижней кромки свободна — там виден мир.
+  </p>
+</section>
+
+<!-- ============================================================
+     2. Панель / модалка
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">2</span>
+    <h2>Панель и модалка — затемнение мира, скобы, вложенный попап</h2>
+    <span class="sub">component-library §4, artlanguage §7.10, §8.3</span>
+  </div>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:130px;height:130px;left:120px;top:230px;"></div>
+      <div class="world-block c-mustard" style="width:70px;height:56px;left:1080px;top:340px;"></div>
+    </div>
+    <div class="scrim"></div>
+
+    <div class="panel modal-panel">
+      <div class="panel-title-plate">
+        <div class="panel-title-text">Ж/Д станция</div>
+        <div class="brace left"><span class="rivet top"></span><span class="rivet bottom"></span></div>
+        <div class="brace right"><span class="rivet top"></span><span class="rivet bottom"></span></div>
+      </div>
+      <button class="btn btn-close panel-close" aria-label="Закрыть">✕</button>
+
+      <p class="body-text" style="margin:6px 0 20px;">Загрузите вагоны, чтобы отправить состав и получить награду.</p>
+
+      <div style="display:flex;gap:14px;align-items:center;">
+        <button class="btn btn-secondary">Запрос</button>
+        <button class="btn btn-primary">Загрузить</button>
+      </div>
+
+      <div class="nested-popup" style="top:-8px;right:10px;">
+        <svg style="width:20px;height:20px;color:var(--xp);"><use href="#i-star-flag"/></svg>
+        Награда: 240
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Затемнение мира — 45% (var(--scrim), rgba(58,36,19,.45)). Заголовок
+    выступает за верхнюю грань панели и держится латунными скобами с
+    заклепками — марсианская замена деревянных ламелей Township
+    (artlanguage §7.10, таблица). Крестик закрытия сидит на шве панели и
+    плашки. Пара «Запрос / Загрузить» разнесена на 14px (&gt; минимальных 8px).
+    Вложенный попап награды — второй, более светлый и меньший слой глубины.
+  </p>
+</section>
+
+<!-- ============================================================
+     3. Bottom sheet
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">3</span>
+    <h2>Bottom sheet — лист снизу, мир виден и затемнен</h2>
+    <span class="sub">component-library §4 (аналог модалки, другая геометрия)</span>
+  </div>
+  <div class="canvas">
+    <div class="world">
+      <div class="hud-row" style="position:absolute;">
+        <div class="hud-capsule"><div class="hud-medal medal-coin"></div><span class="hud-num">7119</span></div>
+      </div>
+      <div class="world-dome" style="width:120px;height:120px;left:560px;top:130px;"></div>
+      <div class="world-block c-red" style="width:60px;height:50px;left:180px;top:200px;"></div>
+      <div class="world-block c-sage" style="width:60px;height:48px;left:980px;top:190px;"></div>
+    </div>
+    <div class="scrim"></div>
+
+    <div class="bottom-sheet">
+      <div class="sheet-grabber"></div>
+      <div class="panel-title-text" style="font-size:18px;margin-top:14px;">Выбор рецепта</div>
+      <div style="display:flex;gap:16px;margin-top:20px;">
+        <div class="item-slot filled"><div class="item-icon" style="background:#d88a4a;">С</div></div>
+        <div class="item-slot filled"><div class="item-icon" style="background:#6fa3d8;">Й</div></div>
+        <div class="item-slot empty"></div>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Скругление 32px только по верхней кромке, нижние углы прямые (лист
+    сросся с краем экрана). Мир и HUD выше листа остаются видны, но
+    затемнены тем же 45% scrim. Верхний «грабер» — короткая горизонтальная
+    полоска-хват — <span class="warn">⚠ гипотеза</span>: жанровая
+    условность мобильных bottom sheet, в разобранных кадрах Township такого
+    элемента нет (там вместо bottom sheet используются модалки).
+  </p>
+</section>
+
+<!-- ============================================================
+     4. Кнопки
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">4</span>
+    <h2>Кнопка — pill и rounded-square, все состояния</h2>
+    <span class="sub">component-library §3, motion-spec §4.7 (задизейбл), «гипотеза» — нажатие</span>
+  </div>
+  <div class="gallery">
+    <div class="spec">
+      <button class="btn btn-primary">Загрузить</button>
+      <span class="cap"><b>Главное действие</b> — обычное</span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-primary is-pressed">Загрузить</button>
+      <span class="cap">Нажатое <span class="warn">⚠ гипотеза жанра</span> — сплющивание + уход тени</span>
+    </div>
+    <div class="spec">
+      <button class="btn is-disabled">Загрузить</button>
+      <span class="cap">Задизейбленное — серое, ~45% непрозрачности заливки</span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-secondary">Запрос</button>
+      <span class="cap"><b>Второстепенное действие</b> — обычное</span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-secondary is-pressed">Запрос</button>
+      <span class="cap">Нажатое <span class="warn">⚠ гипотеза жанра</span></span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-primary">
+        <span class="btn-price-icon"></span>150
+      </button>
+      <span class="cap">Цена на кнопке — иконка валюты вплотную к числу</span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-icon btn-primary"><svg><use href="#i-plus"/></svg></button>
+      <span class="cap">Rounded-square — иконочная, главное действие</span>
+    </div>
+    <div class="spec">
+      <button class="btn btn-icon btn-secondary"><svg><use href="#i-arrow"/></svg></button>
+      <span class="cap">Rounded-square — второстепенная</span>
+    </div>
+    <div class="spec">
+      <div style="position:relative;width:62px;height:62px;">
+        <button class="btn btn-close" style="position:static;">✕</button>
+      </div>
+      <span class="cap">Закрытие — круглая, красно-оранжевая</span>
+    </div>
+    <div class="spec">
+      <div style="position:relative;">
+        <button class="btn btn-icon btn-primary" style="position:relative;">
+          <svg><use href="#i-check"/></svg>
+        </button>
+        <div class="tap-guide" style="left:-2px;top:-2px;width:64px;height:64px;"></div>
+        <span class="dim-label" style="left:70px;top:26px;">44×44 мин.</span>
+      </div>
+      <span class="cap">Тап-таргет — фактический размер 62×62, выше минимума 44×44</span>
+    </div>
+    <div class="spec">
+      <div style="display:flex;align-items:center;">
+        <button class="btn btn-secondary">Запрос</button>
+        <div class="gap-guide" style="width:14px;height:62px;"></div>
+        <button class="btn btn-primary">Купить</button>
+      </div>
+      <span class="cap">Отступ между «главная / тратит валюту» — 14px (мин. 8px)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     5. Слот / карточка предмета
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">5</span>
+    <h2>Слот и карточка предмета — все состояния</h2>
+    <span class="sub">component-library §7</span>
+  </div>
+  <div class="gallery">
+    <div class="spec">
+      <div class="item-slot empty"></div>
+      <span class="cap">Пустой — врезан (inset) в панель, диагональная тень внутрь</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot filled" style="margin-bottom:22px;">
+        <div class="item-icon" style="background:#c8895a;">Мл</div>
+        <div class="slot-fraction deficit">3/4</div>
+      </div>
+      <span class="cap">Частично заполнен — дробь есть/нужно, красная при дефиците</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot complete" style="margin-bottom:22px;">
+        <div class="item-icon" style="background:#5fbf4a;">Ф</div>
+        <div class="slot-qty">x6</div>
+        <div class="slot-fraction">4/4</div>
+      </div>
+      <span class="cap">Укомплектован — зеленая кайма, счетчик xN в углу иконки</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot collected">
+        <div class="item-icon" style="background:#5fbf4a;opacity:.55;">Ф</div>
+        <div class="slot-check"><svg><use href="#i-check"/></svg></div>
+      </div>
+      <span class="cap">Закрыт — готов к сбору, зеленая галочка поверх слота</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot filled">
+        <div class="item-icon" style="background:#f5901e;">Й</div>
+        <div class="slot-badge-ally"><svg><use href="#i-handshake"/></svg></div>
+      </div>
+      <span class="cap">С бейджем-рукопожатием — помощь союзника <span class="warn">⚠ гипотеза</span></span>
+    </div>
+    <div class="spec">
+      <div class="item-slot disabled">
+        <svg style="width:30px;height:30px;color:var(--disabled-border);"><use href="#i-lock"/></svg>
+      </div>
+      <span class="cap">Задизейбленный <span class="warn">⚠ гипотеза</span> — визуального примера в разборе нет</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot filled">
+        <div class="item-icon" style="background:#c8895a;">Мл</div>
+        <div class="slot-timer-corner"><svg><use href="#i-clock"/></svg>13м 34с</div>
+      </div>
+      <span class="cap">В производстве — таймер-пилюля в углу (см. также блок 7)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     6. Таймер
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">6</span>
+    <h2>Таймер — три сценария срочности</h2>
+    <span class="sub">component-library §6</span>
+  </div>
+  <div class="gallery">
+    <div class="spec">
+      <div class="timer-map"><svg><use href="#i-clock"/></svg>5Д 13Ч</div>
+      <span class="cap">Долгий, на карте — спокойный тон, гранулярность дни+часы</span>
+    </div>
+    <div class="spec">
+      <div class="timer-map"><svg><use href="#i-clock"/></svg>18ч 36м</div>
+      <span class="cap">Тот же вариант — гранулярность часы+минуты</span>
+    </div>
+    <div class="spec">
+      <div class="timer-urgent">
+        <svg><use href="#i-clock"/></svg>
+        <span class="digits">00:34</span>
+      </div>
+      <span class="cap">Срочный виджет в модалке — самый тяжелый элемент, мм:сс</span>
+    </div>
+    <div class="spec">
+      <div class="item-slot filled" style="position:relative;">
+        <div class="item-icon" style="background:#d88a4a;">С</div>
+        <div class="slot-timer-corner"><svg><use href="#i-clock"/></svg>13м 34с</div>
+      </div>
+      <span class="cap">Производственный слот — маленькая пилюля в углу</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     7. Бейдж и индикатор внимания
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">7</span>
+    <h2>Бейдж и индикатор внимания — словарь сокетов</h2>
+    <span class="sub">component-library §8</span>
+  </div>
+  <div class="gallery">
+    <div class="spec">
+      <div class="badge-host">
+        <svg><use href="#i-trophy"/></svg>
+        <span class="tile-badge">3</span>
+      </div>
+      <span class="cap">Число на зеленом — есть непрочитанное</span>
+    </div>
+    <div class="spec">
+      <div class="badge-host">
+        <svg><use href="#i-trophy"/></svg>
+        <span class="tile-badge check"><svg><use href="#i-check"/></svg></span>
+      </div>
+      <span class="cap">Тот же сокет — галочка вместо цифры (готово к сбору)</span>
+    </div>
+    <div class="spec">
+      <div class="badge-host">
+        <svg><use href="#i-scroll"/></svg>
+        <span class="tile-ribbon">SALE</span>
+      </div>
+      <span class="cap">Лента — отдельная форма, не конкурирует с кружком</span>
+    </div>
+    <div class="spec">
+      <div class="badge-host">
+        <svg><use href="#i-train"/></svg>
+        <span class="tile-badge flag"><svg style="width:12px;height:12px;"><use href="#i-star-flag"/></svg></span>
+      </div>
+      <span class="cap">Звезда-флаг — уровень/ранг, третья форма</span>
+    </div>
+    <div class="spec">
+      <div class="badge-host">
+        <svg><use href="#i-drone"/></svg>
+        <span class="tile-badge ally"><svg><use href="#i-handshake"/></svg></span>
+      </div>
+      <span class="cap">Рукопожатие <span class="warn">⚠ гипотеза</span> — по аналогии с §8, сама форма не задокументирована</span>
+    </div>
+    <div class="spec">
+      <div class="badge-host" style="background:transparent;border:none;">
+        <span class="pulse-dot"></span>
+      </div>
+      <span class="cap">Пульсирующий индикатор — двигается только один на весь хаб одновременно (motion-spec §5)</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     8. Тост
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">8</span>
+    <h2>Тост — неблокирующее сообщение <span class="warn" style="font-size:12px;">⚠ компонент не описан в источниках</span></h2>
+    <span class="sub">гипотеза жанра, собрана из словаря HUD-капсулы</span>
+  </div>
+  <div class="gallery">
+    <div class="spec">
+      <div class="toast positive"><svg><use href="#i-check"/></svg>Погружено другом Максом</div>
+      <span class="cap">Позитивный тост</span>
+    </div>
+    <div class="spec">
+      <div class="toast info"><svg><use href="#i-bell"/></svg>Склад почти полон</div>
+      <span class="cap">Информационный тост</span>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:6px;">
+    Ни ux-component-library, ни artlanguage тост не описывают — на 10
+    разобранных кадрах нет ни одного некритичного всплывающего сообщения.
+    Форма и материал собраны по аналогии с уже задокументированной темной
+    полупрозрачной HUD-капсулой (component-library §5), чтобы не вносить
+    четвертый материал в интерфейс. Это осознанная гипотеза, а не находка.
+  </p>
+</section>
+
+<!-- ============================================================
+     9. Экран награды
+     ============================================================ -->
+<section class="frame-wrap">
+  <div class="frame-heading">
+    <span class="n">9</span>
+    <h2>Экран награды — контейнеры, закрытый и собранный</h2>
+    <span class="sub">component-library §10 — полноэкранный reveal <span class="warn">⚠ не подтвержден источниками</span></span>
+  </div>
+  <div class="canvas">
+    <div class="world"></div>
+    <div class="scrim"></div>
+    <div class="panel modal-panel" style="top:60px;width:80%;padding-bottom:34px;">
+      <div class="panel-title-plate">
+        <div class="panel-title-text">Прибытие шаттла</div>
+        <div class="brace left"><span class="rivet top"></span><span class="rivet bottom"></span></div>
+        <div class="brace right"><span class="rivet top"></span><span class="rivet bottom"></span></div>
+      </div>
+      <div style="display:flex;gap:30px;align-items:center;justify-content:center;margin-top:6px;">
+        <div>
+          <div class="reward-row" style="margin-bottom:14px;">
+            <div class="reward-crate closed"><svg><use href="#i-chest"/></svg></div>
+            <div class="reward-crate closed"><svg><use href="#i-chest"/></svg></div>
+            <div class="reward-crate collected"><svg><use href="#i-check"/></svg></div>
+            <div class="reward-crate collected"><svg><use href="#i-check"/></svg></div>
+          </div>
+          <span class="cap" style="max-width:320px;">Ряд отсеков: закрытый (иконка сундука) → собранный (та же ячейка, галочка)</span>
+        </div>
+        <svg style="width:30px;height:30px;color:var(--action);"><use href="#i-arrow"/></svg>
+        <div>
+          <div class="reward-hero"><svg><use href="#i-chest"/></svg></div>
+          <span class="cap" style="max-width:220px;">Главный приз — крупнее всего в кадре, со свечением (component-library §10, паттерн «аэропорта»)</span>
+        </div>
+      </div>
+      <div class="reward-receipt" style="position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);">
+        <svg><use href="#i-star-flag"/></svg>Награда: 240
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Источник фиксирует два разных, более скромных паттерна: компактную
+    строку-квитанцию «Награда: ⭐240» рядом с кнопкой подтверждения (кадр
+    Ж/Д станции) и композицию «сундук крупнее всего в кадре + свечение»
+    (кадр аэропорта). Единого полноэкранного многошагового reward-reveal
+    (как в match-3) источники не подтверждают —
+    <span class="warn">⚠ показанная выше композиция — гипотеза</span>,
+    собранная из двух документированных паттернов одновременно.
+  </p>
+</section>
+
+<footer class="gap-report">
+  <h2>Честный список гипотез (⚠ по всей странице)</h2>
+  <ul>
+    <li><b>Состояние нажатия кнопки</b> (сплющивание + уход тени) — component-library §3 прямо помечает «не видно на исходниках», предложено как рабочая гипотеза жанра.</li>
+    <li><b>Задизейбленное состояние кнопки</b> — ни одна кнопка на разобранных кадрах не в этом состоянии; заливка и опрозрачнение взяты по общей конвенции жанра.</li>
+    <li><b>Задизейбленный слот</b> — «полноценная визуальная карточка disabled-состояния не видна на исходниках» (component-library §7); показан как серый/десатурированный с иконкой замка.</li>
+    <li><b>Бейдж-рукопожатие (помощь союзника)</b> — самой формы бейджа в разобранных 10 кадрах нет ни на хабе, ни на слоте; цвет и форма (кружок, иконка рук) заданы по аналогии со словарем §8, где задокументированы только счетчик/галочка/лента/звезда-флаг.</li>
+    <li><b>Bottom sheet и его «грабер»-хват</b> — в разобранных кадрах Township этот паттерн вообще не встречается (там используются только модалки); реализован по общей мобильной конвенции и явно помечен как гипотеза.</li>
+    <li><b>Тост</b> — компонент отсутствует в обоих документах целиком; собран по аналогии с уже задокументированной темной HUD-капсулой, чтобы не плодить новый материал интерфейса без основания.</li>
+    <li><b>Полноэкранный reward-reveal</b> — component-library §10 явно пишет: «полноценный многошаговый reward-reveal... на этих 10 кадрах не подтвержден». Показанная композиция — совмещение двух документированных, более скромных паттернов (строка-квитанция и «крупный приз со свечением»), а не найденный третий.</li>
+    <li><b>Точные размеры и цвета</b> — все числа источника сняты на глаз с одного разрешения (~1280×600) и помечены в самих документах как оценочные; здесь взяты без изменений, отклонений в сторону «более точных» цифр не вносилось.</li>
+  </ul>
+  <p>
+    Размер тайла хаба в этой витрине — 84×84 (спека дает 90×90 при радиусе
+    18-20px — взят ближайший по внутренней сетке 4px, чтобы не плодить
+    произвольное третье число). Высота кнопок — 62px (спека: 60-70px).
+    Панель — border 4px, radius 28px (внутри диапазона 24-32px). Все
+    остальные числа — прямые цитаты таблиц §1-§10 component-library.
+  </p>
+</footer>
+
+</body>
+</html>

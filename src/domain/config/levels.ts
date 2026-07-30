@@ -13,9 +13,17 @@ export const XP_CURVE_BASE_COEF = 120;
 export const XP_CURVE_EXPONENT = 1.35;
 export const XP_CURVE_ROUND_STEP = 10;
 
-/** XP_to_next(N) = round(120 x N^1.35 / 10) x 10. */
-export function xpToNext(level: number): number {
-  const raw = XP_CURVE_BASE_COEF * level ** XP_CURVE_EXPONENT;
+/**
+ * XP_to_next(N) = round(120 x N^1.35 / 10) x 10.
+ * Коэффициенты можно переопределить — этим пользуется только симулятор,
+ * игра всегда работает на значениях конфига.
+ */
+export function xpToNext(
+  level: number,
+  base_coef: number = XP_CURVE_BASE_COEF,
+  exponent: number = XP_CURVE_EXPONENT,
+): number {
+  const raw = base_coef * level ** exponent;
   return Math.round(raw / XP_CURVE_ROUND_STEP) * XP_CURVE_ROUND_STEP;
 }
 
@@ -47,9 +55,13 @@ export const LEVEL_UP_CREDITS_ROUND_STEP = 10;
  * Показатель 1.2 намеренно ниже показателя стока расширений 1.5 — иначе кредиты
  * обесценятся к двадцатому уровню (каркас, раздел 6).
  */
-export function levelUpReward(level: number): LevelUpReward {
+export function levelUpReward(
+  level: number,
+  credits_coef: number = LEVEL_UP_CREDITS_COEF,
+  credits_exponent: number = LEVEL_UP_CREDITS_EXPONENT,
+): LevelUpReward {
   const is_empty = EMPTY_LEVELS.includes(level);
-  const raw_credits = LEVEL_UP_CREDITS_COEF * level ** LEVEL_UP_CREDITS_EXPONENT;
+  const raw_credits = credits_coef * level ** credits_exponent;
   return {
     credits:
       Math.round(raw_credits / LEVEL_UP_CREDITS_ROUND_STEP) * LEVEL_UP_CREDITS_ROUND_STEP,
