@@ -186,8 +186,12 @@ export const SELL_PRICE_RATIO = 1.0;
 export const PLANT_COST_PRICE_SHARE = 0.4;
 export const PLANT_COST_FLOOR = 1;
 
-export function plantingCost(sell_price: number): number {
-  return Math.max(PLANT_COST_FLOOR, Math.round(PLANT_COST_PRICE_SHARE * sell_price));
+export function plantingCost(
+  sell_price: number,
+  price_share: number = PLANT_COST_PRICE_SHARE,
+  floor: number = PLANT_COST_FLOOR,
+): number {
+  return Math.max(floor, Math.round(price_share * sell_price));
 }
 
 /**

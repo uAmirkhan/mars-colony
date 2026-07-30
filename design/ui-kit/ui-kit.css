@@ -1,0 +1,1221 @@
+/*
+ * Витрина компонентов интерфейса Mars Colony.
+ * Источники: ux-component-library.md (анатомия), ux-township-artlanguage.md
+ * разделы 1-5 (палитра, свет, форма, материалы, композиция), ux-motion-spec.md
+ * (тайминги и состояния нажатия).
+ *
+ * Имена переменных ниже, где это одни и те же понятия, повторяют
+ * src/ui/theme.css буква в букву (--panel, --panel-border, --action и т.д.).
+ * Этот файл ничего в src/ не импортирует и не трогает — только повторяет
+ * договоренность об именах, чтобы витрина и рабочий код не разошлись по языку.
+ * Переменные, которых в theme.css нет (латунь, темный HUD, ночной таймер,
+ * дефицит, разбор) — отмечены пометкой NEW.
+ */
+
+:root {
+  /* --- Мир (как в theme.css) --- */
+  --world-ground: #c8895a;
+  --world-ground-far: #d9a276;
+  --world-sky: #f2c9a0;
+  --world-sky-top: #8fa3b8;
+  --world-green: #3fae4a;
+
+  /* --- Интерфейс (как в theme.css) --- */
+  --panel: #f7e8c6;
+  --panel-warm: #f3dfb4;
+  --panel-border: #a8763e;
+  --title: #6b3e1e;
+  --text: #7a5330;
+  --text-muted: #a68a68;
+
+  /* --- Действия (как в theme.css) --- */
+  --action: #4caf2e;
+  --action-dark: #3a8a22;
+  --secondary: #f5901e;
+  --secondary-dark: #c46f10;
+  --close: #e84a2f;
+  --close-dark: #b8351d;
+
+  /* --- Валюты (как в theme.css) --- */
+  --credits: #f2b705;
+  --isotopes: #5fbf4a;
+  --xp: #2e9be0;
+
+  --radius-panel: 28px;
+  --radius-button: 18px;
+  --radius-slot: 20px;
+
+  /* --- NEW: латунь скоб заголовка (перенос на Марс, artlanguage 7 табл.) --- */
+  --brass: #c9a24b;
+  --brass-light: #eccf7d;
+  --brass-dark: #8b6a2c;
+
+  /* --- NEW: темный полупрозрачный корпус HUD-капсул (component-library, 5) --- */
+  --hud-capsule-bg: rgba(51, 33, 18, 0.72);
+  --hud-capsule-border: rgba(20, 12, 5, 0.4);
+
+  /* --- NEW: затемнение мира под модалкой, ~45% (component-library, 4) --- */
+  --scrim: rgba(58, 36, 19, 0.45);
+
+  /* --- NEW: темный корпус срочного таймера-циферблата (component-library, 6) --- */
+  --timer-urgent-bg: #2a1e14;
+  --timer-urgent-digit: #ffe9b8;
+
+  /* --- NEW: дефицит ресурса в дроби "есть/нужно" (component-library, 7) --- */
+  --deficit: #d8402a;
+
+  /* --- NEW: бейдж-рукопожатие (гипотеза, см. отчет) — тон из палитры второстепенного действия */
+  --ally: #f5901e;
+  --ally-dark: #c46f10;
+
+  /* --- NEW: флаг уровня/ранга — отдельный желтый, не путать с монетой кредитов --- */
+  --flag: #ffce3a;
+  --flag-dark: #c98e10;
+
+  /* --- NEW: задизейбленное состояние --- */
+  --disabled-fill: #b9b0a0;
+  --disabled-border: #8d8474;
+  --disabled-text: rgba(255, 255, 255, 0.75);
+
+  /* --- Типографика: ровно два начертания --- */
+  --font-display: "Arial Black", "Segoe UI Black", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-body: "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif;
+
+  font-family: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #2a2724;
+  color: #eee6d8;
+}
+
+body {
+  padding: 28px 0 80px;
+}
+
+/* ============================================================
+   Служебная обвязка витрины — НЕ часть игрового интерфейса
+   ============================================================ */
+
+.page-head {
+  max-width: 1280px;
+  margin: 0 auto 30px;
+  padding: 0 24px;
+}
+
+.page-head h1 {
+  font-family: var(--font-body);
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: #f7e8c6;
+}
+
+.page-head p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #b6ac9c;
+  max-width: 900px;
+  margin: 4px 0;
+}
+
+.page-head .legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #e8b34b;
+  background: rgba(232, 179, 75, 0.12);
+  border: 1px solid rgba(232, 179, 75, 0.4);
+  border-radius: 8px;
+  padding: 5px 10px;
+  margin-top: 6px;
+}
+
+.frame-wrap {
+  max-width: 1280px;
+  margin: 0 auto 56px;
+  padding: 0 24px;
+}
+
+.frame-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.frame-heading .n {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a8172;
+  background: #16140f;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.frame-heading h2 {
+  font-size: 15px;
+  margin: 0;
+  color: #f0e4c8;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.frame-heading .sub {
+  font-size: 12px;
+  color: #8a8172;
+}
+
+/* Холст 1280x600 — landscape-мобильный экран */
+.canvas {
+  position: relative;
+  width: 1280px;
+  max-width: 100%;
+  height: 600px;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #000, 0 18px 40px rgba(0, 0, 0, 0.5);
+  background: #556;
+}
+
+/* блок-галерея вне игрового холста (кнопки, слоты, таймеры, бейджи) */
+.gallery {
+  position: relative;
+  width: 1280px;
+  max-width: 100%;
+  min-height: 220px;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #000, 0 18px 40px rgba(0, 0, 0, 0.5);
+  background: #3a352c;
+  padding: 34px 40px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 34px;
+}
+
+/* служебная подпись компонента — мелкая, вне самого компонента */
+.spec {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.spec .cap {
+  display: block;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #cfc6b4;
+  text-align: center;
+  width: 120px;
+}
+
+.spec .cap b {
+  color: #f0e4c8;
+}
+
+.spec .cap .warn {
+  color: #e8b34b;
+}
+
+.dim {
+  position: absolute;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.dim-label {
+  position: absolute;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Мир — плейсхолдеры без обводки (не UI, просто фон витрины)
+   ============================================================ */
+
+.world {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    var(--world-sky-top) 0%,
+    var(--world-sky) 34%,
+    var(--world-ground-far) 58%,
+    var(--world-ground) 100%
+  );
+}
+
+.world-dome {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d8f3ee, #8fd8cf 60%, #59a89e);
+  opacity: 0.92;
+}
+
+.world-block {
+  position: absolute;
+  border-radius: 18px;
+}
+
+.world-block.c-red {
+  background: linear-gradient(180deg, #e2745a, #b5442c);
+}
+.world-block.c-blue {
+  background: linear-gradient(180deg, #6fa3d8, #3d6fa8);
+}
+.world-block.c-mustard {
+  background: linear-gradient(180deg, #e0c15a, #b3922c);
+}
+.world-block.c-sage {
+  background: linear-gradient(180deg, #93b487, #5f8452);
+}
+.world-block.c-cream {
+  background: linear-gradient(180deg, #fbf1d9, #e7d3a3);
+}
+
+.world-figure {
+  position: absolute;
+  width: 10px;
+  height: 22px;
+  border-radius: 5px;
+  background: #e9dcc0;
+}
+
+.world-figure::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e9dcc0;
+}
+
+/* затемнение мира под модалкой/шитом, ~45% (component-library раздел 4) */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+/* ============================================================
+   1. Верхний HUD — темные капсулы валют
+   ============================================================ */
+
+.hud-row {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hud-capsule {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 18px 0 30px;
+  background: linear-gradient(180deg, rgba(80, 55, 32, 0.72), var(--hud-capsule-bg));
+  border: 2px solid var(--hud-capsule-border);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.hud-medal {
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* три формы носителя, как в theme.css .coin/.hex/.star, но крупнее — HUD-масштаб витрины */
+.medal-coin {
+  background: radial-gradient(circle at 34% 28%, #ffe680, var(--credits) 70%);
+  border: 3px solid #b9880a;
+}
+
+.medal-hex {
+  /* сброс border-radius:50% из .hud-medal — иначе скругленный бордер под
+     clip-path продолжает читаться как окружность, а не шестигранник */
+  border-radius: 0;
+  background: radial-gradient(circle at 34% 28%, #a8e89a, var(--isotopes) 70%);
+  border: 3px solid #2f7a24;
+  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0% 50%);
+}
+
+.medal-hex svg {
+  width: 24px;
+  height: 24px;
+  color: #eafbe6;
+}
+
+.medal-star {
+  border-radius: 0;
+  background: radial-gradient(circle at 34% 28%, #8fd0f5, var(--xp) 70%);
+  border: 3px solid #1c6ea3;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+.hud-num {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 24px;
+  color: #fff;
+  text-shadow:
+    -1.5px -1.5px 0 #2a1a0d,
+    1.5px -1.5px 0 #2a1a0d,
+    -1.5px 1.5px 0 #2a1a0d,
+    1.5px 1.5px 0 #2a1a0d,
+    0 3px 3px rgba(0, 0, 0, 0.35);
+}
+
+.hud-plus {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--action-dark);
+  background: linear-gradient(180deg, #7fdf5c, var(--action) 60%);
+  box-shadow: 0 2px 0 var(--action-dark);
+  display: grid;
+  place-items: center;
+  margin-left: -4px;
+  color: #fff;
+}
+
+.hud-plus svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* адаптация под светлый фон модалки — та же единица, светлый корпус капсулы */
+.hud-capsule.on-panel {
+  background: linear-gradient(180deg, #fff7e4, var(--panel-warm));
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 3px 0 rgba(122, 83, 48, 0.25);
+}
+
+.hud-capsule.on-panel .hud-num {
+  color: var(--title);
+  text-shadow: none;
+}
+
+/* ============================================================
+   2. Нижний хаб — иконочные тайлы, два кластера
+   ============================================================ */
+
+.hub-cluster {
+  position: absolute;
+  bottom: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.hub-cluster.left {
+  left: 14px;
+}
+
+.hub-cluster.right {
+  right: 14px;
+}
+
+.hub-tile {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff3d8 0%, var(--panel-warm) 55%, #e6cd98 100%);
+  border: 3px solid var(--panel-border);
+  box-shadow: 0 4px 0 rgba(122, 83, 48, 0.4);
+  display: grid;
+  place-items: center;
+  color: var(--title);
+}
+
+.hub-tile svg {
+  width: 38px;
+  height: 38px;
+}
+
+.hub-tile.big {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #8fe36c, var(--action) 65%);
+  border-color: var(--action-dark);
+}
+
+.hub-tile.big .hub-num {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 26px;
+  color: #fff;
+  text-shadow:
+    -1px -1px 0 #1e5c10,
+    1px -1px 0 #1e5c10,
+    -1px 1px 0 #1e5c10,
+    1px 1px 0 #1e5c10;
+}
+
+/* бейдж-счетчик / бейдж-таймер на тайле */
+.tile-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #8fe36c, var(--action) 65%);
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 2px 0 var(--action-dark);
+}
+
+.tile-badge.check svg {
+  width: 13px;
+  height: 13px;
+  color: #fff;
+}
+
+.tile-badge.flag {
+  background: linear-gradient(180deg, #fff08a, var(--flag) 65%);
+  border-color: #fff;
+  color: var(--title);
+  box-shadow: 0 2px 0 var(--flag-dark);
+}
+
+.tile-ribbon {
+  position: absolute;
+  top: 10px;
+  right: -12px;
+  width: 70px;
+  padding: 2px 0;
+  background: var(--close);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+  transform: rotate(38deg);
+  box-shadow: 0 1px 0 var(--close-dark);
+  letter-spacing: 0.5px;
+}
+
+.tile-timer {
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border: 2px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--title);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tile-timer svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* пульсирующий индикатор внимания — двигается только у одной иконки одновременно (motion-spec, раздел 5) */
+.pulse-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--action);
+  border: 2px solid #fff;
+  animation: pulse-scale 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+/* бейдж-рукопожатие — см. отчет: элемент не задокументирован в разборе, гипотеза жанра */
+.tile-badge.ally {
+  background: linear-gradient(180deg, #ffb85e, var(--ally) 65%);
+  border-color: #fff;
+  box-shadow: 0 2px 0 var(--ally-dark);
+}
+
+.tile-badge.ally svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+/* ============================================================
+   3-4. Панель / модалка / bottom sheet
+   ============================================================ */
+
+.panel {
+  background: var(--panel);
+  border: 4px solid var(--panel-border);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 8px 0 rgba(58, 36, 19, 0.3), 0 20px 40px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+}
+
+.modal-panel {
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 74%;
+  padding: 40px 30px 26px;
+}
+
+.panel-title-plate {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-warm);
+  border: 4px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 10px 34px;
+  box-shadow: 0 4px 0 rgba(122, 83, 48, 0.3);
+  white-space: nowrap;
+}
+
+.panel-title-text {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.6px;
+  color: var(--title);
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 0 rgba(122, 83, 48, 0.35);
+}
+
+/* металлические скобы с заклепками — марсианская замена деревянных ламелей Township */
+.brace {
+  position: absolute;
+  top: -22px;
+  width: 30px;
+  height: 44px;
+  background: linear-gradient(180deg, var(--brass-light), var(--brass) 55%, var(--brass-dark));
+  border: 2px solid var(--brass-dark);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.brace.left {
+  left: 58px;
+}
+
+.brace.right {
+  right: 58px;
+}
+
+.brace .rivet {
+  position: absolute;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 35% 30%, #fff2c7, var(--brass-dark));
+  border: 1px solid var(--brass-dark);
+}
+
+.brace .rivet.top {
+  top: 6px;
+}
+
+.brace .rivet.bottom {
+  bottom: 6px;
+}
+
+.panel-close {
+  position: absolute;
+  top: -20px;
+  right: -14px;
+}
+
+.body-text {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* вложенный попап — второй слой глубины поверх панели (component-library раздел 4) */
+.nested-popup {
+  position: absolute;
+  background: var(--panel-warm);
+  border: 3px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 10px 16px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  color: var(--title);
+  font-size: 14px;
+}
+
+/* bottom sheet — поднимается снизу, скругления только сверху */
+.bottom-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52%;
+  background: var(--panel);
+  border: 4px solid var(--panel-border);
+  border-bottom: none;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+  padding: 22px 28px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.sheet-grabber {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-border);
+  opacity: 0.55;
+}
+
+/* ============================================================
+   5. Кнопка — pill (CTA) и rounded-square (иконочная)
+   ============================================================ */
+
+.btn {
+  position: relative;
+  border: 3px solid transparent;
+  border-radius: var(--radius-button);
+  padding: 0 26px;
+  height: 62px;
+  min-width: 44px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-shadow:
+    -1px -1px 0 rgba(0, 0, 0, 0.3),
+    1px -1px 0 rgba(0, 0, 0, 0.3),
+    -1px 1px 0 rgba(0, 0, 0, 0.3),
+    1px 1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 0 rgba(0, 0, 0, 0.22);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #7fe05c 0%, var(--action) 45%, var(--action) 78%, var(--action-dark) 100%);
+  border-color: var(--action-dark);
+  box-shadow: 0 5px 0 var(--action-dark), 0 9px 14px rgba(0, 0, 0, 0.28);
+}
+
+.btn-secondary {
+  background: linear-gradient(180deg, #ffb85e 0%, var(--secondary) 45%, var(--secondary) 78%, var(--secondary-dark) 100%);
+  border-color: var(--secondary-dark);
+  box-shadow: 0 5px 0 var(--secondary-dark), 0 9px 14px rgba(0, 0, 0, 0.28);
+}
+
+/* состояние нажатия — сплющивание и уход тени. Гипотеза жанра, ux-component-library раздел 3: "не видно на исходниках" */
+.btn.is-pressed {
+  transform: translateY(5px) scaleY(0.94);
+  box-shadow: 0 0 0 var(--action-dark);
+}
+
+.btn-secondary.is-pressed {
+  box-shadow: 0 0 0 var(--secondary-dark);
+}
+
+.btn.is-disabled {
+  background: linear-gradient(180deg, #cfc7b6, var(--disabled-fill));
+  border-color: var(--disabled-border);
+  box-shadow: 0 5px 0 var(--disabled-border);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  width: 62px;
+  height: 62px;
+  padding: 0;
+  border-radius: 20px;
+}
+
+.btn-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.btn-close {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ff8a68, var(--close) 55%, #c23a22);
+  border-color: var(--close-dark);
+  box-shadow: 0 4px 0 var(--close-dark);
+  font-size: 20px;
+}
+
+.btn-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* цена на кнопке: иконка вплотную к числу */
+.btn-price-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #ffe680, var(--credits) 70%);
+  border: 2px solid #b9880a;
+  display: inline-block;
+}
+
+.tap-guide {
+  position: absolute;
+  border: 1.5px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.gap-guide {
+  position: absolute;
+  border-top: 1.5px dashed #e8b34b;
+  border-bottom: 1.5px dashed #e8b34b;
+}
+
+/* ============================================================
+   6. Слот / карточка предмета
+   ============================================================ */
+
+.item-slot {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-slot);
+  display: grid;
+  place-items: center;
+}
+
+.item-slot.empty {
+  background: linear-gradient(180deg, #d9c093, #c7a878);
+  box-shadow: inset 0 4px 8px rgba(90, 58, 20, 0.45), inset 0 -2px 0 rgba(255, 255, 255, 0.25);
+  border: 3px solid rgba(168, 118, 62, 0.55);
+}
+
+.item-slot.filled {
+  background: var(--panel-warm);
+  border: 3px solid rgba(168, 118, 62, 0.55);
+  box-shadow: 0 3px 0 rgba(122, 83, 48, 0.2);
+}
+
+.item-slot.complete {
+  background: var(--panel-warm);
+  border: 3px solid var(--action);
+  box-shadow: 0 0 0 5px rgba(76, 175, 46, 0.28);
+}
+
+.item-slot.collected {
+  background: var(--panel-warm);
+  border: 3px solid var(--action);
+}
+
+.item-slot.disabled {
+  background: linear-gradient(180deg, #d8d2c4, var(--disabled-fill));
+  border: 3px solid var(--disabled-border);
+  filter: grayscale(0.6);
+  opacity: 0.7;
+}
+
+.item-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.slot-qty {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  background: rgba(40, 26, 12, 0.85);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+}
+
+.slot-check {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #8fe36c, var(--action));
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 0 var(--action-dark);
+}
+
+.slot-check svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+.slot-badge-ally {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffb85e, var(--ally));
+  border: 2px solid #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 0 var(--ally-dark);
+}
+
+.slot-badge-ally svg {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+.slot-fraction {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.slot-fraction.deficit {
+  color: var(--deficit);
+}
+
+.slot-timer-corner {
+  position: absolute;
+  top: -10px;
+  left: 6px;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border: 2px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--title);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.slot-timer-corner svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* ============================================================
+   7. Таймер — три сценария
+   ============================================================ */
+
+.timer-map {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(180deg, #8fa6d8, #5c76ad);
+  border: 2px solid #384f80;
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 17px;
+  box-shadow: 0 3px 0 #2c3d63;
+}
+
+.timer-map svg {
+  width: 18px;
+  height: 18px;
+}
+
+.timer-urgent {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(180deg, #3a2c1c, var(--timer-urgent-bg));
+  border: 3px solid #17110a;
+  border-radius: 16px;
+  padding: 14px 24px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), 0 5px 0 #17110a;
+}
+
+.timer-urgent svg {
+  width: 26px;
+  height: 26px;
+  color: var(--timer-urgent-digit);
+}
+
+.timer-urgent .digits {
+  font-family: "Consolas", "Courier New", monospace;
+  font-weight: 800;
+  font-size: 38px;
+  letter-spacing: 2px;
+  color: var(--timer-urgent-digit);
+  text-shadow: 0 0 8px rgba(255, 233, 184, 0.45);
+}
+
+.timer-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border: 2px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--title);
+}
+
+.timer-slot svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================================
+   8. Бейдж и индикатор внимания — отдельная витрина сокетов
+   ============================================================ */
+
+.badge-host {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border: 3px solid var(--panel-border);
+  display: grid;
+  place-items: center;
+  color: var(--title);
+}
+
+.badge-host svg {
+  width: 36px;
+  height: 36px;
+}
+
+/* ============================================================
+   9. Тост — небольшая недокументированная область, см. отчет
+   ============================================================ */
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(80, 55, 32, 0.88), rgba(40, 26, 12, 0.88));
+  border: 2px solid rgba(20, 12, 5, 0.5);
+  border-radius: 999px;
+  padding: 12px 22px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.toast svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.toast.positive svg {
+  color: #9fe08a;
+}
+
+.toast.info svg {
+  color: #ffe08a;
+}
+
+/* ============================================================
+   10. Экран награды
+   ============================================================ */
+
+.reward-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.reward-crate {
+  position: relative;
+  width: 78px;
+  height: 78px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--panel-border);
+}
+
+.reward-crate.closed {
+  background: linear-gradient(180deg, #ffd88a, #e0a53c);
+  box-shadow: 0 4px 0 #b3822c;
+}
+
+.reward-crate.closed svg {
+  width: 34px;
+  height: 34px;
+  color: #7a4f14;
+}
+
+.reward-crate.collected {
+  background: var(--panel-warm);
+  opacity: 0.75;
+}
+
+.reward-crate.collected svg {
+  width: 30px;
+  height: 30px;
+  color: var(--action);
+}
+
+.reward-hero {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  border-radius: 32px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 42%, #fff3c4 0%, #ffd88a 38%, #e0a53c 70%, #b3822c 100%);
+  border: 4px solid var(--panel-border);
+  box-shadow: 0 0 60px 20px rgba(255, 216, 138, 0.35), 0 8px 0 #b3822c;
+}
+
+.reward-hero svg {
+  width: 92px;
+  height: 92px;
+  color: #7a4f14;
+}
+
+.reward-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-warm);
+  border: 2px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  color: var(--title);
+  font-size: 16px;
+}
+
+.reward-receipt svg {
+  width: 20px;
+  height: 20px;
+  color: var(--xp);
+}
+
+/* ============================================================
+   Отчет о гипотезах — в подвале страницы
+   ============================================================ */
+
+.gap-report {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b6ac9c;
+}
+
+.gap-report h2 {
+  font-size: 14px;
+  color: #f0e4c8;
+}
+
+.gap-report li {
+  margin-bottom: 6px;
+}
+
+.gap-report b {
+  color: #e8b34b;
+}

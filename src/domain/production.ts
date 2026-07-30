@@ -9,13 +9,9 @@
  *     товар недоступным для заказов, пока сам ничего не производит.
  */
 
-import {
-  isPlantingSoftlocked,
-  PRODUCTION_XP_K,
-  plantingCost,
-  SELL_PRICE_RATIO,
-} from './config/economy';
+import { isPlantingSoftlocked, PRODUCTION_XP_K, plantingCost } from './config/economy';
 import { FACTORY_OUTPUT_QTY, GOODS, harvestQty } from './config/goods';
+import { DEFAULT_TUNING, type Tuning } from './tuning';
 import type { BuildingType, GoodId } from './types';
 import {
   availableOf,
@@ -50,7 +46,11 @@ export interface ProductionContext {
   warehouse: WarehouseState;
   credits: number;
   level: number;
+  /** Отклонения от конфига. Только для симулятора; игра работает на умолчаниях. */
+  tuning?: Tuning;
 }
+
+const tuningOf = (ctx: ProductionContext): Tuning => ctx.tuning ?? DEFAULT_TUNING;
 
 export interface ActionResult {
   ok: boolean;
@@ -87,11 +87,11 @@ export function refreshFactorySlot(slot: FactorySlot, now: number): FactorySlot 
 }
 
 /** Самый дешевый посев среди разблокированных культур — нужен для проверки И-15. */
-export function cheapestPlantingCost(level: number): number {
+export function cheapestPlantingCost(level: number, tuning: Tuning = DEFAULT_TUNING): number {
   const costs = (Object.keys(GOODS) as GoodId[])
     .map((id) => GOODS[id])
     .filter((g) => g.kind === 'crop' && g.unlock_level <= level)
-    .map((g) => plantingCost(g.price));
+    .map((g) => plantingCost(g.price, tuning.plant_cost_price_share, tuning.plant_cost_floor));
   return costs.length ? Math.min(...costs) : 0;
 }
 
@@ -112,12 +112,13 @@ export function plant(
     return { ok: false, reason: 'locked' };
   }
 
-  const cost = plantingCost(good.price);
+  const t = tuningOf(ctx);
+  const cost = plantingCost(good.price, t.plant_cost_price_share, t.plant_cost_floor);
   let charged = cost;
   let rescued = false;
 
   if (ctx.credits < cost) {
-    const cheapest = cheapestPlantingCost(ctx.level);
+    const cheapest = cheapestPlantingCost(ctx.level, t);
     const softlocked =
       cost === cheapest &&
       isPlantingSoftlocked({
@@ -252,6 +253,6 @@ export function collectFactory(slot: FactorySlot, ctx: ProductionContext): Actio
 /** Продажа со склада по рыночной цене. Продается только available. */
 export function sell(good_id: GoodId, qty: number, ctx: ProductionContext): ActionResult {
   if (!consume(ctx.warehouse, good_id, qty)) return { ok: false, reason: 'no_inputs' };
-  const sum = Math.floor(GOODS[good_id].price * SELL_PRICE_RATIO * qty);
+  const sum = Math.floor(GOODS[good_id].price * tuningOf(ctx).sell_price_ratio * qty);
   return { ok: true, credits_delta: sum };
 }
