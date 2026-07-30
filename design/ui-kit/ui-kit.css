@@ -831,6 +831,16 @@ body {
   display: inline-block;
 }
 
+/* Цена в изотопах: тот же шестигранник, что в HUD.
+   Валюты обязаны различаться формой, а не только цветом (artlanguage §1),
+   и на кнопке это правило действует так же, как в верхнем баре. */
+.btn-price-icon.hex {
+  border-radius: 0;
+  background: radial-gradient(circle at 34% 28%, #a8e89a, var(--isotopes) 70%);
+  border: 2px solid #2f7a24;
+  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0% 50%);
+}
+
 .tap-guide {
   position: absolute;
   border: 1.5px dashed rgba(255, 255, 255, 0.55);

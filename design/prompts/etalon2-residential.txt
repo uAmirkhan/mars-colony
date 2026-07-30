@@ -1,0 +1,115 @@
+ЭТАЛОН 2: ЖИЛОЙ КВАРТАЛ. Промпт для Gemini / Nano Banana, версия v4.1.
+
+ЧТО ПРИЛОЖИТЬ К ПРОМПТУ (обязательно, две картинки):
+  1. raw/Playrix/tawnship_train/photo_3_2026-07-28_13-23-47.jpg
+     Чистый мировой кадр Township без модалок. Дает плотность цвета и предметов.
+  2. Принятый эталон 1 — кластер куполов. Держит преемственность рендера.
+
+СООТНОШЕНИЕ СТОРОН: 16:9. ВАРИАНТОВ: 4, если инструмент дает выбор.
+
+Приемка — форма из 20 пунктов в конце art-prompts-moodboard.md.
+Провалов 0 — принято. 1-2 — второй проход редактированием той же картинки.
+3 и больше, или любой провал блока B — перегенерация.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Match the colour density, prop density and rendering of the attached reference
+images, but the subject is the Mars scene described below.
+
+NON-NEGOTIABLE RENDER RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no edge stroke, no dark rim on any
+   object at any thickness. Shapes separate through colour and value only.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet. No wall, roof or prop is a single flat tone.
+3. NO CUBES, NO BOXES. Buildings are soft rounded volumes: barrel vaults, domes,
+   capsules, cylinders with rounded caps, fat shells with very large corner radii.
+   Nothing reads as a shipping crate or a rounded-off box.
+4. EVERY BUILDING A DIFFERENT SILHOUETTE. Never the same shell repeated in another
+   colour.
+5. ONE KEY LIGHT from the upper left at 55 degrees above the horizon. Every object
+   drops a soft blurred shadow offset toward the lower right, extending past its own
+   footprint. No near-vertical light, no shadow hidden under its object.
+
+Soft volumetric shading baked into a 2D mobile game asset, in the rendering
+language of Township and Hay Day. Stylized toy-like light falloff, not physically
+realistic lighting. Finish is semi-gloss painted metal and ceramic composite with a
+soft sheen, the polished look of a premium mobile city-builder.
+
+A three-quarter view at roughly 45 degrees on a residential quarter of a Mars colony,
+moderate camera distance so individual buildings and props stay readable. The horizon
+sits about a quarter of the way down from the top, with a band of pale rosy haze under
+a peach-pale sky.
+
+Six habitat modules, each a clearly different rounded shape, no two alike:
+a brick red barrel-vault module, a half-cylinder lying on its side with rounded ends;
+a mustard yellow two-storey shell with a domed roof cap and a curved outside stair;
+a terracotta low capsule module with a curved porch canopy over its door;
+a teal blue upright cylinder with a rounded cap and a ring walkway around it;
+a sage green wide low shell with a soft rounded ridge running along its roof;
+a cream small pill-shaped module with a rounded bay window.
+Three of them form a tight row sharing the warm red-terracotta family, still separate
+silhouettes with a visible gap between them; the rest stand apart. Every module has a
+coloured lamp beside its door and a small numbered plate.
+
+Behind the row on the right sits one hydroponic dome, a true hemisphere shaded with a
+smooth radial gradient, its frame ribs painted a saturated green-teal, dense emerald
+crop rows glowing through the glass as the most saturated green in the frame; a weather
+mast on a tripod stands beside its entrance and painted tile rings its base.
+
+A painted path crosses the foreground, edged on both sides by long planter troughs of
+muted sage-green moss and lichen behind a low glass rim, with a partial transparent
+canopy arching over one stretch of trough. A teal coolant tank with a level gauge
+stands against the leftmost block, and a thin glazed ground pipe carrying visibly
+bluish fluid runs from it toward the dome.
+
+Props pressed against the buildings: a planter of bright succulents by a door, a line
+of small route flags on a thin mast along the path, numbered cargo containers striped
+in terracotta and cream stacked beside the cream block, a cable spool, a bench under
+a striped fabric awning by the airlock. Four colonists in light pastel suits walk the
+path and stand talking by a door.
+
+Every building is a separate standalone structure spaced apart on open ground with
+clear air and visible ground around it, never fused into a shared mass, never joined
+by tube corridors or connecting walkways, linked only by thin ground-level pipes and
+painted paths. Every structure is squat, height roughly equal to its own footprint
+width, with large rounded corners and no sharp edges.
+
+At least four colour families are visible at once and exactly one of them is cool
+teal-cyan; no family except the sky covers more than 40% of the frame. Painted
+structures and decorative props read clearly more saturated than the sky and the
+ground behind them, by a wide and obvious margin. Pure clean blue never appears on
+any world object.
+
+Ground: warm ochre sand as the base, a paler trodden dust path, a rust-red dust band
+at the far edge of the built area, painted tile at the dome entrance. Sky is peach-pale
+Martian daytime graduating to muted blue-grey near the zenith, occupying only the top
+quarter of the frame and never spilling below the horizon line.
+
+Mood: sunny midday, a lived-in neighbourhood, calm optimism.
+
+NEGATIVE:
+any outline or contour line on world objects, thick black outline, comic ink line;
+single flat color fill with no gradient anywhere on an object;
+hard-edged two-tone shading with a sharp light/shadow cutoff;
+boxy angular crate buildings, square-cornered domes, identical repeated modules;
+monochrome beige blob, whole scene at one flat lightness, everything cream and ochre;
+cream or sand-white hull on every building, unpainted residential blocks;
+moss or plants growing loose in open ground with no glass rim or canopy;
+pure clean blue on world objects;
+yellow-and-black hazard hatching, warning stripes, alarm markings;
+sky filling half the frame, sky spilling below the horizon line;
+one single flat ground material across the whole frame;
+near-vertical overhead light, shadow hidden directly under its object;
+objects floating with no visible offset shadow;
+flat 2D vector illustration, sticker-sheet look, infographic icon set, paper cutout;
+buildings fused into one mass, joined by tube corridors, shared walls;
+tall tower-like vertically stretched structures;
+empty bare ground between buildings;
+photorealistic lighting, long sunset shadows, dust storm, craters, cracks, ruins;
+blue Earth sky, dark starry sky, text, UI overlay
+
+================ ДО СЮДА ================
+
+ЕСЛИ КАДР ПРИДЕТ С ПУСТЫМ ГРУНТОМ при в остальном верном цвете — это не ошибка
+правил, а обрезка хвоста длинного промпта. Повтори абзац Props отдельной строкой
+в самом конце и прогони заново.
