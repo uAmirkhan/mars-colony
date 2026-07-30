@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { FACTORY_PRICES, plantingCost } from '../domain/config/economy';
 import { ALL_GOOD_IDS, GOODS } from '../domain/config/goods';
 import type { GoodId } from '../domain/types';
@@ -14,8 +15,8 @@ import { Button, Currency, GoodIcon, Panel, ProgressBar, Timer } from './kit';
 
 export function Hud() {
   const { level, credits, isotopes } = useGame();
-  const xp = useGame(selectXpProgress);
-  const load = useGame(selectWarehouseLoad);
+  const xp = useGame(useShallow(selectXpProgress));
+  const load = useGame(useShallow(selectWarehouseLoad));
   const full = load.used >= load.cap;
 
   return (
@@ -164,7 +165,7 @@ export function DomeScreen() {
 export function WarehousePanel({ onClose }: { onClose: () => void }) {
   const { warehouse, sell } = useGame();
   const goods = occupiedGoods(warehouse);
-  const load = useGame(selectWarehouseLoad);
+  const load = useGame(useShallow(selectWarehouseLoad));
 
   return (
     <div className="scrim" onClick={onClose}>
