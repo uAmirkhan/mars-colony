@@ -7,13 +7,29 @@
 import { create } from 'zustand';
 import {
   CREDITS_START,
+  droneRefreshPrice,
   FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
   productionSpeedupCost,
 } from '../domain/config/economy';
 import { GOODS } from '../domain/config/goods';
-import { levelUpReward, MAX_LEVEL_MVP, xpToNext } from '../domain/config/levels';
+import {
+  levelUpReward,
+  MAX_LEVEL_MVP,
+  MECHANIC_UNLOCK_LEVEL,
+  xpToNext,
+} from '../domain/config/levels';
+import {
+  availableGoodsFor,
+  discardOrder,
+  generateOrder,
+  loadPosition,
+  type OrderSlot,
+  releaseReserved,
+  sendOrder,
+  slotsAtLevel,
+} from '../domain/drone';
 import {
   createFactorySlot,
   createField,
@@ -58,6 +74,11 @@ interface GameState {
   sell: (good_id: GoodId, qty: number) => void;
   speedupField: (idx: number) => void;
   speedupFactory: (idx: number) => void;
+  orders: OrderSlot[];
+  loadOrderPosition: (slot_idx: number, position_idx: number) => void;
+  sendOrderAt: (slot_idx: number) => void;
+  discardOrderAt: (slot_idx: number) => void;
+  refreshSlotNow: (slot_idx: number) => void;
   buyFoodModule: () => void;
   dismissToast: (id: number) => void;
 }
@@ -107,6 +128,21 @@ export const useGame = create<GameState>((set, get) => {
     set({ level, xp_into_level: xp, credits, isotopes, fields });
   };
 
+  /** Новый заказ в слот. Пул товаров — то, что игрок реально умеет производить. */
+  const makeOrder = (idx: number, now: number): OrderSlot => {
+    const s = get();
+    const buildings = new Set<string>(s.has_food_module ? ['food_module'] : []);
+    const order = generateOrder(idx, {
+      level: s.level,
+      warehouse: s.warehouse,
+      available_goods: availableGoodsFor(s.level, buildings),
+      board: s.orders,
+      rng: Math.random,
+    });
+    order.refresh_at = now;
+    return order;
+  };
+
   /** Пополнение склада будит слоты фабрики, ждущие входов. */
   const notifyStockIncreased = () => {
     const slots = [...get().factory_slots];
@@ -127,12 +163,92 @@ export const useGame = create<GameState>((set, get) => {
     ),
     has_food_module: false,
     toasts: [],
+    orders: [],
 
     tick: (now) => {
       const s = get();
       const fields = s.fields.map((f) => refreshField({ ...f }, now));
       const factory_slots = s.factory_slots.map((sl) => refreshFactorySlot({ ...sl }, now));
-      set({ now, fields, factory_slots });
+
+      // Доска наполняется лениво, по тику: слот с истекшим таймером получает
+      // новый заказ, а недостающие слоты (после левелапа) — свои первые.
+      let orders = s.orders;
+      if (s.level >= MECHANIC_UNLOCK_LEVEL.drone) {
+        const target = slotsAtLevel(s.level);
+        orders = [...orders];
+        while (orders.length < target) orders.push(makeOrder(orders.length, now));
+        orders = orders.map((slot) =>
+          slot.state === 'empty_cooldown' && now >= slot.refresh_at
+            ? makeOrder(slot.idx, now)
+            : slot,
+        );
+      }
+
+      set({ now, fields, factory_slots, orders });
+    },
+
+    /** Погрузка позиции: резерв со склада, состояние слота пересчитывается доменом. */
+    loadOrderPosition: (slot_idx, position_idx) => {
+      const orders = get().orders.map((o) => ({
+        ...o,
+        positions: o.positions.map((p) => ({ ...p })),
+      }));
+      const slot = orders[slot_idx];
+      if (!slot) return;
+
+      if (!loadPosition(slot, position_idx, get().warehouse)) {
+        pushToast('Не хватает товара на складе', 'warn');
+        return;
+      }
+      set({ orders, warehouse: { ...get().warehouse } });
+    },
+
+    sendOrderAt: (slot_idx) => {
+      const s = get();
+      const orders = s.orders.map((o) => ({ ...o }));
+      const slot = orders[slot_idx];
+      if (!slot) return;
+
+      const result = sendOrder(slot, s.warehouse);
+      if (!result.ok) return;
+
+      // Слот сразу уходит в новый заказ: у отправки нет таймера, платой за
+      // скорость служит сам заказ, а не ожидание.
+      orders[slot_idx] = makeOrder(slot_idx, s.now);
+      set({ orders, warehouse: { ...s.warehouse }, credits: s.credits + result.credits });
+      applyXp(result.xp);
+      pushToast(`Дрон улетел: +${result.credits} кр, +${result.xp} XP`, 'reward');
+    },
+
+    discardOrderAt: (slot_idx) => {
+      const s = get();
+      const orders = s.orders.map((o) => ({
+        ...o,
+        positions: o.positions.map((p) => ({ ...p })),
+      }));
+      const slot = orders[slot_idx];
+      if (!slot) return;
+
+      // Порядок важен: сначала вернуть резерв, потом гасить слот. Иначе товар
+      // остался бы заперт навсегда — заказа уже нет, а резерв на нем висит.
+      releaseReserved(slot, s.warehouse);
+      discardOrder(slot, s.now);
+      set({ orders, warehouse: { ...s.warehouse } });
+    },
+
+    refreshSlotNow: (slot_idx) => {
+      const s = get();
+      const orders = s.orders.map((o) => ({ ...o }));
+      const slot = orders[slot_idx];
+      if (!slot || slot.state !== 'empty_cooldown') return;
+
+      const price = droneRefreshPrice(slot.refresh_at - s.now);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+      orders[slot_idx] = makeOrder(slot_idx, s.now);
+      set({ orders, isotopes: s.isotopes - price });
     },
 
     plant: (idx, good_id) => {
