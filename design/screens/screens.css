@@ -379,7 +379,7 @@
 .field-cluster {
   position: absolute;
   display: grid;
-  grid-template-columns: repeat(4, 108px);
+  grid-template-columns: repeat(3, 108px);
   gap: 14px;
   z-index: 2;
 }
@@ -666,9 +666,12 @@
 
 /* Плашка грядки в состоянии GROWING: информация без действия,
    кроме ускорения. Компактнее листа погрузки — тут нет выбора. */
+/* Нижний отступ 96px — резерв под .sheet-actions, которая позиционирована
+   абсолютно. Без резерва тело листа наезжает на кнопки: на высоте 42%
+   строка «Склад полон» уходила прямо под «Собрать». */
 .field-sheet {
-  height: 42%;
-  padding: 20px 30px 22px;
+  height: 48%;
+  padding: 20px 30px 96px;
   z-index: 4;
 }
 

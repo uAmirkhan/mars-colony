@@ -10,7 +10,9 @@ import {
   FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
+  productionSpeedupCost,
 } from '../domain/config/economy';
+import { GOODS } from '../domain/config/goods';
 import { levelUpReward, MAX_LEVEL_MVP, xpToNext } from '../domain/config/levels';
 import {
   createFactorySlot,
@@ -54,6 +56,8 @@ interface GameState {
   enqueue: (idx: number, good_id: GoodId) => void;
   collectFactory: (idx: number) => void;
   sell: (good_id: GoodId, qty: number) => void;
+  speedupField: (idx: number) => void;
+  speedupFactory: (idx: number) => void;
   buyFoodModule: () => void;
   dismissToast: (id: number) => void;
 }
@@ -191,6 +195,50 @@ export const useGame = create<GameState>((set, get) => {
         credits: s.credits + (result.credits_delta ?? 0),
         warehouse: { ...s.warehouse },
       }));
+    },
+
+    /**
+     * Ускорение грядки. Ниже порога бесплатно (AC7) — кнопка не исчезает,
+     * а отдает действие даром: игрок, который уже тянулся к ней, получает
+     * результат, и заодно видит механику, если пользуется ей впервые.
+     */
+    speedupField: (idx) => {
+      const s = get();
+      const fields = s.fields.map((f) => ({ ...f }));
+      const field = fields[idx];
+      if (!field || field.state !== 'GROWING') return;
+
+      const good = field.good_id ? GOODS[field.good_id] : null;
+      if (!good) return;
+
+      const price = productionSpeedupCost(field.ends_at - s.now, good.kind);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+
+      field.ends_at = s.now; // цикл завершен, собирать игрок будет сам
+      field.state = 'READY';
+      set({ fields, isotopes: s.isotopes - price });
+      if (price === 0) pushToast('Дозрело', 'info');
+    },
+
+    speedupFactory: (idx) => {
+      const s = get();
+      const slots = s.factory_slots.map((sl) => ({ ...sl }));
+      const slot = slots[idx];
+      if (!slot || slot.state !== 'PRODUCING' || !slot.good_id) return;
+
+      const price = productionSpeedupCost(slot.ends_at - s.now, 'factory');
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+
+      slot.ends_at = s.now;
+      slot.state = 'READY';
+      set({ factory_slots: slots, isotopes: s.isotopes - price });
+      if (price === 0) pushToast('Готово', 'info');
     },
 
     buyFoodModule: () => {
