@@ -19,6 +19,9 @@
   <symbol id="i-helmet" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0114 0v3H5z" fill="currentColor"/><path d="M2.5 18h19v3h-19z" fill="currentColor"/><path d="M9 14.6a3.4 3.4 0 016 0z" fill="var(--panel)"/></symbol>
   <symbol id="i-scroll" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2.5" fill="currentColor"/><path d="M8 9h8M8 13h8M8 17h5" stroke="var(--panel)" stroke-width="1.8" stroke-linecap="round"/></symbol>
   <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z" fill="currentColor"/><path d="M11 14h2v4h-2zM8 18h8v2H8z" fill="currentColor"/></symbol>
+  <symbol id="i-crates" viewBox="0 0 24 24"><rect x="3" y="12.5" width="8.4" height="8" rx="1.6" fill="currentColor"/><rect x="12.6" y="12.5" width="8.4" height="8" rx="1.6" fill="currentColor"/><rect x="7.8" y="3.5" width="8.4" height="8" rx="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 20V11l5 3V11l5 3V7l8 4v9z" fill="currentColor"/><rect x="6" y="3" width="3" height="6" rx="1" fill="currentColor"/></symbol>
+  <symbol id="i-allies" viewBox="0 0 24 24"><circle cx="8.5" cy="8.5" r="3.4" fill="currentColor"/><circle cx="16.5" cy="9.5" r="2.8" fill="currentColor"/><path d="M2.5 20c0-3.3 2.7-5.4 6-5.4s6 2.1 6 5.4z" fill="currentColor"/><path d="M15 20c0-2.6 1.4-4.4 3.6-4.4S22 17.4 22 20z" fill="currentColor"/></symbol>
   <symbol id="i-liner" viewBox="0 0 24 24"><path d="M3 14h18l-2 4H5z" fill="currentColor"/><path d="M6 13V8h12v5z" fill="currentColor"/><circle cx="9" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="12" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="15" cy="10.5" r="1.1" fill="var(--panel)"/></symbol>
 </svg>
 
@@ -36,7 +39,7 @@
      1. Экран станции, состояние ЗАКАЗ
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">1</span> Станция, состояние ЗАКАЗ <span class="src">tz-shuttle §6.1</span></h2>
+  <h2 class="frame-heading"><span class="n">1</span> Станция, состояние ЗАКАЗ <span class="sub">tz-shuttle §6.1</span></h2>
   <div class="canvas">
     <div class="world">
       <div class="world-dome" style="width:150px;height:150px;left:880px;top:210px;"></div>
@@ -70,10 +73,13 @@
     </div>
 
     <!-- Нижний хаб: центр кромки свободен, там лента и мир -->
+    <!-- Хаб: ровно семь иконок из tz-production 9.1, состав общий для всех
+         экранов канваса. Слева кластер колонии, справа три delivery-механики. -->
     <div class="hub-cluster left">
+      <button class="hub-tile" aria-label="Склад"><svg><use href="#i-crates"/></svg></button>
+      <button class="hub-tile" aria-label="Фабрика"><svg><use href="#i-factory"/></svg></button>
       <button class="hub-tile" aria-label="Стройка"><svg><use href="#i-helmet"/></svg></button>
-      <button class="hub-tile" aria-label="Задания"><svg><use href="#i-scroll"/></svg><span class="tile-badge">2</span></button>
-      <button class="hub-tile" aria-label="Достижения"><svg><use href="#i-trophy"/></svg></button>
+      <button class="hub-tile" aria-label="Союзники"><svg><use href="#i-allies"/></svg></button>
     </div>
     <div class="hub-cluster right">
       <button class="hub-tile" aria-label="Дрон"><svg><use href="#i-drone"/></svg></button>
@@ -95,7 +101,7 @@
      2. Лист погрузки, состояние covered_by_stock
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">2</span> Лист погрузки — на складе хватает <span class="src">tz-shuttle §6.2, covered_by_stock</span></h2>
+  <h2 class="frame-heading"><span class="n">2</span> Лист погрузки — на складе хватает <span class="sub">tz-shuttle §6.2, covered_by_stock</span></h2>
   <div class="canvas">
     <div class="world">
       <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
@@ -144,7 +150,7 @@
      3. Лист погрузки, состояние partial
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">3</span> Лист погрузки — частично, есть дефицит <span class="src">tz-shuttle §6.2, partial</span></h2>
+  <h2 class="frame-heading"><span class="n">3</span> Лист погрузки — частично, есть дефицит <span class="sub">tz-shuttle §6.2, partial</span></h2>
   <div class="canvas">
     <div class="world">
       <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
@@ -194,7 +200,7 @@
      4. Лист погрузки, состояние empty + открыт для коопа
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">4</span> Лист погрузки — пусто, отсек открыт для помощи <span class="src">tz-shuttle §6.2, empty + кооп</span></h2>
+  <h2 class="frame-heading"><span class="n">4</span> Лист погрузки — пусто, отсек открыт для помощи <span class="sub">tz-shuttle §6.2, empty + кооп</span></h2>
   <div class="canvas">
     <div class="world">
       <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
@@ -245,7 +251,7 @@
      5. Лист погрузки, состояние filled_by_ally
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">5</span> Лист погрузки — закрыт союзником <span class="src">tz-shuttle §6.2, filled_by_ally</span></h2>
+  <h2 class="frame-heading"><span class="n">5</span> Лист погрузки — закрыт союзником <span class="sub">tz-shuttle §6.2, filled_by_ally</span></h2>
   <div class="canvas">
     <div class="world">
       <div class="world-dome" style="width:150px;height:150px;left:880px;top:150px;"></div>
@@ -288,7 +294,7 @@
      6. Состояния табло
      ========================================================= -->
 <section>
-  <h2 class="frame-heading"><span class="num">6</span> Табло станции — все состояния <span class="src">tz-shuttle §6.1</span></h2>
+  <h2 class="frame-heading"><span class="n">6</span> Табло станции — все состояния <span class="sub">tz-shuttle §6.1</span></h2>
   <div class="gallery">
     <div class="spec">
       <div class="board-states">

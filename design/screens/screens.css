@@ -303,6 +303,410 @@
   max-width: 340px;
 }
 
+/* ============================================================
+   ЭКРАН КУПОЛА (tz-production-mars 9.1)
+   Главный канвас игры, не модалка. Все, чего нет в витрине.
+   ============================================================ */
+
+/* Аватар и XP-бар в верхнем HUD.
+   Спека требует текст «{xp_current} / {xp_to_next}» поверх бара, а не рядом:
+   отдельная подпись на узкой кромке уезжает за габарит. */
+.hud-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  border: 4px solid var(--panel-border);
+  background: radial-gradient(circle at 36% 30%, #cfe3f5, #7fa8c9);
+  box-shadow: 0 4px 0 rgba(122, 83, 48, 0.35);
+  position: relative;
+  flex: none;
+}
+
+.hud-avatar .lvl {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 14px;
+  background: var(--xp);
+  border: 3px solid #fff;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.xp-bar {
+  position: relative;
+  width: 190px;
+  height: 26px;
+  border-radius: 13px;
+  border: 3px solid var(--panel-border);
+  background: #e6d3ad;
+  overflow: hidden;
+  flex: none;
+}
+
+.xp-bar .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(180deg, #6fc3f0, var(--xp));
+}
+
+.xp-bar .val {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+/* ------------------------------------------------------------
+   Кластер грядок. Компактной группой в одной зоне купола,
+   остальные зоны канваса отданы фабрикам и стройке (9.1).
+   Тап-таргет — весь тайл, он заведомо больше 44x44.
+   ------------------------------------------------------------ */
+
+.field-cluster {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(4, 108px);
+  gap: 14px;
+  z-index: 2;
+}
+
+.field {
+  position: relative;
+  width: 108px;
+  height: 92px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #c08d5d, #9c6738);
+  cursor: pointer;
+}
+
+/* Пустая грядка: голый грунт и полупрозрачный плюс по центру */
+.field.empty {
+  background: linear-gradient(180deg, #c08d5d, #9c6738);
+  box-shadow: inset 0 -6px 10px rgba(84, 50, 20, 0.4);
+  display: grid;
+  place-items: center;
+}
+
+.field.empty::after {
+  content: "+";
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 46px;
+  line-height: 1;
+  color: rgba(255, 244, 222, 0.55);
+}
+
+/* Занятая грядка: тот же грунт плюс спрайт культуры сверху */
+.field.growing,
+.field.ready {
+  background: linear-gradient(180deg, #c08d5d, #9c6738);
+  box-shadow: inset 0 -6px 10px rgba(84, 50, 20, 0.4);
+  display: grid;
+  place-items: center;
+}
+
+/* Плейсхолдер спрайта культуры. Стадия роста передается размером
+   и насыщенностью — на месте этого объекта встанет кадр спрайта. */
+.crop-sprite {
+  width: 58px;
+  height: 58px;
+  border-radius: 50% 50% 40% 40%;
+  background: linear-gradient(180deg, #8fd86a, #3f8f2c);
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.18);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.field.growing .crop-sprite.stage-1 {
+  width: 30px;
+  height: 30px;
+  filter: saturate(0.7);
+}
+
+.field.growing .crop-sprite.stage-2 {
+  width: 44px;
+  height: 44px;
+  filter: saturate(0.85);
+}
+
+/* Готовая грядка пульсирует: 1.0 - 1.05, цикл 1.2 c (9.1) */
+.field.ready .crop-sprite {
+  animation: crop-ready 1.2s ease-in-out infinite;
+}
+
+@keyframes crop-ready {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Таймер в углу тайла — тот же носитель, что дробь у отсека шаттла:
+   темная пилюля внутри габарита, наружу ничего не выносится. */
+.field-timer {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 11px;
+  background: rgba(58, 36, 19, 0.82);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-timer svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Иконка урожая на готовой грядке. Склад полон — на ее месте
+   значок склада: состояние данных то же READY, меняется только рендер (9.1). */
+.field-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+  animation: badge-bounce 1.2s ease-in-out infinite;
+}
+
+.field-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+.field-badge.harvest {
+  background: var(--action);
+  color: #fff;
+}
+
+/* Не красный: раздел 6 визуального языка запрещает тревожный цвет в мире.
+   Переполнение подается тем же оранжевым вниманием, что и вторичное действие. */
+.field-badge.full {
+  background: var(--secondary);
+  color: #fff;
+  animation: none;
+}
+
+@keyframes badge-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Карточка докупки грядки. Стоит в конце кластера и только когда
+   свободных грядок нет вовсе, а лимит докупки не выбран (9.1). */
+.field-buy {
+  width: 108px;
+  height: 92px;
+  border-radius: 22px;
+  border: 4px dashed rgba(255, 244, 222, 0.6);
+  background: rgba(90, 56, 26, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.15;
+  color: #fff5e3;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------
+   Фабрика класса А до покупки: силуэт стройплощадки с ценником
+   прямо под зданием, без модалки — покупка мгновенная (9.1).
+   ------------------------------------------------------------ */
+
+.site-ghost {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-ghost .shape {
+  width: 130px;
+  height: 104px;
+  border-radius: 34px 34px 18px 18px;
+  border: 4px dashed rgba(255, 244, 222, 0.7);
+  background: rgba(90, 56, 26, 0.3);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 244, 222, 0.8);
+}
+
+.site-ghost .shape svg {
+  width: 44px;
+  height: 44px;
+}
+
+.site-ghost .btn {
+  font-size: 15px;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   Пикер культур (тап по EMPTY, 9.1). Сетка иконок, будущие
+   культуры остаются видны под замком — игрок видит цель.
+   ------------------------------------------------------------ */
+
+.crop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 6px 0 14px;
+}
+
+.crop-card {
+  position: relative;
+  border-radius: 20px;
+  border: 4px solid var(--panel-border);
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  padding: 10px 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(122, 83, 48, 0.28);
+}
+
+.crop-card .ico {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 6px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.crop-card .nm {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--title);
+}
+
+.crop-card .meta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.crop-card.locked {
+  cursor: default;
+  filter: saturate(0.35);
+  opacity: 0.75;
+}
+
+.crop-card.locked .lock {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(58, 36, 19, 0.75);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.crop-card.locked .lock svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Плашка грядки в состоянии GROWING: информация без действия,
+   кроме ускорения. Компактнее листа погрузки — тут нет выбора. */
+.field-sheet {
+  height: 42%;
+  padding: 20px 30px 22px;
+  z-index: 4;
+}
+
+.picker-sheet {
+  height: 62%;
+  padding: 20px 30px 22px;
+  z-index: 4;
+}
+
+/* Строка состояний грядки: служебная витрина, не экран игры */
+.field-states {
+  display: flex;
+  gap: 26px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.field-states .field,
+.field-states .field-buy {
+  position: relative;
+}
+
+.field-states figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-states figcaption {
+  font-size: 12px;
+  color: #8a8172;
+  max-width: 130px;
+  text-align: center;
+  line-height: 1.3;
+}
+
 /* Строка состояний табло: служебная витрина, не экран игры */
 .board-states {
   display: flex;

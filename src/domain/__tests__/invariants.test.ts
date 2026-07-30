@@ -14,11 +14,11 @@ import {
   fieldsAtLevel,
   LINER_XP_CAP_PER_CONTAINER,
   LINER_XP_CAP_PER_TRIP,
-  MODULE_DROP_WEIGHTS,
   PRODUCTION_XP_K,
   plantingCost,
   shuttleSkipPrice,
   shuttleSlotExpectedValue,
+  TIER_WEIGHTS,
   TRANSPORT_XP_K,
 } from '../config/economy';
 import {
@@ -112,7 +112,7 @@ describe('И-6: цена скипа шаттла', () => {
 
 describe('Дроп модулей', () => {
   it('веса тиров дают в сумме единицу', () => {
-    const sum = Object.values(MODULE_DROP_WEIGHTS).reduce((a, b) => a + b, 0);
+    const sum = Object.values(TIER_WEIGHTS).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(1, 5);
   });
 

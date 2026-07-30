@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Mars Colony — экран купола, главный канвас</title>
+<link rel="stylesheet" href="../ui-kit/ui-kit.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5.5 5.5L20 7" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5.5l3.5 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></symbol>
+  <symbol id="i-atom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.6" fill="currentColor"/><ellipse cx="12" cy="12" rx="9.5" ry="4" fill="none" stroke="currentColor" stroke-width="1.8"/><ellipse cx="12" cy="12" rx="4" ry="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-shuttle" viewBox="0 0 24 24"><path d="M3 12.5c0-2.5 3-4.5 8-4.5h6c2.5 0 4 1.6 4 4.5s-1.5 4.5-4 4.5h-6c-5 0-8-2-8-4.5z" fill="currentColor"/><path d="M5 9.6L2.4 6.4h3L7.4 9zM5 15.4l-2.6 3.2h3l2-2.6z" fill="currentColor"/><circle cx="7.5" cy="12.5" r="1.5" fill="var(--panel)"/><circle cx="12" cy="12.5" r="1.5" fill="var(--panel)"/><circle cx="16.5" cy="12.5" r="1.5" fill="var(--panel)"/></symbol>
+  <symbol id="i-drone" viewBox="0 0 24 24"><rect x="8.5" y="9" width="7" height="6" rx="2.6" fill="currentColor"/><path d="M9 10L5.4 6.4M15 10l3.6-3.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><ellipse cx="4.6" cy="5.6" rx="3.2" ry="1.3" fill="currentColor"/><ellipse cx="19.4" cy="5.6" rx="3.2" ry="1.3" fill="currentColor"/><rect x="10" y="15.4" width="4" height="3.6" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-liner" viewBox="0 0 24 24"><path d="M3 14h18l-2 4H5z" fill="currentColor"/><path d="M6 13V8h12v5z" fill="currentColor"/><circle cx="9" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="12" cy="10.5" r="1.1" fill="var(--panel)"/><circle cx="15" cy="10.5" r="1.1" fill="var(--panel)"/></symbol>
+  <symbol id="i-helmet" viewBox="0 0 24 24"><path d="M5 15a7 7 0 0114 0v3H5z" fill="currentColor"/><path d="M2.5 18h19v3h-19z" fill="currentColor"/><path d="M9 14.6a3.4 3.4 0 016 0z" fill="var(--panel)"/></symbol>
+  <symbol id="i-crates" viewBox="0 0 24 24"><rect x="3" y="12.5" width="8.4" height="8" rx="1.6" fill="currentColor"/><rect x="12.6" y="12.5" width="8.4" height="8" rx="1.6" fill="currentColor"/><rect x="7.8" y="3.5" width="8.4" height="8" rx="1.6" fill="currentColor"/></symbol>
+  <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 20V11l5 3V11l5 3V7l8 4v9z" fill="currentColor"/><rect x="6" y="3" width="3" height="6" rx="1" fill="currentColor"/></symbol>
+  <symbol id="i-allies" viewBox="0 0 24 24"><circle cx="8.5" cy="8.5" r="3.4" fill="currentColor"/><circle cx="16.5" cy="9.5" r="2.8" fill="currentColor"/><path d="M2.5 20c0-3.3 2.7-5.4 6-5.4s6 2.1 6 5.4z" fill="currentColor"/><path d="M15 20c0-2.6 1.4-4.4 3.6-4.4S22 17.4 22 20z" fill="currentColor"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6" fill="currentColor"/><path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="currentColor" stroke-width="2.6"/></symbol>
+  <symbol id="i-basket" viewBox="0 0 24 24"><path d="M3.5 9h17l-2 10.5h-13z" fill="currentColor"/><path d="M8 9l3-5M16 9l-3-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-warehouse-full" viewBox="0 0 24 24"><path d="M3 10l9-5.5L21 10v10H3z" fill="currentColor"/><rect x="8" y="13" width="8" height="7" rx="1" fill="var(--panel)"/></symbol>
+</svg>
+
+<header class="page-head">
+  <h1>Экран купола — главный канвас игры</h1>
+  <p>
+    Собрано из витрины компонентов, ничего не нарисовано заново.
+    Источник композиции, состояний и текстов — <b>tz-production-mars.md раздел 9.1</b>;
+    числа — <b>раздел 7</b> того же ТЗ и <b>mars-colony-frame.md раздел 3</b>;
+    сетка, тап-таргеты и анатомия деталей — <b>ux-component-library.md</b>.
+    Мировые объекты и спрайты культур — цветные плейсхолдеры: их место займут
+    сгенерированные ассеты, композиция от замены не меняется.
+    Состояние игрока в кадре: уровень 8, шесть грядок (4 стартовых плюс анлоки на ур. 3 и 6).
+  </p>
+</header>
+
+<!-- =========================================================
+     1. Купол, спокойное состояние
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">1</span> Купол, спокойное состояние <span class="sub">tz-production §9.1</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:250px;height:250px;left:120px;top:120px;"></div>
+      <div class="world-block c-red" style="width:120px;height:90px;left:640px;top:120px;"></div>
+      <div class="world-block c-mustard" style="width:104px;height:98px;left:790px;top:104px;"></div>
+      <div class="world-block c-blue" style="width:96px;height:88px;left:1120px;top:150px;"></div>
+      <div class="world-figure" style="left:600px;top:300px;"></div>
+      <div class="world-figure" style="left:640px;top:308px;"></div>
+    </div>
+
+    <!-- Верхний HUD: аватар с уровнем, XP-бар, кредиты, изотопы -->
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="lvl">8</span></div>
+      <div class="xp-bar"><span class="fill" style="width:62%"></span><span class="val">1240 / 1990</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+      <button class="btn hud-plus" aria-label="Пополнить">+</button>
+    </div>
+
+    <!-- Кластер грядок: компактной группой в одной зоне купола -->
+    <div class="field-cluster" style="left:150px;top:300px;">
+      <div class="field ready">
+        <div class="crop-sprite" style="background:linear-gradient(180deg,#c8a37a,#8a6034)">Гр</div>
+        <span class="field-badge harvest"><svg><use href="#i-basket"/></svg></span>
+      </div>
+      <div class="field growing">
+        <div class="crop-sprite stage-2">Вд</div>
+        <span class="field-timer"><svg><use href="#i-clock"/></svg>00:48</span>
+      </div>
+      <div class="field growing">
+        <div class="crop-sprite stage-1" style="background:linear-gradient(180deg,#e8d47a,#b39a2e)">Со</div>
+        <span class="field-timer"><svg><use href="#i-clock"/></svg>02:11</span>
+      </div>
+      <div class="field growing">
+        <div class="crop-sprite stage-2" style="background:linear-gradient(180deg,#f08a6c,#c0442a)">Тм</div>
+        <span class="field-timer"><svg><use href="#i-clock"/></svg>34:12</span>
+      </div>
+      <div class="field empty"></div>
+      <div class="field ready">
+        <div class="crop-sprite">Вд</div>
+        <span class="field-badge harvest"><svg><use href="#i-basket"/></svg></span>
+      </div>
+    </div>
+
+    <!-- Фабрика класса А до покупки: Атмосферный модуль, открылся на ур. 8 -->
+    <div class="site-ghost" style="left:900px;top:250px;">
+      <div class="shape"><svg><use href="#i-factory"/></svg></div>
+      <button class="btn btn-primary">Построить за 4000 кр.</button>
+    </div>
+
+    <!-- Нижний хаб: ровно семь иконок, центр кромки свободен -->
+    <div class="hub-cluster left">
+      <button class="hub-tile" aria-label="Склад"><svg><use href="#i-crates"/></svg></button>
+      <button class="hub-tile" aria-label="Фабрика"><svg><use href="#i-factory"/></svg></button>
+      <button class="hub-tile" aria-label="Стройка"><svg><use href="#i-helmet"/></svg></button>
+      <button class="hub-tile" aria-label="Союзники"><svg><use href="#i-allies"/></svg></button>
+    </div>
+    <div class="hub-cluster right">
+      <button class="hub-tile" aria-label="Дрон"><svg><use href="#i-drone"/></svg></button>
+      <button class="hub-tile" aria-label="Шаттл"><svg><use href="#i-shuttle"/></svg></button>
+      <button class="hub-tile" aria-label="Лайнер"><svg><use href="#i-liner"/></svg><span class="tile-badge check"><svg><use href="#i-check"/></svg></span></button>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Хаб — ровно семь иконок из ТЗ: склад, фабрика, стройка, союзники слева, три delivery-механики справа.
+    Горит один индикатор, у лайнера: приоритет бейджей лайнер &gt; шаттл &gt; дрон &gt; союзники &gt; стройка &gt; фабрика &gt; склад,
+    больше одного «горящего» одновременно не бывает. Центр нижней кромки не занят ничем — там виден мир.
+    Грядка целиком тап-таргет 108x92 при минимуме 44x44. Таймер и дробь живут внутри габарита тайла:
+    вынесенная наружу подпись обрезается нижней кромкой, это уже ловилось на экране шаттла.
+    Атмосферный модуль открылся уровнем и стоит силуэтом с ценником прямо под зданием — покупка мгновенная,
+    без модалки и без подтверждения, потому что тратятся кредиты, а не изотопы.
+  </p>
+</section>
+
+<!-- =========================================================
+     2. Пикер культур
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">2</span> Тап по пустой грядке — пикер культур <span class="sub">tz-production §9.1, EMPTY</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:250px;height:250px;left:120px;top:60px;"></div>
+      <div class="world-block c-red" style="width:120px;height:90px;left:640px;top:70px;"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="lvl">8</span></div>
+      <div class="xp-bar"><span class="fill" style="width:62%"></span><span class="val">1240 / 1990</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:62%;"></div>
+
+    <div class="panel bottom-sheet picker-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-26px;right:18px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-title">Что посадить</div>
+      </div>
+      <div class="crop-grid">
+        <div class="crop-card">
+          <div class="ico" style="background:#4f9e34;">Вд</div>
+          <div class="nm">Водоросли</div>
+          <div class="meta">2 мин · 4 шт · 1 кр.</div>
+        </div>
+        <div class="crop-card">
+          <div class="ico" style="background:#b39a2e;">Со</div>
+          <div class="nm">Соя</div>
+          <div class="meta">2 мин 30 с · 4 шт · 1 кр.</div>
+        </div>
+        <div class="crop-card">
+          <div class="ico" style="background:#8a6034;">Гр</div>
+          <div class="nm">Грибы</div>
+          <div class="meta">5 мин · 3 шт · 2 кр.</div>
+        </div>
+        <div class="crop-card">
+          <div class="ico" style="background:#c0442a;">Тм</div>
+          <div class="nm">Томаты-гидро</div>
+          <div class="meta">1 ч · 2 шт · 2 кр.</div>
+        </div>
+        <div class="crop-card locked">
+          <span class="lock"><svg><use href="#i-lock"/></svg></span>
+          <div class="ico" style="background:#b98cc4;">Хл</div>
+          <div class="nm">Хлопок-синт</div>
+          <div class="meta">Ур. 9</div>
+        </div>
+        <div class="crop-card locked">
+          <span class="lock"><svg><use href="#i-lock"/></svg></span>
+          <div class="ico" style="background:#6d4b2f;">Кф</div>
+          <div class="nm">Кофе-бобы</div>
+          <div class="meta">Ур. 12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Будущие культуры остаются в сетке под замком, а не прячутся: игрок видит, к чему идет.
+    Тап по заблокированной — короткий тултип «Открывается на уровне N», никуда не ведет.
+    Третья строка карточки — цикл, выход за цикл и цена посева (доля 0.4 от цены продажи, минимум 1 кредит).
+    Уровни открытия взяты из каркаса, а не из лестницы уровней ТЗ — см. расхождение в подвале страницы.
+  </p>
+</section>
+
+<!-- =========================================================
+     3. GROWING
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">3</span> Тап по растущей грядке — инфо и ускорение <span class="sub">tz-production §9.1, GROWING</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:250px;height:250px;left:120px;top:60px;"></div>
+      <div class="world-block c-mustard" style="width:104px;height:98px;left:700px;top:80px;"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="lvl">8</span></div>
+      <div class="xp-bar"><span class="fill" style="width:62%"></span><span class="val">1240 / 1990</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:42%;"></div>
+
+    <div class="panel bottom-sheet field-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-26px;right:18px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#c0442a;">Тм</div>
+        <div class="sheet-title">Томаты-гидро</div>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter"><span class="have">34:12</span></div>
+        <div class="sheet-xp">до готовности</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary">Ускорить за <span class="btn-price-icon hex"></span>175</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Действий, кроме ускорения, тут нет — растущую грядку нельзя ни собрать, ни пересадить.
+    Цена ускорения — оставшиеся минуты вверх на ставку 5 изотопов за минуту, пол 10 изотопов:
+    35 минут дают 175. Меньше двадцати секунд до готовности — кнопка исчезает совсем,
+    чтобы не продавать игроку то, что он получит бесплатно через миг.
+  </p>
+</section>
+
+<!-- =========================================================
+     4. READY, есть место на складе
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">4</span> Готовая грядка — сбор <span class="sub">tz-production §9.1, READY</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:250px;height:250px;left:120px;top:60px;"></div>
+      <div class="world-block c-sage" style="width:110px;height:86px;left:700px;top:90px;"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="lvl">8</span></div>
+      <div class="xp-bar"><span class="fill" style="width:62%"></span><span class="val">1240 / 1990</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:42%;"></div>
+
+    <div class="panel bottom-sheet field-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-26px;right:18px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#8a6034;">Гр</div>
+        <div class="sheet-title">Грибы</div>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter"><span class="have">3</span> <span class="need">шт</span></div>
+        <div class="sheet-xp">+6 XP за сбор</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-primary">Собрать</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Сбор оптимистичный: иконки урожая улетают дугой к иконке склада в хабе примерно за полсекунды,
+    рядом всплывает «+6 XP», ответа сервера экран не ждет. XP считается как базовый XP культуры
+    на выход цикла — у грибов 2 на 3 штуки.
+  </p>
+</section>
+
+<!-- =========================================================
+     5. READY, склад полон
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">5</span> Готовая грядка — склад полон <span class="sub">tz-production §9.1, READY + переполнение</span></h2>
+  <div class="canvas">
+    <div class="world">
+      <div class="world-dome" style="width:250px;height:250px;left:120px;top:60px;"></div>
+      <div class="world-block c-red" style="width:120px;height:90px;left:700px;top:86px;"></div>
+    </div>
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="lvl">8</span></div>
+      <div class="xp-bar"><span class="fill" style="width:62%"></span><span class="val">1240 / 1990</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-coin"></span><span class="hud-num">7119</span></div>
+      <div class="hud-capsule"><span class="hud-medal medal-hex"><svg><use href="#i-atom"/></svg></span><span class="hud-num">116</span></div>
+    </div>
+    <div class="scrim" style="bottom:42%;"></div>
+
+    <div class="panel bottom-sheet field-sheet">
+      <div class="sheet-grabber"></div>
+      <button class="btn btn-close panel-close" style="top:-26px;right:18px;" aria-label="Закрыть">✕</button>
+      <div class="sheet-head">
+        <div class="sheet-good-icon" style="background:#8a6034;">Гр</div>
+        <div class="sheet-title">Грибы</div>
+      </div>
+      <div class="sheet-body">
+        <div class="sheet-counter"><span class="have">3</span> <span class="need">шт</span></div>
+        <div class="sheet-xp" style="color:var(--secondary-dark);">Склад полон — 50 / 50</div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn is-disabled" title="Склад полон">Собрать</button>
+        <button class="btn btn-secondary"><svg style="width:20px;height:20px;vertical-align:-4px;"><use href="#i-search"/></svg> К складу</button>
+      </div>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    «Собрать» задизейблена, но не спрятана: игрок должен видеть, что бесплатный путь есть и почему он закрыт.
+    Лупа ведет на склад с подсветкой переполненной строки — тот же паттерн перехода, что лупа
+    «где произвести» в листе погрузки шаттла. Тревожного красного тут нет: переполнение подается
+    оранжевым вниманием, потому что красный в мире и в предупреждениях запрещен визуальным языком.
+  </p>
+</section>
+
+<!-- =========================================================
+     6. Состояния грядки
+     ========================================================= -->
+<section>
+  <h2 class="frame-heading"><span class="n">6</span> Грядка — все состояния <span class="sub">tz-production §9.1</span></h2>
+  <div class="gallery">
+    <div class="spec">
+      <div class="field-states">
+        <figure>
+          <div class="field empty"></div>
+          <figcaption>EMPTY — грунт и плюс, тап открывает пикер</figcaption>
+        </figure>
+        <figure>
+          <div class="field growing"><div class="crop-sprite stage-1">Вд</div><span class="field-timer"><svg><use href="#i-clock"/></svg>01:40</span></div>
+          <figcaption>GROWING, ранняя стадия</figcaption>
+        </figure>
+        <figure>
+          <div class="field growing"><div class="crop-sprite stage-2">Вд</div><span class="field-timer"><svg><use href="#i-clock"/></svg>00:32</span></div>
+          <figcaption>GROWING, поздняя стадия</figcaption>
+        </figure>
+        <figure>
+          <div class="field ready"><div class="crop-sprite">Вд</div><span class="field-badge harvest"><svg><use href="#i-basket"/></svg></span></div>
+          <figcaption>READY — пульсирует, значок урожая</figcaption>
+        </figure>
+        <figure>
+          <div class="field ready"><div class="crop-sprite">Вд</div><span class="field-badge full"><svg><use href="#i-warehouse-full"/></svg></span></div>
+          <figcaption>READY, склад полон — рендер-оверлей, не отдельное состояние данных</figcaption>
+        </figure>
+        <figure>
+          <div class="field-buy">нет свободного места под грядку<br><b>Открыть — 150 ⚛</b></div>
+          <figcaption>Карточка докупки: только когда пустых грядок нет и куплено меньше трех</figcaption>
+        </figure>
+      </div>
+      <span class="cap">Три стадии роста синхронизированы с процентом прогресса, а не с таймером в отдельности</span>
+    </div>
+  </div>
+  <p class="spec cap" style="max-width:1200px;text-align:left;margin-top:10px;">
+    Переполнение склада — не пятое состояние в данных, а оверлей поверх READY: меняется только значок
+    в углу тайла. Это важно для кода — состояние грядки остается READY, и после освобождения склада
+    ничего не нужно пересчитывать.
+  </p>
+</section>
+
+<footer>
+  <h3>Что здесь взято из ТЗ, а что достроено</h3>
+  <ul>
+    <li><b>Из ТЗ дословно:</b> состав и состояния грядки, набор из семи иконок хаба и приоритет их бейджей, тексты («Склад полон», «Открывается на уровне N», «нет свободного места под грядку», «Построить за {price} кр.»), правило «переполнение — рендер-оверлей поверх READY», покупка фабрики класса А без модалки и без подтверждения, пульсация 1.0-1.05 с циклом 1.2 секунды.</li>
+    <li><b>Из конфиг-таблицы и каркаса:</b> цена докупки грядки 150 изотопов, максимум 3 докупки, ставка ускорения грядки 5 изотопов за минуту с полом 10, порог скрытия кнопки ускорения 20 секунд, цена Атмосферного модуля 4000 кредитов, стартовая емкость склада 50, циклы и выходы культур.</li>
+    <li><b>Из компонентной библиотеки:</b> сетка, безопасные зоны, тап-таргеты, анатомия кнопки, капсулы, таймера, положение крестика, затемнение мира, боттом-шит.</li>
+    <li><b>Достроено дизайн-дорожкой (нет ни в ТЗ, ни в разборе):</b> вид XP-бара с текстом поверх заливки, компоновка карточки культуры в пикере и состав ее третьей строки, вид силуэта стройплощадки, выбор оранжевого вместо красного для переполнения, деление хаба на кластер колонии слева и кластер доставки справа. Все это решения композиции: ни одного правила игры они не меняют и правятся свободно.</li>
+    <li><b>Плейсхолдеры:</b> купол, жилые блоки и спрайты культур — цветные фигуры и двухбуквенные плашки. На их место встают сгенерированные ассеты по контракту передачи.</li>
+  </ul>
+
+  <h3>Расхождение, найденное при сборке</h3>
+  <ul>
+    <li><b>Уровень открытия грибов.</b> Каркас (mars-colony-frame раздел 3) дает «Грибы (4 ур / 5 кр / 2 XP / 5м)», а лестница уровней ТЗ производства (раздел 5) выдает культуру «Грибы» на уровне 3. Одно из двух неверно. На макете взят каркас: по правилу проекта противоречие каркасу — баг, а не каркас. Решение за владельцем, дизайн-дорожка числа игры не меняет.</li>
+    <li><b>Хаб на экране шаттла не совпадал со спекой.</b> Там стояли шесть иконок, включая «Задания» и «Достижения», которых в списке ТЗ нет, и не было склада, фабрики и союзников. Исправлено на семь иконок из 9.1 — хаб общий для всех экранов канваса, разный состав на двух экранах читался бы как две разные игры.</li>
+  </ul>
+</footer>
+
+</body>
+</html>
