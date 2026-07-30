@@ -13,7 +13,8 @@
     "sim": "tsx src/sim/run.ts",
     "e2e": "playwright test",
     "check": "biome check src && tsc -b && vitest run --coverage",
-    "format": "biome check --write src"
+    "format": "biome check --write src",
+    "metrics": "node scripts/metrics.mjs"
   },
   "dependencies": {
     "pixi.js": "^8.19.0",

@@ -1,0 +1,317 @@
+/*
+ * Экраны Mars Colony поверх витрины компонентов.
+ * Здесь только то, чего в витрине нет: лента отсеков, табло станции,
+ * внутренности листа погрузки. Все остальное берется из ui-kit.css
+ * и переопределять его тут нельзя — иначе экран и витрина разъедутся.
+ *
+ * Источники: tz-shuttle-mars.md разделы 6.1 и 6.2, ux-component-library.md
+ * разделы 1 (сетка, тап-таргеты), 6 (таймер), 7 (слот).
+ */
+
+/* ============================================================
+   Лента отсеков (tz-shuttle 6.1, паттерн «вагоны поезда»)
+   Горизонтальный ряд из N люков, каждый самостоятельный тап-таргет
+   не меньше 44x44, отступ между ними не меньше 8. Прижата к нижней
+   кромке с безопасной зоной, центр кромки лентой не занимается —
+   там виден мир (component-library §1).
+   ============================================================ */
+
+.lenta {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  display: flex;
+  gap: 12px;
+  z-index: 3;
+}
+
+.bay {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 20px;
+  border: 4px solid var(--panel-border);
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  box-shadow: 0 5px 0 rgba(122, 83, 48, 0.3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* Люк закрыт: отсек погружен, товар уже внутри, тапать больше не по чему */
+.bay.closed {
+  background: linear-gradient(180deg, #d9b681, #b98c52);
+  border-color: #8a5f2c;
+}
+
+.bay.closed .bay-hatch {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #f0d5a6, #c39a5e 70%);
+  border: 4px solid #8a5f2c;
+  box-shadow: inset 0 -4px 6px rgba(101, 68, 28, 0.45);
+}
+
+/* Отсек ждет товар: тусклая иконка товара */
+.bay .bay-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.bay.waiting .bay-icon {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.bay.covered {
+  border-color: var(--action);
+  box-shadow: 0 5px 0 rgba(58, 138, 34, 0.45), 0 0 0 3px rgba(76, 175, 46, 0.35);
+}
+
+/* Дробь есть/нужно под иконкой отсека */
+/* Дробь есть/нужно — темная пилюля в правом нижнем углу плитки.
+   Тот же носитель, что счетчик xN у вагона Township (component-library §7).
+   Наружу за плитку ничего не выносится: на нижней кромке экрана
+   вынесенная подпись обрезается, это поймано на первой сборке. */
+.bay-fraction {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  padding: 2px 8px;
+  border-radius: 11px;
+  background: rgba(58, 36, 19, 0.82);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.bay-fraction.deficit {
+  color: #ffb4a2;
+}
+
+/* Галочка на погруженном отсеке и бейдж помощи союзника —
+   те же сокеты, что в витрине (component-library §8) */
+.bay-check,
+.bay-ally {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.bay-check {
+  background: var(--action);
+  color: #fff;
+}
+
+.bay-ally {
+  background: var(--secondary);
+  color: #fff;
+}
+
+.bay-check svg,
+.bay-ally svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================
+   Табло станции (tz-shuttle 6.1) — некликабельная плашка над лентой.
+   Микро-CTA: единственное место, где написано, что происходит.
+   ============================================================ */
+
+.board {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 128px;
+  padding: 10px 26px;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border: 4px solid var(--panel-border);
+  border-radius: 22px;
+  box-shadow: 0 5px 0 rgba(122, 83, 48, 0.3);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--title);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 3;
+}
+
+/* Таймер меньше пяти минут: табло меняет цвет (tz-shuttle 6.1) */
+.board.urgent {
+  background: linear-gradient(180deg, #ffd2a0, #f5901e);
+  border-color: var(--secondary-dark);
+  color: #4a2a08;
+}
+
+.board.arrived {
+  background: linear-gradient(180deg, #a8e58c, var(--action));
+  border-color: var(--action-dark);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.board svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================================
+   Лист погрузки (tz-shuttle 6.2) — bottom sheet, а не модалка:
+   лента и мир остаются видны сверху, чтобы не терять контекст
+   «сколько отсеков еще осталось».
+   ============================================================ */
+
+.load-sheet {
+  height: 58%;
+  padding: 20px 30px 22px;
+  z-index: 4;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.sheet-good-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.sheet-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 26px;
+  color: var(--title);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Лупа «где произвести»: бесплатный путь всегда виден первым (tz-shuttle 6.2) */
+.btn-magnifier {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff3d8, var(--panel-warm));
+  border-color: var(--panel-border);
+  box-shadow: 0 4px 0 rgba(122, 83, 48, 0.35);
+  color: var(--title);
+}
+
+.btn-magnifier svg {
+  width: 24px;
+  height: 24px;
+}
+
+.sheet-body {
+  text-align: center;
+  padding: 6px 0 14px;
+}
+
+.sheet-counter {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 54px;
+  line-height: 1;
+  color: var(--title);
+}
+
+.sheet-counter .need {
+  color: var(--text-muted);
+}
+
+.sheet-counter.deficit .have {
+  color: var(--deficit, #e0603c);
+}
+
+.sheet-xp {
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--xp);
+}
+
+.sheet-readonly {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ally-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid var(--panel-border);
+  background: radial-gradient(circle at 36% 30%, #cfe3f5, #7fa8c9);
+}
+
+/* Нижняя панель листа: одна или две кнопки в ряд.
+   Отступ 14px — защита от случайного тапа по кнопке, тратящей валюту. */
+.sheet-actions {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  bottom: 22px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+
+.sheet-actions .btn {
+  flex: 1 1 0;
+  max-width: 340px;
+}
+
+/* Строка состояний табло: служебная витрина, не экран игры */
+.board-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.board-states .board {
+  position: static;
+  transform: none;
+}
