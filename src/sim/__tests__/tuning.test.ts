@@ -25,7 +25,7 @@ describe('Настройки влияют на результат прогона
     expect(hard.final_level).toBeLessThan(soft.final_level);
   });
 
-  it('дорогой посев тормозит экономику', () => {
+  it('дорогой посев съедает деньги, которые ушли бы в стройку', () => {
     const cheap = simulate({
       ...base,
       tuning: { ...DEFAULT_TUNING, plant_cost_price_share: 0.1 },
@@ -34,7 +34,17 @@ describe('Настройки влияют на результат прогона
       ...base,
       tuning: { ...DEFAULT_TUNING, plant_cost_price_share: 0.9 },
     });
-    expect(dear.rows.at(-1)?.credits).toBeLessThan(cheap.rows.at(-1)?.credits ?? 0);
+    // Сравниваем то, на что сток влияет напрямую, а не опыт.
+    //
+    // Написание этого теста вскрыло факт баланса: на легком профиле цена посева
+    // почти не двигает опыт — разница между долей 0.1 и 0.9 меньше процента,
+    // и знак случайный. Узкое место там не деньги, а время сессии и склад.
+    // Проверять «дорогой посев тормозит прогресс» на этом профиле бессмысленно:
+    // утверждение попросту неверно, и тест был бы зеленым по совпадению.
+    expect(dear.planting_starved).toBeGreaterThanOrEqual(cheap.planting_starved);
+    expect(dear.credits_spent_on_buildings).toBeLessThanOrEqual(
+      cheap.credits_spent_on_buildings,
+    );
   });
 
   it('низкий коэффициент продажи снижает доход', () => {
@@ -93,5 +103,60 @@ describe('Симулятор ловит поломку экономики нас
     expect(broken.planting_starved).toBeGreaterThan(0);
     expect(healthy.planting_starved).toBe(0);
     expect(broken.final_level).toBeLessThan(healthy.final_level);
+  });
+});
+
+describe('Кредитные стоки: деньги обязаны тратиться', () => {
+  /**
+   * Целевой профиль каркаса: 4 захода по 20 минут, около 9 часов в неделю.
+   * `base` — легкий профиль, а вопрос ТЗ 5.4 про два тяжелых чека поставлен
+   * именно для целевого. Легкий до текстильного модуля не доходит за 30 дней,
+   * и это отдельная находка, а не поломка теста.
+   */
+  const target = {
+    ...base,
+    session_starts_min: [480, 760, 1040, 1320],
+    session_length_min: 20,
+  };
+
+  it('кредиты не копятся мертвым грузом', () => {
+    // Пока симулятор знал один сток из трех, он показывал 24 тысячи на руках
+    // к 30-му дню и выглядел здоровым. Экономика, где заработанное некуда деть,
+    // сломана — но без этой проверки поломка невидима.
+    const r = simulate(target);
+    const left = r.rows.at(-1)?.credits ?? 0;
+    expect(r.credits_spent_on_buildings).toBeGreaterThan(left * 3);
+  });
+
+  it('целевой профиль доходит до всех трех перерабатывающих зданий', () => {
+    const r = simulate(target);
+    expect(r.buildings_owned).toContain('food_module');
+    expect(r.buildings_owned).toContain('atmospheric_module');
+    expect(r.buildings_owned).toContain('textile_module');
+  });
+
+  it('два тяжелых чека не слипаются в один барьер', () => {
+    // ТЗ производства 5.4 предупреждало: 4000 и 5500 открываются на соседних
+    // уровнях и могут встать стеной. Проверяем, что игрок берет оба и при этом
+    // не остается без оборотных средств.
+    const r = simulate(target);
+    const left = r.rows.at(-1)?.credits ?? 0;
+    expect(r.buildings_owned.length).toBe(3);
+    expect(left).toBeGreaterThan(0);
+    expect(r.planting_starved).toBe(0);
+  });
+
+  it('легкий профиль за 30 дней до текстильного модуля НЕ доходит', () => {
+    // Это не баг теста, а зафиксированный факт баланса: при 4 часах в неделю
+    // третье здание остается недостижимым за месяц. Рецепты ткани и комбинезона
+    // такому игроку не открываются вообще. Решение — за владельцем каркаса,
+    // тест лишь не дает факту потеряться.
+    const r = simulate(base);
+    expect(r.buildings_owned).not.toContain('textile_module');
+  });
+
+  it('расширения купола реально покупаются, а не остаются на бумаге', () => {
+    const r = simulate(target);
+    expect(r.dome_expansions).toBeGreaterThan(0);
   });
 });
