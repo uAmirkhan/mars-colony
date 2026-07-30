@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Артефакты проверок
+coverage
+test-results
+playwright-report
+.lefthook*
