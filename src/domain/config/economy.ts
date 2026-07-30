@@ -48,9 +48,7 @@ export function shuttleSkipPrice(
   slot_count: number,
 ): number {
   const raw =
-    (remaining_min / trip_min) *
-    SPEEDUP_TARIFF_ISOTOPES_PER_SLOT.shuttle *
-    slot_count;
+    (remaining_min / trip_min) * SPEEDUP_TARIFF_ISOTOPES_PER_SLOT.shuttle * slot_count;
   return Math.max(SPEEDUP_FLOOR_ISOTOPES.shuttle, Math.round(raw));
 }
 
@@ -233,7 +231,7 @@ export const DOME_EXPANSION_EXPONENT = 1.5;
 export const DOME_EXPANSION_ROUND_STEP = 100;
 
 export function domeExpansionCost(n: number): number {
-  const raw = DOME_EXPANSION_BASE * Math.pow(n, DOME_EXPANSION_EXPONENT);
+  const raw = DOME_EXPANSION_BASE * n ** DOME_EXPANSION_EXPONENT;
   return Math.round(raw / DOME_EXPANSION_ROUND_STEP) * DOME_EXPANSION_ROUND_STEP;
 }
 

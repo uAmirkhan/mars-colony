@@ -5,30 +5,30 @@
  */
 
 import { create } from 'zustand';
-import { createWarehouse, type WarehouseState, totalQty } from '../domain/warehouse';
-import {
-  createField,
-  createFactorySlot,
-  plant as domainPlant,
-  collectField as domainCollectField,
-  collectFactory as domainCollectFactory,
-  enqueue as domainEnqueue,
-  onWarehouseStockIncreased,
-  refreshField,
-  refreshFactorySlot,
-  sell as domainSell,
-  type FieldSlot,
-  type FactorySlot,
-  type ProductionContext,
-} from '../domain/production';
 import {
   CREDITS_START,
-  FACTORY_QUEUE_BASE_SLOTS,
   FACTORY_PRICES,
+  FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
 } from '../domain/config/economy';
-import { xpToNext, levelUpReward, MAX_LEVEL_MVP } from '../domain/config/levels';
+import { levelUpReward, MAX_LEVEL_MVP, xpToNext } from '../domain/config/levels';
+import {
+  createFactorySlot,
+  createField,
+  collectFactory as domainCollectFactory,
+  collectField as domainCollectField,
+  enqueue as domainEnqueue,
+  plant as domainPlant,
+  sell as domainSell,
+  type FactorySlot,
+  type FieldSlot,
+  onWarehouseStockIncreased,
+  type ProductionContext,
+  refreshFactorySlot,
+  refreshField,
+} from '../domain/production';
 import type { GoodId } from '../domain/types';
+import { createWarehouse, totalQty, type WarehouseState } from '../domain/warehouse';
 
 export interface Toast {
   id: number;
@@ -87,7 +87,10 @@ export const useGame = create<GameState>((set, get) => {
       const reward = levelUpReward(level);
       credits += reward.credits;
       isotopes += reward.isotopes;
-      pushToast(`Уровень ${level}! +${reward.credits} кр, +${reward.isotopes} изотопов`, 'reward');
+      pushToast(
+        `Уровень ${level}! +${reward.credits} кр, +${reward.isotopes} изотопов`,
+        'reward',
+      );
 
       const target = fieldsAtLevel(level);
       if (fields.length < target) {
@@ -147,7 +150,8 @@ export const useGame = create<GameState>((set, get) => {
       if (!field) return;
       const result = domainCollectField(field, ctx());
       if (!result.ok) {
-        if (result.reason === 'warehouse_full') pushToast('Склад полон — продай излишки', 'warn');
+        if (result.reason === 'warehouse_full')
+          pushToast('Склад полон — продай излишки', 'warn');
         return;
       }
       set({ fields, warehouse: { ...get().warehouse } });
@@ -171,7 +175,8 @@ export const useGame = create<GameState>((set, get) => {
       if (!slot) return;
       const result = domainCollectFactory(slot, ctx());
       if (!result.ok) {
-        if (result.reason === 'warehouse_full') pushToast('Склад полон — продай излишки', 'warn');
+        if (result.reason === 'warehouse_full')
+          pushToast('Склад полон — продай излишки', 'warn');
         return;
       }
       set({ factory_slots: slots, warehouse: { ...get().warehouse } });

@@ -12,8 +12,12 @@
  * deliver: qty -= n, reserved -= n (капасити освобождается)
  */
 
+import {
+  WAREHOUSE_MAX_CAPACITY,
+  WAREHOUSE_START_CAPACITY,
+  WAREHOUSE_UPGRADE_STEP,
+} from './config/economy';
 import type { GoodId } from './types';
-import { WAREHOUSE_START_CAPACITY, WAREHOUSE_UPGRADE_STEP, WAREHOUSE_MAX_CAPACITY } from './config/economy';
 
 export interface WarehouseState {
   cells: Record<string, { qty: number; reserved: number }>;

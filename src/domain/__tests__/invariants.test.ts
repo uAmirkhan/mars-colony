@@ -6,38 +6,38 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  GOODS,
-  ALL_GOOD_IDS,
-  GOOD_BASE_QTY,
-  goodsOfKind,
-  slotQuantity,
-  mechanicMult,
-} from '../config/goods';
-import {
-  TRANSPORT_XP_K,
-  PRODUCTION_XP_K,
+  DRONE_REFRESH_FREE_SEC,
+  domeExpansionCost,
+  droneRefreshPrice,
+  FACTORY_PRICES,
+  FLOOR_GUARANTEE_ALLOWED_TIERS,
+  fieldsAtLevel,
   LINER_XP_CAP_PER_CONTAINER,
   LINER_XP_CAP_PER_TRIP,
+  MODULE_DROP_WEIGHTS,
+  PRODUCTION_XP_K,
+  plantingCost,
   shuttleSkipPrice,
   shuttleSlotExpectedValue,
-  MODULE_DROP_WEIGHTS,
-  FLOOR_GUARANTEE_ALLOWED_TIERS,
-  droneRefreshPrice,
-  DRONE_REFRESH_FREE_SEC,
-  plantingCost,
-  domeExpansionCost,
-  FACTORY_PRICES,
-  fieldsAtLevel,
+  TRANSPORT_XP_K,
 } from '../config/economy';
 import {
-  xpToNext,
+  ALL_GOOD_IDS,
+  GOOD_BASE_QTY,
+  GOODS,
+  goodsOfKind,
+  mechanicMult,
+  slotQuantity,
+} from '../config/goods';
+import {
   cumulativeXpToReach,
-  levelUpReward,
-  freeIsotopeBudget,
   EMPTY_LEVELS,
+  freeIsotopeBudget,
+  levelUpReward,
   MAX_LEVEL_MVP,
+  xpToNext,
 } from '../config/levels';
-import { rushCost, buyoutPrice } from '../rushcost';
+import { buyoutPrice, rushCost } from '../rushcost';
 
 /**
  * Доступ к элементу массива с проверкой. Строгий режим требует явности,
@@ -48,7 +48,6 @@ function at(arr: readonly number[], i: number): number {
   if (v === undefined) throw new Error(`нет элемента ${i} в массиве длины ${arr.length}`);
   return v;
 }
-
 
 describe('И-2: XP фабричных товаров пропорционален цене (~0.43)', () => {
   it.each(goodsOfKind('factory'))('$name держит пропорцию', (good) => {
@@ -209,10 +208,7 @@ describe('Кредитные стоки', () => {
 
   it('переработка выгоднее продажи сырья', () => {
     for (const good of goodsOfKind('factory')) {
-      const raw_value = good.inputs.reduce(
-        (sum, i) => sum + GOODS[i.good_id].price * i.qty,
-        0,
-      );
+      const raw_value = good.inputs.reduce((sum, i) => sum + GOODS[i.good_id].price * i.qty, 0);
       expect(good.price).toBeGreaterThan(raw_value);
     }
   });

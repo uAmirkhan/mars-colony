@@ -13,9 +13,9 @@
  * по пятому уровню» оказался ложным.
  */
 
-import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 
 const SPEC = resolve(
   process.cwd(),
@@ -127,8 +127,9 @@ describe('Спецификация против кода: разъезд име�
     // Обратная проверка: если параметр реализован, его надо убрать из списка,
     // иначе список превращается в свалку и перестает что-либо значить.
     const stale = Object.keys(DEFERRED).filter((name) => codeHasExact(name));
-    expect(stale, `Эти параметры уже реализованы, убери их из DEFERRED: ${stale.join(', ')}`).toEqual(
-      [],
-    );
+    expect(
+      stale,
+      `Эти параметры уже реализованы, убери их из DEFERRED: ${stale.join(', ')}`,
+    ).toEqual([]);
   });
 });

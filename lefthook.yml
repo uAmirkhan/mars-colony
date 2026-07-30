@@ -1,0 +1,16 @@
+# Гейт стоит ДО коммита, а не после. Агент физически не может сохранить красное.
+# Порядок от дешевого к дорогому: формат, потом типы, потом тесты.
+
+pre-commit:
+  parallel: false
+  jobs:
+    - name: format
+      glob: '*.{ts,tsx,json}'
+      run: npx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    - name: typecheck
+      run: npx tsc -b
+
+    - name: tests
+      run: npx vitest run

@@ -22,6 +22,7 @@ export function Panel({
         <div className="panel-title">{title}</div>
         {onClose && (
           <button
+            type="button"
             className="btn btn-close"
             onClick={onClose}
             style={{ position: 'absolute', right: -12, top: -34 }}
@@ -51,6 +52,7 @@ export function Button({
 }) {
   return (
     <button
+      type="button"
       className={`btn btn-${kind}`}
       disabled={disabled}
       onClick={onClick}

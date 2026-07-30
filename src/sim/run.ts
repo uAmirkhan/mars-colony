@@ -1,6 +1,6 @@
 /** Запуск симулятора: npm run sim */
 
-import { simulate, DEFAULT_SIM, type SimConfig } from './simulate';
+import { DEFAULT_SIM, type SimConfig, simulate } from './simulate';
 
 interface Profile {
   name: string;
@@ -10,7 +10,11 @@ interface Profile {
 const PROFILES: Profile[] = [
   {
     name: 'Легкий (3 захода по 12 мин)',
-    config: { ...DEFAULT_SIM, session_starts_min: [8 * 60, 13 * 60, 20 * 60], session_length_min: 12 },
+    config: {
+      ...DEFAULT_SIM,
+      session_starts_min: [8 * 60, 13 * 60, 20 * 60],
+      session_length_min: 12,
+    },
   },
   {
     name: 'Целевой каркаса (4 захода по 20 мин)',
@@ -34,7 +38,9 @@ const hoursPerWeek = (c: SimConfig) =>
   (c.session_starts_min.length * c.session_length_min * 7) / 60;
 
 console.log('\nБалансный прогон, %d дней, seed %d', DEFAULT_SIM.days, DEFAULT_SIM.seed);
-console.log('Обещание каркаса: ур.5 — первая-вторая сессия; ур.12 — 2-3 неделя при 5-10 ч/нед.\n');
+console.log(
+  'Обещание каркаса: ур.5 — первая-вторая сессия; ур.12 — 2-3 неделя при 5-10 ч/нед.\n',
+);
 
 const widths = [34, 10, 8, 8, 9, 10, 10];
 const line = (cells: (string | number)[]) =>
@@ -63,10 +69,7 @@ for (const profile of PROFILES) {
   );
 
   if (result.softlock_rescues > 0) {
-    console.log(
-      '   ВНИМАНИЕ: анти-софтлок И-15 сработал %d раз.',
-      result.softlock_rescues,
-    );
+    console.log('   ВНИМАНИЕ: анти-софтлок И-15 сработал %d раз.', result.softlock_rescues);
   }
 }
 
@@ -81,7 +84,9 @@ console.log(dline(['День', 'Ур.', 'XP', 'Кредиты', 'Изотопы'
 console.log(dw.map((w) => '-'.repeat(w)).join(' '));
 for (const row of target.rows) {
   if (row.day % 3 !== 0 && row.day !== 1) continue;
-  console.log(dline([row.day, row.level, row.xp_total, row.credits, row.isotopes, row.orders_done]));
+  console.log(
+    dline([row.day, row.level, row.xp_total, row.credits, row.isotopes, row.orders_done]),
+  );
 }
 
 console.log('\nЧего в модели нет: шаттл и строй-модули, лайнер, помощь союзников,');

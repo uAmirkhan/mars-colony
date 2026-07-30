@@ -5,12 +5,12 @@
  */
 
 import { useState } from 'react';
-import { Button, Currency, GoodIcon, Panel, ProgressBar, Timer } from './kit';
-import { useGame, selectWarehouseLoad, selectXpProgress } from '../state/gameStore';
-import { GOODS, ALL_GOOD_IDS } from '../domain/config/goods';
-import { plantingCost, FACTORY_PRICES } from '../domain/config/economy';
-import { availableOf, qtyOf, occupiedGoods } from '../domain/warehouse';
+import { FACTORY_PRICES, plantingCost } from '../domain/config/economy';
+import { ALL_GOOD_IDS, GOODS } from '../domain/config/goods';
 import type { GoodId } from '../domain/types';
+import { availableOf, occupiedGoods, qtyOf } from '../domain/warehouse';
+import { selectWarehouseLoad, selectXpProgress, useGame } from '../state/gameStore';
+import { Button, Currency, GoodIcon, Panel, ProgressBar, Timer } from './kit';
 
 export function Hud() {
   const { level, credits, isotopes } = useGame();
@@ -84,7 +84,9 @@ export function DomeScreen() {
               key={field.idx}
               className={`slot ${ready ? 'slot-ready' : ''}`}
               style={{ height: 104 }}
-              onClick={() => (ready ? collectField(field.idx) : good ? null : setPicker(field.idx))}
+              onClick={() =>
+                ready ? collectField(field.idx) : good ? null : setPicker(field.idx)
+              }
             >
               {!good && <span style={{ fontSize: 30, color: 'var(--text-muted)' }}>+</span>}
               {good && (
@@ -94,7 +96,9 @@ export function DomeScreen() {
                     {good.name}
                   </span>
                   {ready ? (
-                    <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--action-dark)' }}>
+                    <span
+                      style={{ fontSize: 12, fontWeight: 800, color: 'var(--action-dark)' }}
+                    >
                       Собрать
                     </span>
                   ) : (
@@ -110,18 +114,29 @@ export function DomeScreen() {
       {picker !== null && (
         <div className="scrim" onClick={() => setPicker(null)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <Panel title="Что посадить" onClose={() => setPicker(null)} style={{ maxWidth: 420 }}>
+            <Panel
+              title="Что посадить"
+              onClose={() => setPicker(null)}
+              style={{ maxWidth: 420 }}
+            >
               <div style={{ display: 'grid', gap: 8 }}>
                 {crops.map((id) => {
                   const good = GOODS[id];
                   return (
                     <div
                       key={id}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 2px' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '4px 2px',
+                      }}
                     >
                       <GoodIcon name={good.name} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                        <div style={{ fontWeight: 800, color: 'var(--title)' }}>
+                          {good.name}
+                        </div>
                         <div style={{ fontSize: 12 }}>
                           продажа {good.price} кр · {Math.round(good.prod_time_sec / 60)} мин
                         </div>
@@ -190,8 +205,16 @@ export function WarehousePanel({ onClose }: { onClose: () => void }) {
 }
 
 export function FactoryPanel({ onClose }: { onClose: () => void }) {
-  const { factory_slots, now, level, has_food_module, buyFoodModule, enqueue, collectFactory, warehouse } =
-    useGame();
+  const {
+    factory_slots,
+    now,
+    level,
+    has_food_module,
+    buyFoodModule,
+    enqueue,
+    collectFactory,
+    warehouse,
+  } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
 
   const price = FACTORY_PRICES.food_module.first;
@@ -207,7 +230,11 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="scrim" onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()}>
-        <Panel title="Пищевой модуль" onClose={onClose} style={{ maxWidth: 460, width: '92vw' }}>
+        <Panel
+          title="Пищевой модуль"
+          onClose={onClose}
+          style={{ maxWidth: 460, width: '92vw' }}
+        >
           {!has_food_module ? (
             <div style={{ display: 'grid', gap: 12, textAlign: 'center' }}>
               <div>
@@ -242,7 +269,9 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
                       <>
                         <GoodIcon name={good.name} />
                         <div style={{ flex: 1, textAlign: 'left' }}>
-                          <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                          <div style={{ fontWeight: 800, color: 'var(--title)' }}>
+                            {good.name}
+                          </div>
                           <div style={{ fontSize: 12 }}>
                             {slot.state === 'QUEUED' ? (
                               <span style={{ color: 'var(--secondary-dark)', fontWeight: 700 }}>
@@ -270,8 +299,16 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
           )}
 
           {picker !== null && (
-            <div style={{ marginTop: 14, borderTop: '3px dashed rgba(168,118,62,.4)', paddingTop: 12 }}>
-              <div style={{ fontWeight: 800, color: 'var(--title)', marginBottom: 8 }}>Рецепт</div>
+            <div
+              style={{
+                marginTop: 14,
+                borderTop: '3px dashed rgba(168,118,62,.4)',
+                paddingTop: 12,
+              }}
+            >
+              <div style={{ fontWeight: 800, color: 'var(--title)', marginBottom: 8 }}>
+                Рецепт
+              </div>
               <div style={{ display: 'grid', gap: 8 }}>
                 {recipes.map((id) => {
                   const good = GOODS[id];
@@ -279,7 +316,9 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
                     <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <GoodIcon name={good.name} />
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                        <div style={{ fontWeight: 800, color: 'var(--title)' }}>
+                          {good.name}
+                        </div>
                         <div style={{ fontSize: 12 }}>
                           {good.inputs
                             .map((i) => `${GOODS[i.good_id].name} x${i.qty}`)
