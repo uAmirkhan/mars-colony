@@ -70,7 +70,7 @@ export const MODULE_BUYOUT_ISOTOPES: Record<ModuleTier, number> = {
 };
 
 /** Веса дропа по тирам (каркас, раздел 4). Сумма = 1. */
-export const MODULE_DROP_WEIGHTS: Record<ModuleTier, number> = {
+export const TIER_WEIGHTS: Record<ModuleTier, number> = {
   basic: 0.62,
   rare: 0.33,
   gated: 0.05,
@@ -82,35 +82,49 @@ export const MODULE_DROP_WEIGHTS: Record<ModuleTier, number> = {
  */
 export function shuttleSlotExpectedValue(): number {
   return (
-    MODULE_DROP_WEIGHTS.basic * MODULE_BUYOUT_ISOTOPES.basic +
-    MODULE_DROP_WEIGHTS.rare * MODULE_BUYOUT_ISOTOPES.rare +
-    MODULE_DROP_WEIGHTS.gated * MODULE_BUYOUT_ISOTOPES.gated
+    TIER_WEIGHTS.basic * MODULE_BUYOUT_ISOTOPES.basic +
+    TIER_WEIGHTS.rare * MODULE_BUYOUT_ISOTOPES.rare +
+    TIER_WEIGHTS.gated * MODULE_BUYOUT_ISOTOPES.gated
   );
 }
 
 // --- И-7: pity и анти-стокпайл ------------------------------------------
 
 /** Счетчик на пару (игрок, модуль), не на стройку целиком. */
-export const PITY_MISSES_BEFORE_BOOST = 4;
-export const PITY_WEIGHT_MULTIPLIER = 2;
-/** Запас > потребность x2 (среднее за 24ч) → вес делится. */
-export const ANTI_STOCKPILE_THRESHOLD = 2;
-export const ANTI_STOCKPILE_DIVISOR = 2;
+export const PITY_K = 4;
+export const PITY_MULTIPLIER = 2;
+/** Запас > потребность x2 (среднее за 24ч) → вес умножается на фактор ниже. */
+export const ANTISTOCKPILE_THRESHOLD = 2;
+/**
+ * Канон задает фактор x0.5, а не делитель 2. Значение то же, но форма важна:
+ * следующая правка диапазона (x0.3-x0.7 по спеке) в терминах делителя читается
+ * наизнанку и приглашает ошибиться.
+ */
+export const ANTISTOCKPILE_FACTOR = 0.5;
 
 // --- И-11: floor guarantee ----------------------------------------------
 
-export const FLOOR_GUARANTEE_AFTER_EMPTY_ARRIVALS = 2;
-export const FLOOR_GUARANTEE_COOLDOWN_ARRIVALS = 5;
+/**
+ * Окно из трех прибытий: если за него не выпало ничего, третье выдает гарантию.
+ *
+ * Прежнее имя `AFTER_EMPTY_ARRIVALS` со значением 2 описывало ровно то же
+ * правило с другого конца. Переименование без правки числа посадило бы
+ * константу, которая врет собственным именем, — поэтому 2 стало 3.
+ */
+export const FLOOR_GUARANTEE_WINDOW = 3;
+export const FLOOR_GUARANTEE_MIN_GAP = 5;
 /** Гарантия никогда не выдает гейтовый тир — иначе выгодно держать стройку голодной. */
 export const FLOOR_GUARANTEE_ALLOWED_TIERS: ModuleTier[] = ['basic', 'rare'];
 
 // --- И-8: анти-фрустрация генератора ------------------------------------
 
-export const ORDER_COVERAGE_MIN = { drone: 0.6, shuttle: 0.6, liner: 0.7 };
-export const ORDER_QUICK_PRODUCTION_MAX_SEC = 1800;
+export const COVERAGE_MIN = { drone: 0.6, shuttle: 0.6, liner: 0.7 };
+/** Порог «легко произвести». Канон задает его в МИНУТАХ, не в секундах. */
+export const EASY_PRODUCE_MAX_MIN = { drone: 30, shuttle: 30, liner: 30 };
 export const MAX_DEFICIT_SLOTS = 1;
-export const ORDER_DEFICIT_EXTRA_RANGE = { min: 1, max: 3 };
-export const ORDER_MAX_REPEAT_SHARE = 0.5;
+export const PINCH_MIN = 1;
+export const PINCH_MAX = 3;
+export const REPEAT_CAP = 0.5;
 
 /** И-10: суммарное время производства заказа <= 60% дедлайна. */
 export const ORDER_FEASIBILITY_DEADLINE_SHARE = 0.6;
