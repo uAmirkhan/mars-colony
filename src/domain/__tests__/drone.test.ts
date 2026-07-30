@@ -16,17 +16,19 @@ import {
 import { GOODS } from '../config/goods';
 import {
   availableGoodsFor,
+  canFulfillNow,
   discardOrder,
   generateOrder,
   loadPosition,
   type OrderPosition,
   orderReward,
+  positionCovered,
   positionsCountFor,
   releaseReserved,
   sendOrder,
   slotsAtLevel,
 } from '../drone';
-import { availableOf, createWarehouse, deposit, qtyOf, totalQty } from '../warehouse';
+import { availableOf, createWarehouse, deposit, qtyOf, reserve, totalQty } from '../warehouse';
 
 const pos = (
   good_id: Parameters<typeof orderReward>[0][number]['good_id'],
@@ -346,5 +348,117 @@ describe('Выброс: отказ обязан быть дешевым', () => 
 
   it('бесплатный путь существует: по истечении таймера цена ноль', () => {
     expect(droneRefreshPrice(0)).toBe(0);
+  });
+});
+
+describe('Подсветка доски: можно ли закрыть заказ прямо сейчас', () => {
+  const make = (positions: OrderPosition[]) => ({
+    idx: 0,
+    state: 'active' as const,
+    npc_name: 'тест',
+    positions,
+    credits_reward: 100,
+    xp_reward: 10,
+    refresh_at: 0,
+  });
+
+  it('склад покрывает все позиции — заказ подсвечивается', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 10);
+    deposit(w, 'mushrooms', 5);
+    expect(canFulfillNow(make([pos('soy', 4), pos('mushrooms', 2)]), w)).toBe(true);
+  });
+
+  it('не хватает хотя бы одной позиции — не подсвечивается', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 10);
+    deposit(w, 'mushrooms', 1);
+    expect(canFulfillNow(make([pos('soy', 4), pos('mushrooms', 2)]), w)).toBe(false);
+  });
+
+  it('две позиции одного товара считаются вместе, а не по отдельности', () => {
+    // Пять на складе, две позиции по три. Каждая по отдельности проходит,
+    // вместе — нет. Проверка по одной позиции подсветила бы заказ, который
+    // закрыть невозможно, и это худший вид подсказки: она врет.
+    const w = createWarehouse();
+    deposit(w, 'soy', 5);
+    expect(canFulfillNow(make([pos('soy', 3), pos('soy', 3)]), w)).toBe(false);
+  });
+
+  it('зарезервированное под другой заказ своим не считается', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 5);
+    reserve(w, 'soy', 3);
+    expect(canFulfillNow(make([pos('soy', 4)]), w)).toBe(false);
+  });
+
+  it('уже погруженные позиции из проверки исключаются', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 10);
+    const order = make([pos('soy', 4), pos('mushrooms', 2)]);
+    loadPosition(order, 0, w); // соя погружена, грибов на складе нет
+    expect(canFulfillNow(order, w)).toBe(false);
+
+    deposit(w, 'mushrooms', 2);
+    expect(canFulfillNow(order, w)).toBe(true);
+  });
+
+  it('выброшенный слот не подсвечивается никогда', () => {
+    const w = createWarehouse(300);
+    deposit(w, 'soy', 100);
+    const order = make([pos('soy', 1)]);
+    discardOrder(order, 0);
+    expect(canFulfillNow(order, w)).toBe(false);
+  });
+});
+
+describe('Счетчик позиции: цвет обязан совпадать с возможностью погрузить', () => {
+  it('хватает — зеленый', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 5);
+    expect(positionCovered(pos('soy', 5), w)).toBe(true);
+  });
+
+  it('не хватает — не зеленый, даже если чуть-чуть', () => {
+    // «3/5» зеленым — противоречие само по себе: три из пяти это нехватка.
+    const w = createWarehouse();
+    deposit(w, 'soy', 3);
+    expect(positionCovered(pos('soy', 5), w)).toBe(false);
+  });
+
+  it('погруженная позиция считается покрытой независимо от склада', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 4);
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 4)],
+      credits_reward: 0,
+      xp_reward: 0,
+      refresh_at: 0,
+    };
+    loadPosition(order, 0, w);
+    // Товар зарезервирован, available упал до нуля — но позиция уже закрыта.
+    expect(availableOf(w, 'soy')).toBe(0);
+    expect(positionCovered(order.positions[0]!, w)).toBe(true);
+  });
+
+  it('цвет счетчика согласован с подсветкой карточки', () => {
+    // Все позиции зеленые тогда и только тогда, когда карточка подсвечена.
+    const w = createWarehouse();
+    deposit(w, 'soy', 10);
+    deposit(w, 'mushrooms', 1);
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 4), pos('mushrooms', 3)],
+      credits_reward: 0,
+      xp_reward: 0,
+      refresh_at: 0,
+    };
+    const all_green = order.positions.every((p) => positionCovered(p, w));
+    expect(all_green).toBe(canFulfillNow(order, w));
   });
 });

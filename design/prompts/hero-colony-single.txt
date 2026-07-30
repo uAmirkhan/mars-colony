@@ -1,0 +1,233 @@
+КАРТА КОЛОНИИ — ОДИН КАДР СО ВСЕМ СРАЗУ.
+Собран под ограничение «две генерации, больше нет».
+
+ГДЕ: Higgsfield, Create Image, модель Nano Banana Pro.
+СООТНОШЕНИЕ СТОРОН: 16:9.
+
+ЧТО ПРИЛОЖИТЬ: raw/Playrix/tawnship_train/photo_3_2026-07-28_13-23-47.jpg
+Это чистый мировой кадр Township без модалок. Он нужен ради плотности цвета
+и предметов, а не ради планировки: композиция описана в промпте и она наша.
+
+КАК ПОТРАТИТЬ ВТОРОЙ ЗАПРОС. Не повторять вслепую. Посмотреть первый результат
+по списку внизу, и если провалено одно-два — чинить через Inpaint по той же
+картинке. Если провалено три и больше или сломана форма (обводка, плоская
+заливка, коробки вместо скруглений) — перегенерировать с правкой промпта.
+
+ЧТО ПРОВЕРИТЬ НА РЕЗУЛЬТАТЕ (сокращенная форма приемки):
+  1. Обводки нет ни на одном объекте. Любая линия по контуру — провал формы.
+  2. Ни одной плоской заливки: на каждой стене виден переход от света к тени.
+  3. Тени смещены вправо-вниз и выходят за габарит объекта. Тень под объектом
+     означает, что объекты висят.
+  4. Постройки стоят раздельно, с воздухом вокруг, не слиты в одну кишку.
+  5. Видно четыре цветовых семейства сразу, из них ровно одно холодное
+     (бирюзовое), и это не небо.
+  6. Небо занимает примерно верхнюю четверть, не половину.
+  7. Купол — самый насыщенный зеленый объект кадра.
+  8. Шаттл лежит горизонтально и не выглядит ракетой или цистерной.
+  9. Нет кратеров, трещин, бури, разрухи, знаков радиации и опасности.
+ 10. Грунт показывает минимум два материала помимо охристого песка.
+ 11. Все семь объектов на месте и узнаются по отдельности: два купола, шаттл
+     на своей площадке, дрон над своей, жилые модули, склад с пищевым модулем,
+     ледяной карьер, буровая с рудными бункерами.
+ 12. Площадка дрона отличается от площадки шаттла с первого взгляда:
+     шестиугольная тумба против круглого диска. Слились — это провал,
+     игрок спутает две станции.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Match the colour density, the prop density and the rendering language of the attached
+reference image, but the composition, the layout and the subject are entirely the Mars
+colony scene described below. Do not copy the layout of the attached image.
+
+NON-NEGOTIABLE RENDER RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no edge stroke, no dark rim on any object
+   at any thickness. Shapes separate through colour and value contrast only.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter lit
+   facet into a darker shaded facet, plus gentle ambient-occlusion darkening in deep
+   seams only. No wall, no roof, no prop is a single flat tone anywhere.
+3. NO CUBES, NO BOXES. Every building is a soft rounded volume with very large corner
+   radii: barrel vaults, true hemispheres, capsules, cylinders with rounded caps. Not
+   one structure reads as a shipping crate or a rounded-off box.
+4. EVERY BUILDING A DIFFERENT SILHOUETTE. No shell is ever repeated in another colour.
+5. ONE KEY LIGHT from the upper left at 55 degrees above the horizon. Every object —
+   dome, module, shuttle, drone, tank, crate, colonist — casts a soft blurred shadow
+   offset toward the lower right, visibly extending past its own footprint. No
+   near-vertical light. No shadow hidden underneath its own object.
+6. BUILDINGS STAND APART. Every structure is a separate standalone object with clear
+   air and visible ground around it. Never fused into a shared mass, never joined by
+   tube corridors, never sharing walls. They are linked only by thin ground-level
+   pipes and painted paths running across the sand.
+
+Soft volumetric shading baked into a 2D mobile game asset, in the rendering language of
+Township and Hay Day. Stylized toy-like light falloff, not physically realistic
+lighting. Finish is semi-gloss painted metal and ceramic composite with a soft sheen —
+the polished look of a premium mobile city-builder. Every structure is squat, its
+height roughly equal to its own footprint width, with large rounded corners and no
+sharp edges anywhere.
+
+A three-quarter aerial view at roughly 45 degrees over a thriving, prosperous Mars
+colony on a sunny afternoon. Moderate camera distance: close enough that individual
+props and small figures stay readable, far enough that the whole settlement fits. The
+horizon sits about a quarter of the way down from the top of the frame.
+
+CENTRE OF THE FRAME, the heart of the colony: two hydroponic domes of clearly different
+diameters and heights, standing apart from each other. Each is a TRUE HEMISPHERE shaded
+with a smooth radial gradient, brightest near the crown and darker toward the base rim,
+never a boxy angular greenhouse and never a faceted geodesic cage. Their shells are a
+pale blue-green held by curved ribs painted saturated green-teal that run from the crown
+down like meridians, each rib a rounded raised strip with its own light and shade. The
+shells are painted, not see-through: through them, dense rows of vivid emerald crop beds
+are clearly visible on two stepped tiers, and this emerald is the single most saturated
+green in the entire frame. Each dome sits on a wide rounded base ring in warm cream with
+brass trim, has a small rounded airlock porch with a saturated teal frame at its front,
+and a ring of painted tile around its base. A slim weather mast on a tripod stands beside
+the nearer dome's entrance.
+
+LEFT SIDE OF THE FRAME, the shuttle station: a low circular landing pad read as a wide
+flat disc seen at 45 degrees, its deck of ribbed metal decking in warm cream-white with
+brass edging around a softly rounded rim, a ring of soft-orange guide stripes painted
+around the outer edge and a rounded landing cross painted in the centre — decorative
+painted stripes, never hazard hatching. Four short rounded corner posts stand on the rim;
+one carries a small brass radar dish on a mast, another a rounded soft-orange beacon lamp.
+Resting on the pad on three short landing legs with thick rounded pads: a chubby friendly
+cargo shuttle, its hull lying HORIZONTALLY and roughly twice as long as it is tall — not
+an upright rocket, not a standing capsule, not a tank. Its nose is softly rounded and
+lifted slightly upward with one wide curved cockpit windscreen of tinted teal glass
+wrapping around it under a brass frame. At its rear, two short rounded stabiliser fins
+with soft tips and two round engine nozzles with brass rims, cold and unlit. Along its
+side runs a row of four cargo hatch doors, each a rounded square door recessed into the
+hull with a raised brass frame, two hinges on one edge and a chunky brass latch handle on
+the other, the door panel painted solid soft terracotta — they read as doors that open,
+never as round portholes or windows. One door stands open showing a shallow empty bay. A
+thin soft-orange stripe runs above the row. Beside the pad: two stacked cargo pallets in
+terracotta and cream, and a coiled fuel hose on a brass reel. Two colonists in light
+pastel suits load a pallet at the foot of the ramp.
+
+RIGHT FOREGROUND, the drone station: a small compact courier drone pad, clearly a
+completely different shape from the shuttle pad — a squat HEXAGONAL pedestal about as
+tall as it is wide, in cream-white with brass corner strips running up each edge and a
+brass ring around its base, not a flat disc. On its top sits a shallow recessed hexagonal
+cradle in muted teal with four small rounded contact pads inside. At its back corner a
+slim mast rises carrying a rounded amber beacon lamp. On its front face, a rounded
+brass-framed parcel hatch and, above it, one oversized three-dimensional emblem of a
+parcel with a soft-orange ribbon. A short stack of three small parcel containers striped
+in terracotta and cream leans against its base.
+Hovering level just above that pedestal: a little courier drone, wider than it is tall.
+A fat rounded cream-white capsule body, softly pillowed, with brass rivets along a seam
+around its middle and a small teal beacon on top. One large round lens of tinted teal
+glass in a brass ring at its front, reading clearly as an eye. Four short thick arms
+sweeping out from the body, each ending in a full closed RING housing around its rotor in
+muted terracotta — never a bare propeller on a stick. Slung underneath and hanging clearly
+below the body, a hexagonal cargo pod in warm amber with a brass rim, held by two small
+rounded grippers. Four short rounded landing skids below the arms. The rotors are still:
+no motion blur, no spin arcs, no glow trail.
+
+RIGHT AND FAR SIDE, the residential quarter: a row of five habitat modules, each a
+clearly different rounded shape, no two alike — a brick red barrel vault lying on its
+side with rounded ends; a mustard yellow two-storey shell with a domed roof cap and a
+curved outside stair; a terracotta low capsule with a curved porch canopy over its door;
+a teal blue upright cylinder with a rounded cap and a ring walkway around it; a sage
+green wide low shell with a soft rounded ridge along its roof. Three of them form a tight
+row sharing the warm red-terracotta family, still with separate silhouettes and a visible
+gap between them. Every module has a coloured lamp beside its door and a small numbered
+plate. Only one small pill-shaped module in the whole frame is cream; every other
+residential hull is painted a saturated colour.
+
+BACKGROUND, the industrial edge: a wide low warehouse in muted ochre with a soft rounded
+roof ridge and a wide arched gate in saturated brown, an oversized three-dimensional
+emblem of a stacked pallet of crates above the gate, numbered containers striped in two
+warm colours against its wall, a loading cart docked at the gate. Beside it a food module:
+a terracotta barrel-vault shell wrapped by a saturated orange-red collar band that follows
+the curve of the vault exactly, an oversized three-dimensional fork-and-tray emblem on its
+roof ridge, a striped fabric awning and a bench by its rounded door. Further back on the
+right, a field of solar panels with the cold blue-grey sheen of glass.
+
+LEFT BACKGROUND, the ice quarry — the colony's water source: a shallow open pit cut into
+a low rounded rise, its terraced walls showing pale blue-white frost and salt crust
+lying in the shade, clearly the coldest and palest area of the frame. A rounded pump
+housing in cream-white with a saturated teal collar band stands at the pit edge, and
+from it a glazed channel of large diameter carrying visibly bluish fluid runs across the
+ground toward the domes. Two rounded ice bins with brass rims stand beside the pump, one
+heaped with pale blue ice blocks. A small rounded cutting machine with a soft drum head
+sits on the lowest terrace. No jagged rock, no rubble, no blasting, no scarring.
+
+FAR RIGHT BACKGROUND, the regolith extraction site — the colony's ore source: a squat
+rounded drill rig in muted ochre with a saturated mustard collar band and a soft rounded
+drill housing, standing on a dark basalt gravel apron. Beside it, three rounded ore
+hoppers with brass rims, one filled with heaped rust-red ore, and a short conveyor with
+rounded end drums feeding them. A small cream-white rover with fat rounded wheels is
+parked at the loading point, its bed half full. Colour-coded canisters lean against the
+rig: a blue drop for water, a rust-red box for ore, an amber one for fuel. Everything
+clean and toy-like, no grime, no smoke stacks, no scorching, no open flame.
+
+TYING THE SCENE TOGETHER: painted paths run between all zones across the sand. Along
+them lie long planter troughs of muted sage-green moss and lichen behind a low glass rim,
+with a partial transparent canopy arching over one stretch — clearly duller and less
+saturated than the emerald crops inside the domes. A teal coolant tank with a level gauge
+stands beside the domes, and a thin glazed ground pipe carrying visibly bluish fluid runs
+from it across the ground toward the warehouse. Cable spools sit by the solar field, route
+flag markers on thin masts line the paths, a planter of bright succulents stands by one
+habitat door, and a bench under a striped fabric awning sits by an airlock. Eight small
+colonists in light pastel suits walk the paths, stand talking in twos, and work between
+the modules, giving the scene its scale.
+
+COLOUR, treat this as a hard requirement: at least four different colour families are
+visible at once and exactly one of them is cool. The cool family is technological
+teal-cyan and fills roughly a tenth of the frame — the coolant tank, the glazed pipe, the
+dome ribs and airlock frames, the drone cradle and lens, the shuttle windscreen, the solar
+panel glass. Pure clean blue never appears on any object in the world. No colour family
+except the sky covers more than 40 percent of the frame. Painted structures and decorative
+props read clearly more saturated than the sky and the ground behind them, by a wide and
+obvious margin.
+
+GROUND: warm ochre sand as the base, dark basalt gravel forming the apron under the
+landing pad and the warehouse, a paler trodden dust path where colonists walk, a rust-red
+dust band at the far edge of the built area, and painted tile at the dome entrances.
+Never one flat orange fill across the whole frame.
+
+SKY: peach-pale Martian daytime graduating to a muted blue-grey near the zenith, with a
+band of pale rosy haze at the horizon. It occupies only the top quarter of the frame and
+never spills below the horizon line.
+
+MOOD: sunny midday in a place that is doing well. Lived-in, busy, calm optimism, a colony
+someone would want to move to. Not survival, not a frontier outpost, nothing hostile.
+
+NEGATIVE — none of the following appear anywhere in the image:
+any outline or contour line on any object, thick black outline, comic ink line;
+single flat colour fill with no gradient anywhere on an object;
+hard-edged two-tone shading with a sharp light/shadow cutoff;
+boxy angular crate buildings, square-cornered domes, faceted geodesic domes;
+identical repeated modules, the same shell repeated in a different colour;
+cream or sand-white hull on every building, unpainted residential blocks;
+monochrome beige blob, the whole scene at one flat lightness, everything cream and ochre;
+buildings fused into one mass, joined by tube corridors, shared walls, a continuous
+connected structure;
+tall tower-like vertically stretched structures;
+objects floating with no visible offset shadow, shadows hidden under their objects,
+near-vertical overhead light;
+upright rocket pose, a shuttle standing on its tail, tank or silo or water cylinder
+shapes, sharp pointed nose cones, swept wings, round portholes along the shuttle side;
+exposed bare propellers, motion blur, speed lines, glow trails, exhaust, flame, smoke;
+moss or plants growing loose in open soil with no glass rim or canopy;
+pure clean blue on world objects;
+yellow-and-black hazard hatching, warning stripes, alarm markings, radiation symbols,
+red danger signage;
+sky filling half the frame, sky spilling below the horizon line;
+one single flat ground material across the whole frame, empty bare ground between
+buildings;
+craters, canyons, cracks, ruins, abandonment, dust storm, wreckage, rust, soot, grime;
+photorealistic lighting, long sunset shadows, night, dark starry sky, blue Earth sky;
+lens flare, sparkles, decorative flecks, text, numbers, labels, UI overlay, watermark.
+
+FINAL REMINDER, do not drop these: the ice quarry with its pale frost crust and its
+glazed bluish channel, the regolith drill rig with its ore hoppers and parked rover, the
+painted paths, the sage moss troughs behind their glass rims, the teal coolant tank, the
+cable spools, the route flags, the striped cargo containers, and the eight small
+colonists walking among the buildings. The ground between structures is never empty.
+
+The image must contain all seven of these at once and each must be recognisable on its
+own: the two hydroponic domes, the shuttle standing on its round landing pad, the drone
+hovering over its hexagonal pedestal pad, the row of painted habitat modules, the
+warehouse and food module, the ice quarry, and the regolith drill rig.
+
+================ ДО СЮДА ================

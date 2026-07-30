@@ -1,0 +1,128 @@
+ЗОНА РАСШИРЕНИЯ: ГРАНИЦА ЗАСТРОЙКИ И УЧАСТКИ ПОД ВЫКУП.
+
+ЗАЧЕМ ЭТО В КАДРЕ. Это не антураж. Каркас, раздел 6: расширение зоны застройки —
+один из трех обязательных кредитных стоков и главный поздний сток экономики.
+Цена N-го расширения = 200 x N^1.5 с округлением к сотням: первое 200, пятое
+около 2200, десятое около 6300. Шесть расширений игрок получает бесплатно за
+уровни без нового контента, остальные покупает. Показатель стока 1.5 обгоняет
+показатель притока от левелапов 1.2 — именно поэтому кредиты не обесцениваются
+к двадцатому уровню.
+
+Значит на герой-кадре граница освоенного и участки за ней показывают
+работающую экономику, а не пустое место. У Township это делянки леса с
+табличкой-ценником на столбе — снимок `raw/Playrix/tawnship_train/
+photo_2026-07-31_00-18-10.jpg`.
+
+ЧТО НА МАРСЕ ИГРАЕТ РОЛЬ ЛЕСА. У референса участок закрыт тем, что физически
+мешает строить: лес, камни, вода. Марсианский аналог — неподготовленная
+поверхность: скальные выходы, валунные поля, наледь в тени, старая пыльная
+порода. Расчистка читается как подготовка площадки, а не как вырубка.
+
+ОТКРЫТЫЙ ВОПРОС К ВЛАДЕЛЬЦУ, не к дизайн-дорожке: каркас называет сток
+«расширение зоны застройки купола». Если зона застройки физически лежит под
+куполом, граница должна выглядеть как кромка герметичного периметра, а не как
+край утоптанного грунта. Промпт ниже написан по второму варианту — граница
+освоенной площадки под открытым небом, потому что все постройки в кадре стоят
+на открытом грунте. Если верен первый вариант, промпт переписывается.
+
+ПОЧЕМУ ЭТОТ ПРОХОД ИМЕЕТ ХОРОШИЙ ШАНС ПРОЙТИ. Он не строит крупное сооружение,
+а раскладывает мелкое по всей площади — как дорожки, лотки и колонисты,
+которые правка брала охотно. Крупные объекты она теряет, распределенную
+мелочь дописывает.
+
+РЕЖИМ: редактирование приложенной картинки.
+ЧТО ПРИКЛАДЫВАТЬ: отдаленный кадр после прохода расширения холста.
+
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Do not move, resize, restyle or remove any
+existing building, vehicle, prop, path or figure. Add only what is described below, and
+place all of it in the open empty ground that surrounds the colony.
+
+WHAT TO ADD, PART ONE — A VISIBLE EDGE OF THE DEVELOPED AREA.
+
+Draw a clear boundary between the colony's prepared ground and the raw Martian terrain
+beyond it. Inside the boundary, the ground stays as it is now: smooth compacted warm
+ochre sand, painted paths, tile at the entrances. The boundary itself is a soft rounded
+kerb of pale cream painted concrete, low and chunky, following an irregular rounded
+outline around the built area — never a straight line, never a hard rectangle, never a
+wall or a fence. Short rounded marker posts in cream with brass caps stand along it at
+intervals, joined by a slack soft-orange cord. Beyond the kerb, the ground changes
+visibly: rougher, darker, unprepared.
+
+WHAT TO ADD, PART TWO — PLOTS OF UNCLAIMED LAND WAITING TO BE BOUGHT.
+
+In the open ground outside the kerb, lay out five or six separate plots of raw Martian
+terrain. They are roughly square-ish patches of similar size, loosely arranged side by
+side around the colony, each one separated from its neighbours by a shallow furrow in
+the sand and a few low rounded boundary stones. Their edges are soft and irregular, not
+sharp squares, and they read as parcels of land rather than as a drawn grid.
+
+Give each plot a DIFFERENT filling, so they never look like repeated tiles:
+- one plot covered in a scatter of large rounded boulders in warm grey-brown;
+- one with a low rocky outcrop rising out of the sand, softly rounded, terracotta-toned;
+- one holding a shallow patch of pale blue-white frost crust lying in its own shade;
+- one of rippled rust-red dust dunes, low and soft;
+- one of dark basalt gravel with a few small stone clusters;
+- one of cracked pale salt crust with a couple of rounded stones on it.
+Everything softly rounded and toy-like — no jagged rock, no sharp spires, no rubble, no
+debris field, no crater.
+
+ON EACH PLOT, one marker sign standing on a short rounded post driven into the ground:
+a small rounded plaque in warm cream with a brass frame and a brass cap on the post,
+tilted slightly toward the camera so it reads clearly. The plaque face is BLANK — a
+plain cream surface with no text, no numbers, no letters, no symbols of any kind. The
+signs are the same size and style on every plot, and they are the brightest, cleanest
+objects out there, so the eye immediately reads the plots as claimable rather than as
+scenery.
+
+WHAT TO ADD, PART THREE — SMALL SIGNS OF WORK AT THE EDGE.
+
+On the plot nearest the colony, show preparation already under way: a short stretch of
+new cream kerb laid on the ground and not yet closed, two colonists in light pastel
+suits standing beside it, one with a rolled plan, and a small cream-white surveying
+tripod with a brass head. On another plot, a single small rounded marker flag on a thin
+mast. Nothing else — the plots stay mostly empty.
+
+LEAVE ROOM. Do not fill the whole picture. Beyond the ring of plots, keep a wide band of
+plain open Martian ground running out to the horizon, with only a few scattered rounded
+boulders and gentle rises in it. The colony should still feel like it has room to grow.
+
+KEEP THE MOOD. Nothing about the unclaimed land looks dangerous, hostile or ruined. It
+is simply ground that has not been prepared yet: calm, warm, sunlit, inviting. No
+warning markings anywhere.
+
+AVOID: straight rectangular grid lines drawn on the ground, a visible chessboard or tile
+pattern, glowing outlines around the plots, coloured translucent overlays or highlight
+shading on the plots, fences, walls, barbed wire, hazard tape, yellow-and-black striping,
+warning signs, skulls, danger symbols; jagged sharp rocks, craters, canyons, cracks in
+the terrain, rubble, wreckage, ruins; any text, numbers, letters or symbols on the
+plaques or anywhere else; moving, shrinking, recolouring or removing any existing
+building, path, vehicle, prop or figure; new buildings of any kind.
+
+================ ДО СЮДА ================
+
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА:
+  1. Вся старая застройка цела и не поехала. Это по-прежнему главный пункт.
+  2. Граница освоенного читается: внутри гладкий подготовленный грунт, снаружи
+     дикая порода, между ними низкая кремовая кромка со столбиками.
+  3. Участков пять-шесть, каждый с СВОИМ наполнением. Одинаковые — провал:
+     повтор читается как текстура, а не как отдельные делянки.
+  4. На каждом участке табличка на столбике, все одинаковые и заметные.
+     Именно табличка превращает пустую землю в «это можно купить».
+  5. Текста на табличках НЕТ. Цену рисует код поверх, а не картинка:
+     цена меняется с каждым расширением по формуле 200 x N^1.5.
+  6. Сетки, свечения и цветных подсветок на участках нет — все это работа
+     интерфейса, а не мира.
+  7. За кольцом участков осталась широкая пустая полоса до горизонта.
+     Кадр не должен выглядеть забитым.
+  8. Ничего тревожного: заборов, лент, предупреждающих знаков нет.
+
+
+ЕСЛИ ТАБЛИЧКИ ПРИДУТ С НАДПИСЯМИ. Модели почти всегда пытаются написать текст
+и почти всегда пишут абракадабру. Тогда либо второй проход с просьбой стереть
+надписи с плашек, оставив их пустыми, либо принять как есть для концепта: в
+игре табличка все равно будет компонентом интерфейса поверх спрайта, а не
+частью картинки.

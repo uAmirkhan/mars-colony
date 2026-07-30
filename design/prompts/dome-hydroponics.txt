@@ -1,0 +1,107 @@
+КУПОЛ ГИДРОПОНИКИ — buildings/dome_hydroponics.png, 512 по ширине.
+Первый ассет волны. Стилевой якорь: пока он не принят, остальные не гнать.
+
+ГДЕ ГЕНЕРИРОВАТЬ: Higgsfield, Create Image, модель Nano Banana Pro
+(не хватит кредитов — Nano Banana 2, тот же семейный рендер).
+
+ЧТО ПРИЛОЖИТЬ: ничего. Это первый ассет, якоря еще нет.
+Он сам станет референсом для остальных восемнадцати.
+
+ВАРИАНТОВ: четыре, если инструмент дает выбор. Смотреть все четыре
+по форме приемки, а не выбирать самый красивый.
+
+ПРО СТЕКЛО, ГЛАВНОЕ. Прошлая версия купола была отвергнута именно из-за него:
+стекло вышло по-настоящему прозрачным, и после съема фона на его месте будет
+дыра или серая вуаль. В промпте ниже стекло прямо потребовано закрашенным
+непрозрачным тоном, а грядки — сплошным цветом сквозь него. Пока это условие
+держится, хватает обычного зеленого экрана, и возня с дублем на белом и черном
+не нужна. Если модель все равно нарисует настоящее стекло — тогда дубль,
+и второй кадр делается РЕДАКТИРОВАНИЕМ первого, а не новой генерацией.
+
+ПРИЕМКА: форма из 10 пунктов, art-prompts-assets.md раздел 6.
+Отдельно проверить два пункта, на которых проект уже падал:
+  - обводки нет вообще, ни на одной детали (провалено трижды);
+  - тени на грунте в файле нет, под куполом не должно быть темного пятна.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+A single game asset sprite for a 2D mobile city-builder game, isolated on a solid pure
+chromakey green #00FF00 background. Not an illustration, not a poster, not a concept
+art scene: one game sprite, ready to be cut out and placed in a game.
+
+NON-NEGOTIABLE RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no comic linework, no dark edge stroke
+   on any part of the object at any thickness. This is painted volume, not line art.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet, with gentle ambient-occlusion darkening in
+   deep seams only. No panel is a single flat tone.
+3. NO CUBES, NO BOXES. Soft rounded volumes with very large corner radii. Nothing
+   reads as a crate or an angular greenhouse.
+4. ONE OBJECT ONLY, centered, complete, nothing cropped at the frame edge. No second
+   building, no piece of a neighbour, no cut-off figure, no sparkles, no stray
+   highlights, no decorative flecks anywhere in the frame.
+5. NO CAST SHADOW ON THE GROUND and NO GROUND AT ALL. The object stands alone on the
+   flat green background. Self-shading on the object itself stays; the shadow it would
+   throw does not. No green spill, no green reflection on the object itself.
+
+Rendering language of Township and Hay Day: semi-gloss painted metal and ceramic
+composite with a soft sheen, stylized toy-like light falloff, not physically realistic
+lighting, the polished look of a premium mobile city-builder. A single soft key light
+from the upper left at roughly 55 degrees, so the upper left facets are lighter and
+the lower right facets are darker. Saturated painted colour, clearly not washed out,
+never pastel, never dusty.
+
+Squat proportions, height roughly equal to footprint width. Three-quarter view from
+slightly above, roughly 45 degrees.
+
+The object: a hydroponic dome of a Mars colony.
+
+Shape: a TRUE HEMISPHERE, a clean half-sphere sitting on a wide base ring, shaded with
+a smooth radial gradient — brightest near the crown, darker toward the base rim. Never
+a boxy angular greenhouse, never a faceted geodesic cage, never a square-cornered
+structure.
+
+Shell: a pale blue-green shell held by a frame of curved ribs painted a saturated
+green-teal, the ribs running from the crown down to the base ring like meridians, each
+rib a rounded raised strip with its own light and shade, never a drawn line.
+
+Interior, the most important part: through the shell, dense rows of vivid emerald crop
+beds are clearly visible on two stepped tiers — the most saturated green of the whole
+object. The shell is PAINTED, NOT TRANSPARENT: the crops read as solid opaque colour
+seen through a tinted pane, the silhouette of the dome stays clean and filled, and no
+part of the object is see-through or glassy enough to show the background behind it.
+
+Base: a wide rounded base ring in warm cream with brass trim. At the front of the ring
+sits a small rounded airlock porch with a saturated teal frame and a chunky brass door
+handle. A ring of painted tile runs around the base and ends exactly at the footprint,
+going no wider.
+
+Pressed against the base, part of the same sprite: a low planter trough of muted
+sage-green moss behind a low glass rim, clearly duller than the emerald crops inside
+the dome, and a slim weather mast on a tripod with a small brass dish.
+
+Colours: pale blue-green shell, saturated green-teal ribs and airlock frame, vivid
+emerald crops inside, warm cream base ring, brass trim, muted sage moss outside.
+
+Avoid: any outline or contour line, ink line, comic linework, dark edge stroke; flat
+single-tone fill with no gradient; a boxy angular greenhouse, a faceted geodesic dome,
+a square-cornered structure; genuinely transparent or see-through glass, background
+visible through the shell, a hollow or empty dome; a cast shadow on the ground, any
+ground, any base plate, any platform under the object; green spill or green reflection
+on the object; a second building, a cropped neighbour, colonist figures, sparkles,
+lens flare, decorative flecks; yellow-and-black hazard hatching, warning stripes,
+radiation symbols; dark metals, soot, rust, cracks, dust, wear; photorealistic
+lighting, long sunset shadows; text, numbers, labels, UI overlay.
+
+================ ДО СЮДА ================
+
+ЕСЛИ ПРИДЕТ С ОБВОДКОЙ — не спорить с моделью словами, это уже пробовали трижды.
+Перегенерировать. Обводка относится к блоку формы: любой ее случай означает
+перегенерацию, а не правку.
+
+ЕСЛИ КУПОЛ ВЫЙДЕТ УГЛОВАТОЙ ТЕПЛИЦЕЙ — тоже перегенерация. Полусфера с радиальным
+градиентом — то, что уже один раз сработало и принято как эталон, ее не докрашивают.
+
+ЕСЛИ ВСЕ ОСТАЛЬНОЕ ВЕРНО, А НЕ ХВАТАЕТ ТОЛЬКО ДЕКОРА У ОСНОВАНИЯ (лоток мха,
+метеомачта) — это обрезка хвоста длинного промпта. Дописать абзац про декор
+отдельной строкой в самом конце и прогнать заново.

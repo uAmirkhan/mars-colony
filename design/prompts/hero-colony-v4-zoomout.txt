@@ -1,0 +1,206 @@
+РАСШИРЕНИЕ ХОЛСТА И ТРИ ПРОХОДА ПОСЛЕ НЕГО.
+
+ЧТО СЛУЧИЛОСЬ НА ПРОШЛОМ ПРОГОНЕ. Промпт просил добавить космопорт, не трогая
+остальное. Модель космопорт нарисовала, но свободного места под него в кадре
+не было — и она освободила его сносом: пропали текстильный модуль, атмосферный
+модуль и почти весь жилой ряд. Инструкция «keep everything else unchanged»
+проиграла физике кадра. Если места нет, правка не добавляет, а замещает.
+
+ВЫВОД. Сначала расширяем холст и получаем пустой грунт по краям. Только потом
+дорисовываем в него крупные объекты. Порядок обратный тому, что мы делали.
+
+КАКУЮ КАРТИНКУ БРАТЬ ЗА ОСНОВУ. Предыдущую — ту, где на месте текстильный
+модуль с катушкой нити, атмосферный модуль, энергостанция и весь жилой ряд,
+а космопорта еще нет. НЕ последнюю: в ней потеряно слишком много.
+
+ТРИ ПРОХОДА, СТРОГО ПО ОЧЕРЕДИ:
+  1. Отдалить камеру, дорисовать пустой грунт по краям. Ничего не добавлять.
+  2. Космопорт лайнера в новой пустой зоне.
+  3. Стройплощадка в новой пустой зоне.
+Каждый следующий проход получает результат предыдущего.
+
+
+##############################################################
+# ПРОХОД 1 — ОТДАЛИТЬ КАМЕРУ, НИЧЕГО НЕ ДОБАВЛЯТЬ
+##############################################################
+
+Самый важный и самый скучный проход. Единственная его задача — получить
+свободное место. Если на нем что-то появится сверх грунта, следующие проходы
+опять начнут вытеснять постройки.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Zoom out from the attached image of a Mars colony. Extend the picture outward on all
+four sides, so the existing colony ends up smaller and centred, surrounded by a wide
+generous band of new open Martian ground.
+
+THE EXISTING COLONY IS FROZEN. Every building, vehicle, prop, path and figure already
+in the picture stays exactly as it is: same shapes, same colours, same positions
+relative to each other, same style. Nothing is moved, redrawn, restyled, removed or
+replaced. The whole existing scene is simply reproduced smaller inside the new, larger
+frame. Do not redesign anything. Do not add anything inside the existing colony.
+
+THE NEW OUTER BAND contains only empty terrain, and it must be wide — the existing
+colony should end up occupying roughly the middle half of the new picture, with clearly
+open, buildable ground all the way around it. NO NEW BUILDINGS, NO NEW STRUCTURES, NO
+VEHICLES anywhere in the new band. It stays empty on purpose: it is the space where
+buildings will be added later.
+
+Fill the new band with ground and landscape only, continuing what is already there:
+warm ochre sand as the base, patches of dark basalt gravel, a paler trodden dust area,
+a rust-red dust band toward the outer edge, a few scattered rounded boulders and small
+stone clusters, and low gentle rises. Continue the existing painted paths a short way
+outward so they trail off into the open sand, and continue one thin ground-level pipe
+the same way.
+
+Along the upper edge of the new picture, add a distant horizon: a soft band of low
+rounded hills in pale rosy-grey haze, and above them a peach-pale Martian daytime sky
+graduating to muted blue-grey higher up. The sky occupies only the top fifth of the new
+picture and never spills below the horizon line. This is the only new element allowed
+besides ground.
+
+Keep the same rendering style, the same lighting direction and the same colour palette
+as the existing image, so the new ground reads as the same picture, not as a border
+pasted around it.
+
+AVOID: any new building, dome, tower, pad, vehicle, rover, drone or machine in the new
+outer band; craters, canyons, cracks, chasms, ruins, wreckage; dust storm, dark clouds,
+night, stars; changing the size, colour, position or design of anything in the existing
+colony; a visible seam, frame or border between the old picture and the new ground;
+text, numbers, labels, watermark.
+
+================ ДО СЮДА ================
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА 1:
+  - Старая колония цела: текстильный модуль с катушкой, атмосферный, энергостанция,
+    весь жилой ряд, купола, шаттл, дрон, склад, карьер, буровая — все на месте.
+  - Вокруг колонии реально много пустого грунта, не узкая кайма.
+  - В новой зоне НЕТ ни одной постройки.
+  - Шва между старой картинкой и новым грунтом не видно.
+  - Сверху появился горизонт и небо примерно на пятую часть кадра.
+
+Если старая часть поехала или что-то пропало — повторить проход, усилив первую
+фразу: попросить воспроизвести существующую сцену без единого изменения.
+
+
+##############################################################
+# ПРОХОД 2 — КОСМОПОРТ ЛАЙНЕРА В ПУСТОЙ ЗОНЕ
+##############################################################
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Add ONE new structure, placed entirely in the
+EMPTY OPEN GROUND in the upper right area of the picture, well away from the existing
+buildings. Do not place it on top of anything. Do not move, resize, restyle or remove
+any existing building, vehicle, prop, path or figure. There is open sand available —
+use it.
+
+THE ONE NEW STRUCTURE: an interplanetary liner spaceport, the largest structure in the
+picture, standing at the edge of the colony and clearly a different kind of place from
+the small round shuttle pad.
+
+A long wide apron of ribbed metal decking with softly rounded corners and brass edging,
+raised on a low rounded rim, laid out lengthwise in the empty ground. Its surface carries
+soft-orange guide lines painted flat onto the decking — decorative painted lines, never
+hazard hatching, never yellow-and-black stripes.
+
+At one end of the apron stands a rounded control tower in warm cream-white: a smooth
+cylinder with brass bands, widening near the top into a wide observation ring glazed in
+tinted teal glass, capped by a softly domed roof, with a radar dish and a small
+blue-green beacon on top. Rounded and friendly, never a sharp angular mast.
+
+Along the far edge of the apron, two rows of numbered cargo containers stacked two high,
+striped in terracotta, mustard and cream, each a rounded box with brass corner fittings.
+Beside them a rounded loading crane in cream-white with a soft-orange boom on short
+rails, lifting one container by a brass hook.
+
+The apron stands ready and EMPTY: no liner, no rocket, no spacecraft parked on it.
+
+A wide painted path in warm cream runs from the apron across the open sand to join the
+colony's existing paths, with a thin ground-level pipe beside it and a line of small
+route flags on thin masts along its edge. Four small colonists in light pastel suits
+work around the apron: two walking the new path, one guiding a loaded cart, one beside
+the crane. Same size and style as the colonists already in the picture.
+
+AVOID: placing the spaceport on top of or overlapping any existing building; removing,
+shrinking or recolouring anything that is already in the picture; a liner or rocket on
+the apron; yellow-and-black hazard hatching, warning markings, military airfield styling,
+dark metals, soot, scorch marks, sharp angular towers, overhead cables strung through
+the air; text, numbers, labels, sparkles, lens flare.
+
+================ ДО СЮДА ================
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА 2:
+  - Космопорт стоит в пустой зоне, а не поверх старых построек.
+  - Текстильный модуль, атмосферный, энергостанция и жилой ряд ЦЕЛЫ.
+    Это главный пункт: именно они гибли в прошлый раз.
+  - Башня читается как башня, перрон не спутан с круглым диском шаттла.
+  - На перроне нет корабля.
+
+
+##############################################################
+# ПРОХОД 3 — СТРОЙПЛОЩАДКА В ПУСТОЙ ЗОНЕ
+##############################################################
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Add ONE new scene, placed entirely in the
+EMPTY OPEN GROUND in the lower left area of the picture, well away from the existing
+buildings. Do not place it on top of anything. Do not move, resize, restyle or remove
+any existing building, vehicle, prop, path or figure.
+
+THE ONE NEW SCENE: a building site under construction. It must read instantly as a
+half-finished building with work going on, not as a finished structure.
+
+A rounded foundation platform of painted pale concrete with a brass rim sits flat on the
+sand. On it, a new habitat module HALF BUILT: its lower half is a finished curved shell
+in saturated mustard yellow with a brass base band and one rounded window in place; its
+upper half is still an open skeleton of rounded cream-white ribs curving up and meeting
+at the top, the gaps between the ribs empty so the unfinished shape is obvious. One
+curved wall panel is already fitted between two ribs, the rest are still open.
+
+Beside the platform, a small rounded crane in cream-white with a soft-orange boom and a
+brass hook holds one more curved mustard panel in the air, just above the gap it will
+fill.
+
+Around the base, neat stacks of building materials, each a different colour and shape so
+they read as different materials: a bundle of flat cream panels tied with brass straps,
+a rack of curved cream-white ribs standing on end, three rolls of teal sealant sheeting,
+a crate of pale filters, two coils of coloured cable. Chunky rounded objects, never flat
+boxes.
+
+A low decorative barrier of short rounded posts joined by soft-orange rope rings the
+site — decorative rope only, never hazard tape, never yellow-and-black striping.
+
+Three small colonists in light pastel suits work there: one on the platform guiding the
+hanging panel with a raised hand, one lifting a rib at the stacks, one standing back
+with a rolled plan. Same size and style as the colonists already in the picture.
+
+A short painted path in warm cream connects the site to the nearest existing path, with
+a thin ground-level pipe beside it.
+
+AVOID: a finished completed building on the platform; placing the site on top of or
+overlapping anything existing; removing, shrinking or recolouring anything already in
+the picture; scaffolding poles and lattice towers, hazard tape, warning signs, safety
+cones, rubble, debris, dust clouds, an excavation pit, dark metals, rust; text, numbers,
+labels, sparkles, lens flare.
+
+================ ДО СЮДА ================
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА 3:
+  - Здание НЕДОСТРОЕНО: верх — открытый каркас из ребер. Вышло готовое здание —
+    механика стройки снова не показана, узел потерян.
+  - Кран держит панель в воздухе, а не стоит просто так.
+  - Космопорт с прошлого прохода цел, старые постройки целы.
+
+
+##############################################################
+# ЕСЛИ ПОСТРОЙКИ ПРОДОЛЖАТ ГИБНУТЬ ПРИ КАЖДОЙ ПРАВКЕ
+##############################################################
+
+Значит редактирование целого кадра для нас потолок, и дальше идем коллажем:
+каждый объект генерируется отдельным спрайтом на зеленом фоне по правилам
+art-prompts-assets.md, а сцена собирается из принятых спрайтов. Это все равно
+предстоит для билда — там каждый объект отдельный файл, и сцену собирает код.
+Тогда герой-кадр перестает быть отдельной работой и становится побочным
+продуктом готовых ассетов.

@@ -1,0 +1,181 @@
+ДВА ПРОХОДА ПРАВКИ: КОСМОПОРТ, ЗАТЕМ СТРОЙПЛОЩАДКА.
+
+ПОЧЕМУ ПО ОДНОМУ, А НЕ СПИСКОМ. Прогон v2 просил пять построек разом. Дошли
+три мелких и средних — текстильный модуль, атмосферный, энергостанция. Не
+дошли ровно две самые крупные и составные: космопорт с башней и краном,
+стройплощадка с недостроем и штабелями. Правка охотно дописывает локальную
+деталь и плохо строит большое сооружение, когда оно идет четвертым пунктом
+списка. Лечится узостью запроса, а не усилением слов.
+
+ЧЕГО В ЭТИХ ПРОМПТАХ НАМЕРЕННО НЕТ. Требований убрать обводку, добавить объем
+и тени. Три захода подряд их не взяли, а лишние требования размывают главный
+пункт. Держим инструкцию узкой: один объект плюс немного мелочи.
+
+РЕЖИМ: редактирование приложенной картинки, не новая генерация.
+ПОРЯДОК: сначала проход 1, к проходу 2 прикладывается результат прохода 1.
+
+
+##############################################################
+# ПРОХОД 1 — КОСМОПОРТ ЛАЙНЕРА
+##############################################################
+
+Идет первым, потому что это самое крупное сооружение кадра и ему нужно
+свободное место в фоне. После стройплощадки места уже не останется.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Keep the composition, the camera angle, the
+colour palette and every existing building exactly as they are. Add ONE new structure
+and a few small props. Change nothing else.
+
+THE ONE NEW STRUCTURE: an interplanetary liner spaceport, placed in the open background
+behind and beyond the round shuttle landing pad, further from the camera than everything
+else, so it reads as the edge of the colony. It is the largest structure in the picture
+and it must look like a completely different kind of place from the small round shuttle
+pad in the foreground.
+
+Build it from these parts:
+
+A long wide apron of ribbed metal decking with softly rounded corners and brass edging,
+raised on a low rounded rim, laid out lengthwise across the background. Its surface
+carries soft-orange guide lines painted flat onto the decking — decorative painted
+lines, never hazard hatching, never yellow-and-black stripes.
+
+Standing at one end of the apron, a rounded control tower in warm cream-white, the only
+tall object in the picture: a smooth cylinder with brass bands around it, widening near
+the top into a wide observation ring glazed in tinted teal glass, capped by a softly
+domed roof. On the roof, a radar antenna dish turned to one side and a small blue-green
+beacon lamp at the tip. The tower is rounded and friendly, never a sharp angular mast,
+never a military control tower.
+
+Along the far edge of the apron, two long rows of numbered cargo containers stacked two
+high, striped in terracotta, mustard and cream, each container a rounded box with brass
+corner fittings. Beside them, a rounded loading crane in cream-white with a soft-orange
+boom, standing on short rails, lifting one container by a brass hook.
+
+The apron stands ready and EMPTY: no liner ship, no rocket, no spacecraft of any kind
+parked on it.
+
+The spaceport is a separate standalone structure with clear open ground around it. It
+does not touch, overlap or fuse with the shuttle pad, the warehouse or anything else
+already in the picture.
+
+ALSO ADD, small and easy:
+
+A wide painted path in warm cream running from the spaceport apron across the sand
+toward the warehouse and the shuttle pad, joining the colony's existing paths, with a
+thin ground-level pipe running beside it.
+
+Four more small colonists in light pastel suits: two walking together along the new
+path, one guiding a loaded cart toward the containers, one standing beside the crane
+looking up at it. Draw them the same size and in the same style as the colonists
+already in the picture.
+
+A line of small route flag markers on thin masts along the edge of the new path.
+
+KEEP EVERYTHING ELSE UNCHANGED: the two hydroponic domes, the shuttle on its round pad,
+the drone above its hexagonal pad, the habitat modules, the warehouse, the food module,
+the textile module, the atmosphere module, the power station, the ice quarry and the
+drill rig all stay exactly where they are, at their current size and colour.
+
+AVOID: any liner or rocket standing on the apron, yellow-and-black hazard hatching,
+warning markings, military airfield styling, dark metals, soot, scorch marks, sharp
+angular towers, overhead cables strung through the air, text, numbers, labels, signage
+lettering, sparkles, lens flare.
+
+================ ДО СЮДА ================
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА 1:
+  - Космопорт появился и стоит в фоне, а не поверх существующих построек.
+  - Башня читается как башня и это единственный высокий объект кадра.
+  - Космопорт не спутан с площадкой шаттла: длинный перрон против круглого диска.
+  - Ни одна старая постройка не поехала, не поменяла цвет и не исчезла.
+  - На перроне нет корабля.
+
+
+##############################################################
+# ПРОХОД 2 — СТРОЙПЛОЩАДКА В РАБОТЕ
+##############################################################
+
+Прикладывается результат прохода 1. Это второй по сложности объект и он несет
+механику стройки, которой на кадре нет вообще.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Keep the composition, the camera angle, the
+colour palette and every existing building exactly as they are. Add ONE new scene and a
+few small props. Change nothing else.
+
+THE ONE NEW SCENE: a building site under construction, placed in an open sandy area
+between the row of habitat modules and the hydroponic domes, standing apart from both
+with clear ground around it. It must read instantly as a half-finished building with
+work going on, not as a finished structure.
+
+Build it from these parts:
+
+A rounded foundation platform of painted pale concrete with a brass rim, sitting flat on
+the sand.
+
+On the platform, a new habitat module HALF BUILT: its lower half is already a finished
+curved shell in saturated mustard yellow with a brass base band and one rounded window
+in place. Its upper half is still an open skeleton of rounded cream-white ribs curving up
+and meeting at the top, with the sky-side gaps between the ribs empty, so the shape it
+will become is obvious and the building is clearly unfinished. One curved wall panel is
+already fitted between two ribs; the rest are still open.
+
+Beside the platform, a small rounded crane in cream-white with a soft-orange boom and a
+brass hook, holding one more curved mustard wall panel in the air just above the gap it
+will fill.
+
+Around the base of the platform, neat stacks of building materials, each stack a
+different colour and shape so they read as different materials: a bundle of flat cream
+panels tied with brass straps, a rack of curved cream-white ribs standing on end, three
+rolls of teal sealant sheeting, a crate of pale filters, and two coils of coloured
+cable. They are chunky rounded objects, never flat boxes.
+
+A low decorative barrier of short rounded posts joined by soft-orange rope rings the
+site. Decorative rope only, never hazard tape, never yellow-and-black striping.
+
+Three small colonists in light pastel suits work at the site: one on the platform
+guiding the hanging panel with a raised hand, one at the material stacks lifting a rib,
+one standing back holding a rolled plan. Draw them the same size and in the same style
+as the colonists already in the picture.
+
+ALSO ADD, small and easy:
+
+A short painted path in warm cream connecting the building site to the nearest existing
+path, with a thin ground-level pipe running beside it.
+
+Two more small colonists walking together elsewhere on the existing paths, and one
+sitting on the bench that is already in the picture, so the colony looks busier.
+
+KEEP EVERYTHING ELSE UNCHANGED: the two hydroponic domes, the shuttle on its round pad,
+the drone above its hexagonal pad, the habitat modules, the warehouse, the food module,
+the textile module, the atmosphere module, the power station, the liner spaceport with
+its control tower, the ice quarry and the drill rig all stay exactly where they are, at
+their current size and colour.
+
+AVOID: a finished completed building on the platform, scaffolding poles and lattice
+towers, yellow-and-black hazard tape, warning signs, safety cones, rubble, dust clouds,
+debris, a construction pit or excavation, dark metals, rust, text, numbers, labels,
+sparkles, lens flare.
+
+================ ДО СЮДА ================
+
+ПРОВЕРИТЬ ПОСЛЕ ПРОХОДА 2:
+  - Здание читается как НЕДОСТРОЕННОЕ: верх открытый каркас из ребер.
+    Вышло готовое здание — узел потерян, механика стройки снова не показана.
+  - Кран есть и он держит панель в воздухе, а не стоит просто так.
+  - Штабели материалов различимы между собой по цвету и форме.
+  - Ни одна старая постройка не поехала и не исчезла, космопорт на месте.
+
+
+##############################################################
+# ЕСЛИ ОБЪЕКТ СНОВА НЕ ПОЯВИТСЯ
+##############################################################
+
+Значит правка не тянет постройку такого размера в принципе. Тогда обходной путь:
+генерировать космопорт и стройплощадку ОТДЕЛЬНЫМИ АССЕТАМИ на зеленом фоне по
+правилам art-prompts-assets.md, а собирать их в общий кадр коллажем — это все
+равно придется делать для игры, потому что в билде каждый объект отдельный файл.
+Герой-кадр тогда собирается из принятых спрайтов, а не догенерируется целиком.

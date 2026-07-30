@@ -1,0 +1,238 @@
+ПРАВКА ГЕРОЙ-КАДРА, ВЕРСИЯ 2. Промпт на редактирование существующей картинки.
+
+ЧТО ПРИЛОЖИТЬ: принятый кадр колонии (первая генерация Gemini).
+РЕЖИМ: редактирование этой картинки, не новая генерация. Композиция и стиль
+сохраняются, меняется и дополняется только перечисленное.
+
+
+================================================================
+КАРТА РЕСУРСОВ: ЧТО ГДЕ БЕРЕТСЯ И ЧТО ИЗ ЭТОГО МЕХАНИКА
+================================================================
+
+Таблица нужна, чтобы кадр не обещал студии механик, которых нет в билде.
+
+| Что                  | Где на карте                    | Механика в игре?          |
+|----------------------|----------------------------------|---------------------------|
+| Шесть культур        | купола гидропоники               | ДА, грядки                |
+| Еда, кофе-паек       | пищевой модуль                   | ДА, фабрика               |
+| Ткань, комбинезон    | текстильный модуль               | ДА, фабрика               |
+| Кислород-баллон      | атмосферный модуль               | ДА, фабрика               |
+| Хранение             | склад                            | ДА                        |
+| Строй-модули         | ПРИХОДЯТ С ШАТТЛА, не добываются | ДА, дроп шаттла (И-1)     |
+| Постройка зданий     | стройплощадка                    | ДА, стройка               |
+| Кредиты              | заказы дрона                     | ДА, площадка дрона        |
+| Очки Лиги            | рейсы лайнера                    | ДА, космопорт             |
+| Вода                 | ледяной карьер                   | НЕТ, флейвор              |
+| Реголит, минералы    | карьер реголита с буровой        | НЕТ, флейвор              |
+| Энергия              | энергостанция и поле панелей     | НЕТ, флейвор              |
+
+Флейвор-узлы оставляем: они объясняют, откуда в трубах вода и откуда грунт
+под стройку, и делают колонию живой. Но кнопок за ними нет, и если о кадре
+зайдет разговор, называть их антуражем, а не механикой.
+
+Инвариант И-1 каркаса: строй-модули нельзя добыть на карте, они падают только
+с шаттла. Поэтому буровая рядом с рудными бункерами — это карьер сырья для
+колонии вообще, а не станок, производящий панели и каркасы.
+
+
+================================================================
+ЧЕГО НА КАДРЕ НЕ ХВАТАЕТ: ЧЕТЫРЕ НАСТОЯЩИХ ИГРОВЫХ УЗЛА
+================================================================
+
+1. Текстильный модуль — фабрика, делает ткань-синт и комбинезоны.
+2. Атмосферный модуль — фабрика, делает кислород-баллоны.
+3. Космопорт лайнера — третья delivery-механика, сейчас не показана вовсе.
+4. Стройплощадка в работе — механика стройки, сейчас не показана вовсе.
+
+Плюс энергостанция как узел, объединяющий поле солнечных панелей.
+
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Edit the attached image of a Mars colony. Keep the existing composition, the camera
+angle, the colour palette and the overall look. Keep every building that is already
+there exactly where it is. Do not move, resize or restyle the two hydroponic domes, the
+shuttle on its round landing pad, the courier drone above its hexagonal pedestal pad,
+the warehouse, the food module, the painted habitat modules, the ice quarry or the
+regolith drill rig. Only apply the corrections and additions listed below.
+
+PART ONE — CORRECTIONS TO WHAT IS ALREADY THERE.
+
+1. REMOVE ALL OUTLINES. Every object currently carries a dark brown contour line around
+   its silhouette and around its internal details. Remove every one of them completely.
+   No contour line, no ink line, no edge stroke, no dark rim anywhere, at any thickness,
+   on any object — buildings, vehicles, props, colonists, ground features. Objects must
+   separate from each other purely through colour and value contrast, the way a painted
+   volume does. This is the single most important correction in this list.
+
+2. ADD VOLUME TO EVERY SURFACE. Most walls, roofs and props are currently filled with a
+   single flat tone. Repaint each surface with a two-step gradient: a lighter lit facet
+   flowing into a darker shaded facet, plus a gentle darkening in deep seams and where
+   two surfaces meet. Domes keep a smooth radial gradient, brightest near the crown and
+   darker toward the base rim. Cylinders and barrel vaults get a soft band of light
+   along their upper left curve fading into shade on the lower right. No panel, no wall
+   and no roof stays a single flat tone.
+
+3. ADD CAST SHADOWS. There is a single key light coming from the upper left at roughly
+   55 degrees above the horizon. Every object — every dome, module, habitat, the
+   shuttle, the drone, every tank, crate, container, rover, mast, planter and colonist —
+   casts one soft blurred shadow on the ground, offset toward the lower right and
+   visibly extending past its own footprint, so nothing looks pasted onto the sand. The
+   drone, hovering, casts its shadow on the ground below and to the lower right of it.
+
+4. REMOVE the bright sparkle or lens flare in the lower right corner of the frame. No
+   sparkles, no glints, no decorative flecks anywhere in the image.
+
+PART TWO — FIVE NEW STRUCTURES TO ADD.
+
+Place them in the open sand and gravel areas between and behind the existing buildings.
+Each is a separate standalone structure with clear air and visible ground around it,
+never touching or fused with its neighbours, linked to the rest only by thin
+ground-level pipes and painted paths. Each has a silhouette unlike anything already in
+the frame. All of them are squat, roughly as tall as they are wide, with large rounded
+corners and no sharp edges, in the same painted semi-gloss style as the existing
+buildings.
+
+NEW STRUCTURE 1 — THE TEXTILE MODULE, placed among the factory buildings near the food
+module. A rounded shell in muted rust-violet, shaped as a wide low drum with a softly
+domed roof, wrapped by a saturated pink-magenta collar band that follows the curve of
+the drum exactly and never floats as a flat decal on the wall. On its roof ridge stands
+one oversized three-dimensional thread spool wound with pink-magenta thread, chunky and
+readable from a distance. Beside its rounded entrance door lean three rolls of folded
+fabric in lilac, cream and soft teal, and a line strung between two short posts carries
+five small coloured cloth swatches fluttering gently. A small brass-framed window with a
+coloured lamp above the door.
+
+NEW STRUCTURE 2 — THE ATMOSPHERE MODULE, placed near the habitat row, on a patch of
+ribbed metal decking. A muted cyan barrel-vault shell lying on its side with softly
+rounded ends, wrapped by a saturated teal collar band. On its roof sits a large pale
+blue-green sphere like a soft glass globe, and beside the globe a rounded ventilation
+fan housing with three thick curved blades turning slowly inside a circular guard. A row
+of small blue-green indicator lights runs along the base of the shell. Against its side
+wall stands a tall teal coolant tank with a brass level gauge and two large cable spools
+wound with coloured cable. Thin pipes run from the module along the ground toward the
+habitat modules.
+
+NEW STRUCTURE 3 — THE INTERPLANETARY LINER SPACEPORT, placed in the background behind
+the shuttle pad, clearly the largest structure in the frame and clearly a different kind
+of place from the small round shuttle pad. A long rectangular apron of ribbed metal
+decking with softly rounded corners and brass edging, raised on a low rim. Standing on
+it, one tall rounded control tower in cream-white with brass bands, a wide teal glass
+observation ring near its top and a slowly rotating radar antenna dish on its roof, one
+blue-green beacon blinking at its tip. Along the apron edge stand two long rows of
+numbered cargo containers striped in terracotta, mustard and cream, stacked two high,
+with a rounded loading crane on rails beside them lifting one container. A line of small
+route flags on thin masts runs along the apron edge. Two colonists in light pastel suits
+guide a loaded cart toward the containers. No liner ship itself is on the apron — the
+apron stands ready and empty.
+
+NEW STRUCTURE 4 — A BUILDING SITE UNDER CONSTRUCTION, placed in an open sandy area
+between the habitat row and the domes. A rounded foundation platform of painted concrete
+with a brass rim, on which the lower half of a new habitat module is already built in
+saturated mustard yellow, its upper half still an open framework of rounded cream-white
+ribs showing the shape it will become. A small rounded crane in cream-white with a soft
+orange boom stands beside it, lifting one curved wall panel into place. Around the base:
+neat stacks of building modules as chunky rounded objects — flat cream panels tied in
+bundles, curved ribs in a rack, rolls of teal sealant, boxes of filters and coils of
+cable, each stack a different colour so they read as different materials. Two colonists
+in light pastel suits work at the foundation, one holding a rolled plan. A low painted
+barrier of rounded posts and soft-orange rope rings the site — decorative rope, never
+hazard tape, never yellow-and-black stripes.
+
+NEW STRUCTURE 5 — THE POWER STATION, placed at the near edge of the existing solar panel
+field so the two read as one energy zone. A squat cylindrical building in cream-white
+with a softly domed roof cap and a saturated amber collar band around its middle, brass
+trim along its base. On its roof, three short rounded heat-exchanger fins and one amber
+beacon lamp. Against its wall stand two rounded accumulator tanks in muted teal with
+brass caps and glowing amber level windows, and a bank of large cable spools wound with
+coloured cable. Thick soft cables run from the station along the ground toward the solar
+panel field on one side and toward the domes on the other, lying on the sand, never
+strung overhead.
+
+PART THREE — WHAT MUST STAY TRUE OF THE WHOLE IMAGE AFTER THE EDIT.
+
+Colour: at least four colour families visible at once, exactly one of them cool
+teal-cyan, filling roughly a tenth of the frame — the ice quarry, the glazed channel,
+the coolant tanks, the dome ribs, the drone cradle and lens, the atmosphere module, the
+solar glass. Pure clean blue appears on no object. No family except the ground covers
+more than 40 percent of the frame. Painted structures and props stay clearly more
+saturated than the sand behind them.
+
+Green: the emerald crop rows inside the hydroponic domes remain the single most
+saturated green in the whole image. The sage-green moss in the planter troughs stays
+visibly duller and always sits behind its low glass rim or under its transparent canopy,
+never growing loose in open sand.
+
+Ground: warm ochre sand as the base, dark basalt gravel on the aprons under the landing
+pad, the warehouse, the drill rig and the new spaceport, a paler trodden dust path along
+the walking routes, a rust-red dust band at the far edge of the built area, painted tile
+at the dome entrances and pale frost crust at the ice quarry. Never one flat orange fill.
+
+Density: the ground between structures is never empty. Small saturated props stay
+pressed against specific buildings rather than scattered on bare sand — striped cargo
+containers, cable spools, route flags, docked carts, planters of bright succulents,
+benches under striped awnings, colour-coded canisters. Small colonists in light pastel
+suits walk the paths throughout the colony and give it scale.
+
+Separation: every structure keeps its own silhouette with visible air and ground around
+it. Nothing is fused into a shared mass, nothing is joined by tube corridors or
+connecting walkways. Connection is shown only by thin ground-level pipes and painted
+paths crossing the sand.
+
+Mood: sunny midday in a prosperous, busy, lived-in colony. Calm optimism. Not survival,
+not a frontier outpost, nothing hostile or dangerous anywhere.
+
+NEGATIVE — none of the following appear anywhere in the edited image:
+any outline, contour line, ink line or dark edge stroke on any object;
+flat single-tone fill with no gradient on any surface;
+objects without a cast shadow, shadows hidden directly under their objects;
+sparkles, glints, lens flare, decorative flecks;
+yellow-and-black hazard hatching, warning tape, alarm markings, radiation symbols,
+red danger signage;
+buildings fused into one mass, tube corridors, shared walls, connecting walkways;
+identical repeated shells, the same building copied in another colour;
+boxy angular crate buildings, square-cornered domes, sharp edges;
+tall thin tower-like proportions on anything except the spaceport control tower;
+moss or plants growing loose in open sand with no glass rim or canopy;
+pure clean blue on world objects;
+smoke stacks, exhaust plumes, open flame, scorch marks, soot, rust, grime, wear;
+craters, canyons, cracks, ruins, wreckage, abandonment, dust storm;
+photorealistic lighting, long sunset shadows, night, dark starry sky, blue Earth sky;
+text, numbers, labels, signage lettering, UI overlay, watermark.
+
+FINAL CHECK, do not drop any of these from the finished image: the two hydroponic domes,
+the shuttle on its round pad, the drone above its hexagonal pad, the habitat row, the
+warehouse, the food module, the ice quarry, the regolith drill rig, and the five new
+structures — textile module, atmosphere module, liner spaceport with its control tower,
+the building site under construction, and the power station beside the solar field.
+
+================ ДО СЮДА ================
+
+
+================================================================
+ПРИЕМКА ПОСЛЕ ПРАВКИ
+================================================================
+
+Сначала три пункта, ради которых правка и делалась:
+  1. Обводки нет ни на одном объекте. Осталась хоть где-то — правка провалена,
+     дальше можно не смотреть.
+  2. На каждой стене виден переход от света к тени. Плоских заливок нет.
+  3. Каждый объект отбрасывает мягкую тень вправо-вниз, выходящую за габарит.
+
+Дальше состав:
+  4. Все четырнадцать узлов на месте и узнаются по отдельности.
+  5. Стройплощадка читается как стройка: недостроенный корпус, кран, штабели
+     модулей. Если вышло готовое здание — узел потерян.
+  6. Космопорт лайнера не спутан с площадкой шаттла: длинный перрон с вышкой
+     против маленького круглого диска.
+  7. Площадка дрона по-прежнему шестиугольная тумба, а не второй диск.
+
+И цвет:
+  8. Холодное семейство на месте, примерно десятая часть кадра, и это не небо.
+  9. Купол остается самым насыщенным зеленым объектом.
+ 10. Сигнальной раскраски опасности нет нигде.
+
+Если обводка вернулась, а все остальное верно — не спорить с моделью словами,
+это уже провалено четыре раза подряд. Класть кадр как есть в концепт-мудборд
+и не делать его стилевым эталоном ассетов: девятнадцать спрайтов, снятых с
+обводкой, не пройдут контракт передачи.
