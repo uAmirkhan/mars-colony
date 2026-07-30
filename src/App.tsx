@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import './ui/theme.css';
 import { useGame } from './state/gameStore';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
+import { SimScreen } from './ui/sim-screen';
 
 type Modal = null | 'warehouse' | 'factory';
+type Mode = 'sim' | 'game';
 
 const HUB: Array<{ id: 'dome' | 'warehouse' | 'factory'; label: string }> = [
   { id: 'dome', label: 'Купол' },
@@ -11,7 +13,53 @@ const HUB: Array<{ id: 'dome' | 'warehouse' | 'factory'; label: string }> = [
   { id: 'factory', label: 'Фабрика' },
 ];
 
+/**
+ * Симулятор — первый экран. Игра открывается вторым и служит доказательством,
+ * что модель не теория: те же числа, тот же доменный код, реально играется.
+ */
 export default function App() {
+  const [mode, setMode] = useState<Mode>('sim');
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, overflow: 'auto' }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 40,
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+          padding: '10px 16px',
+          background: 'var(--panel)',
+          borderBottom: '3px solid var(--panel-border)',
+        }}
+      >
+        <strong style={{ color: 'var(--title)', marginRight: 6 }}>Mars Colony</strong>
+        <button
+          type="button"
+          className={`btn ${mode === 'sim' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '6px 14px', fontSize: 13 }}
+          onClick={() => setMode('sim')}
+        >
+          Балансный симулятор
+        </button>
+        <button
+          type="button"
+          className={`btn ${mode === 'game' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '6px 14px', fontSize: 13 }}
+          onClick={() => setMode('game')}
+        >
+          Играть
+        </button>
+      </div>
+
+      {mode === 'sim' ? <SimScreen /> : <GameScreen />}
+    </div>
+  );
+}
+
+function GameScreen() {
   const tick = useGame((s) => s.tick);
   const [modal, setModal] = useState<Modal>(null);
 
@@ -24,8 +72,8 @@ export default function App() {
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
+        position: 'relative',
+        minHeight: 'calc(100vh - 58px)',
         background:
           'linear-gradient(180deg, var(--world-sky-top) 0%, var(--world-sky) 26%, var(--world-ground-far) 42%, var(--world-ground) 100%)',
         display: 'flex',

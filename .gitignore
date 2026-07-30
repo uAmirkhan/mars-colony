@@ -28,3 +28,6 @@ coverage
 test-results
 playwright-report
 .lefthook*
+
+# Служебное
+.obsidian

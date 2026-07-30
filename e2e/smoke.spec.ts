@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+
+/** Игра теперь второй экран: первым открывается симулятор. */
+async function openGame(page: Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Играть' }).click();
+}
 
 /**
  * Дымовая проверка: игра открывается и первая петля проходится.
@@ -6,7 +12,7 @@ import { expect, test } from '@playwright/test';
  */
 
 test('игра открывается и показывает купол с грядками', async ({ page }) => {
-  await page.goto('/');
+  await openGame(page);
 
   // HUD на месте: уровень и обе валюты.
   await expect(page.getByText('ур. 1')).toBeVisible();
@@ -22,7 +28,7 @@ test('игра открывается и показывает купол с гр
 });
 
 test('первый ход проходит: посев списывает кредиты и занимает грядку', async ({ page }) => {
-  await page.goto('/');
+  await openGame(page);
 
   const credits_before = await page.locator('.currency').nth(1).innerText();
 
@@ -39,13 +45,13 @@ test('первый ход проходит: посев списывает кре
 });
 
 test('склад открывается и сообщает, что пуст', async ({ page }) => {
-  await page.goto('/');
+  await openGame(page);
   await page.getByRole('button', { name: 'Склад' }).click();
   await expect(page.getByText('Пока пусто.')).toBeVisible();
 });
 
 test('на узком экране интерфейс не разъезжается', async ({ page }) => {
-  await page.goto('/');
+  await openGame(page);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
   );

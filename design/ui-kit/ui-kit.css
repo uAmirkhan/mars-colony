@@ -450,8 +450,8 @@ body {
 
 .hub-tile {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 90px;
+  height: 90px;
   border-radius: 20px;
   background: linear-gradient(180deg, #fff3d8 0%, var(--panel-warm) 55%, #e6cd98 100%);
   border: 3px solid var(--panel-border);
@@ -467,8 +467,8 @@ body {
 }
 
 .hub-tile.big {
-  width: 88px;
-  height: 88px;
+  width: 94px;
+  height: 94px;
   border-radius: 50%;
   background: linear-gradient(180deg, #8fe36c, var(--action) 65%);
   border-color: var(--action-dark);
