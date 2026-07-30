@@ -1,49 +1,132 @@
 /**
- * И-4: цена докупки = rush-cost цепочки x 1.2, округление к витринным числам.
- * Rush-cost = сумма (минуты звена x ставка ускорения типа здания), рекурсивно по входам.
+ * И-4: цена докупки = rush-cost цепочки x наценка, округление к витринным числам.
  *
- * Одна функция на все витрины докупки — каркас, раздел 8, пункт 5.
- * Если у докупки появится второй расчет где-то еще, это баг реализации.
+ * Источник истины — [[tz-common-systems-mars]] раздел 5, а НЕ каркас раздел 8.
+ * Каркас дает бедную формулу («сумма минут звена x ставка»), ТЗ общих подсистем
+ * добавляет два правила, меняющие цену: вычитание того, что уже лежит на складе,
+ * и пол на каждое звено. Реализация следует ТЗ.
+ *
+ * Одна функция на все витрины докупки и ускорения — каркас, раздел 8, пункт 5.
+ * Второй расчет цены докупки где-либо еще считается багом реализации.
  */
 
-import { SPEEDUP_RATE_ISOTOPES_PER_MIN } from './config/economy';
+import { SPEEDUP_FLOOR_ISOTOPES, SPEEDUP_RATE_ISOTOPES_PER_MIN } from './config/economy';
 import { GOODS } from './config/goods';
 import type { GoodId } from './types';
+import { availableOf, createWarehouse, type WarehouseState } from './warehouse';
 
-export const BUYOUT_MARKUP = 1.2;
+/** И-4: наценка докупки в слот заказа. Имя из конфиг-таблицы ТЗ раздел 5.6. */
+export const PURCHASE_MARGIN = 1.2;
 
 /**
- * Витринное округление. Каркас называет ряд «50/100/150...», но это верхний
- * конец лестницы: для дешевого сырья шаг в 50 превращает цену в 50 при
- * себестоимости 12. Ниже — ступенчатый ряд по порядку величины.
+ * Потолок наценки любой витрины ускорения (ТЗ 5.5). Дороже — опция экономически
+ * мертва, никто не покупает. Дешевле единицы — витрина каннибализирует обычные
+ * кнопки ускорения производства.
+ */
+export const SPEEDUP_MARGIN_CEILING = 1.5;
+
+/**
+ * Витринное округление. Лестница задана ТЗ раздел 5.4 псевдокодом.
  *
- * ВНИМАНИЕ: ступени ниже 50 — интерпретация, каркас их не задает явно.
- * Требует решения владельца каркаса перед плейтестом.
+ * Отступление от спеки ровно одно и осознанное: спека молчит про нулевой случай,
+ * а `roundToStep(2, 5)` дает ноль, то есть бесплатную докупку. Ставим пол в один
+ * шаг лестницы. Это не интерпретация лестницы, а закрытие дыры в ней.
  */
 export function roundToShowcase(value: number): number {
-  const step = value < 20 ? 1 : value < 50 ? 5 : value < 100 ? 10 : value < 500 ? 25 : 50;
+  const step = value < 50 ? 5 : value < 200 ? 10 : value < 1000 ? 50 : 100;
   return Math.max(step, Math.round(value / step) * step);
 }
 
+interface ChainLink {
+  good_id: GoodId;
+  qty_needed: number;
+  kind: 'crop' | 'factory';
+  minutes_per_unit: number;
+}
+
 /**
- * Стоимость мгновенно произвести одну единицу товара со всей цепочкой входов,
- * в изотопах. Кропы считаются по ставке грядок, фабричные — по ставке фабрик.
+ * Рекурсивный обход графа рецептов (ТЗ 5.3). Комбинезон требует Ткань-синт x2,
+ * которая требует Хлопок-синт x2 — три уровня, и считать надо все.
+ *
+ * `visited` защищает от циклов. По контенту их быть не должно, но защита
+ * обязательна: цикл в рецептах уронил бы расчет в бесконечную рекурсию.
  */
-export function rushCost(good_id: GoodId): number {
+function expandProductionChain(
+  good_id: GoodId,
+  qty: number,
+  warehouse: WarehouseState,
+  visited: Set<GoodId>,
+): ChainLink[] {
+  if (visited.has(good_id)) return [];
+  visited.add(good_id);
+
   const good = GOODS[good_id];
-  const rate =
-    good.kind === 'crop'
-      ? SPEEDUP_RATE_ISOTOPES_PER_MIN.crop
-      : SPEEDUP_RATE_ISOTOPES_PER_MIN.factory;
-  const own = (good.prod_time_sec / 60) * rate;
-  const inputs = good.inputs.reduce(
-    (sum, input) => sum + rushCost(input.good_id) * input.qty,
-    0,
-  );
-  return own + inputs;
+  const owned = availableOf(warehouse, good_id);
+  const needed = Math.max(0, qty - owned);
+
+  const links: ChainLink[] = [
+    {
+      good_id,
+      qty_needed: qty,
+      kind: good.kind,
+      minutes_per_unit: good.prod_time_sec / 60,
+    },
+  ];
+
+  // Во входы спускаемся только за недостающим: то, что уже лежит на складе,
+  // производить не нужно, и сырье под него — тоже.
+  if (needed > 0) {
+    for (const input of good.inputs) {
+      links.push(
+        ...expandProductionChain(input.good_id, needed * input.qty, warehouse, visited),
+      );
+    }
+  }
+
+  return links;
+}
+
+/**
+ * Стоимость мгновенно получить `qty` единиц товара со всей недостающей цепочкой,
+ * в изотопах, до наценки.
+ *
+ * Склад учитывается: игрок не платит за то, что у него уже есть. По умолчанию
+ * склад пуст — это случай докупки товара, которого нет ни на одном уровне цепочки.
+ */
+export function rushCost(
+  good_id: GoodId,
+  qty = 1,
+  warehouse: WarehouseState = createWarehouse(),
+): number {
+  const chain = expandProductionChain(good_id, qty, warehouse, new Set());
+
+  let total = 0;
+  for (const link of chain) {
+    const owned = availableOf(warehouse, link.good_id);
+    const missing = Math.max(0, link.qty_needed - owned);
+    if (missing === 0) continue;
+
+    const rate = SPEEDUP_RATE_ISOTOPES_PER_MIN[link.kind];
+    const minutes = missing * link.minutes_per_unit;
+    // Пол на каждое звено, а не на итог: короткий остаток по мелочи не продаем.
+    total += Math.max(minutes * rate, SPEEDUP_FLOOR_ISOTOPES[link.kind]);
+  }
+  return total;
 }
 
 /** И-4: цена докупки qty единиц товара в слот заказа. */
-export function buyoutPrice(good_id: GoodId, qty: number): number {
-  return roundToShowcase(rushCost(good_id) * qty * BUYOUT_MARKUP);
+export function buyoutPrice(good_id: GoodId, qty: number, warehouse?: WarehouseState): number {
+  return roundToShowcase(rushCost(good_id, qty, warehouse) * PURCHASE_MARGIN);
+}
+
+/**
+ * Прямое ускорение производства (ТЗ 5.6, дополнение к API-контракту): та же
+ * функция без наценки. Ускоряется конкретная партия, а не путь до сырья,
+ * поэтому цепочка не раскрывается — склад считается полным по входам.
+ */
+export function productionSpeedupPrice(good_id: GoodId, qty = 1): number {
+  const good = GOODS[good_id];
+  const minutes = qty * (good.prod_time_sec / 60);
+  const rate = SPEEDUP_RATE_ISOTOPES_PER_MIN[good.kind];
+  return roundToShowcase(Math.max(minutes * rate, SPEEDUP_FLOOR_ISOTOPES[good.kind]));
 }
