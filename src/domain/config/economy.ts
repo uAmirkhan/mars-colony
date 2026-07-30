@@ -43,6 +43,28 @@ export const SPEEDUP_FLOOR_ISOTOPES = {
   shuttle: 15,
 } as const;
 
+/**
+ * Ниже этого остатка ускорение бесплатно (ТЗ производства, AC7).
+ *
+ * Прежняя редакция ТЗ кнопку в этом диапазоне скрывала. Заменено по наблюдению
+ * за референсом: в Township ниже примерно 30 секунд ускорение грядки бесплатно,
+ * кнопка остается. Скрытие молча отнимает опцию у игрока, который уже тянулся
+ * к кнопке; обнуление оставляет действие и показывает механику даром тому,
+ * кто ей ни разу не пользовался.
+ */
+export const SPEEDUP_FREE_THRESHOLD_SEC = 30;
+
+/**
+ * И-5: цена ускорения производства по ОСТАВШЕМУСЯ времени, не по полному циклу.
+ * Минуты округляются вниз: неполная минута не продается.
+ */
+export function productionSpeedupCost(remaining_sec: number, kind: 'crop' | 'factory'): number {
+  if (remaining_sec <= 0) return 0;
+  if (remaining_sec <= SPEEDUP_FREE_THRESHOLD_SEC) return 0;
+  const minutes = Math.floor(remaining_sec / 60);
+  return Math.max(SPEEDUP_FLOOR_ISOTOPES[kind], minutes * SPEEDUP_RATE_ISOTOPES_PER_MIN[kind]);
+}
+
 // --- И-6: цена скипа шаттла ---------------------------------------------
 
 export const SPEEDUP_TARIFF_ISOTOPES_PER_SLOT = { shuttle: 70 } as const;

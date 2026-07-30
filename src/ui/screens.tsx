@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { FACTORY_PRICES, plantingCost } from '../domain/config/economy';
+import { FACTORY_PRICES, plantingCost, productionSpeedupCost } from '../domain/config/economy';
 import { ALL_GOOD_IDS, GOODS } from '../domain/config/goods';
 import type { GoodId } from '../domain/types';
 import { availableOf, occupiedGoods, qtyOf } from '../domain/warehouse';
@@ -58,7 +58,7 @@ export function Hud() {
 }
 
 export function DomeScreen() {
-  const { fields, now, plant, collectField, level } = useGame();
+  const { fields, now, plant, collectField, speedupField, level } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
 
   const crops = ALL_GOOD_IDS.filter(
@@ -103,7 +103,27 @@ export function DomeScreen() {
                       Собрать
                     </span>
                   ) : (
-                    <Timer remaining_sec={remaining} />
+                    <>
+                      <Timer remaining_sec={remaining} />
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: '3px 10px', fontSize: 11, borderRadius: 12 }}
+                        onClick={(e) => {
+                          // Слот целиком кликабелен под сбор — ускорение не должно
+                          // проваливаться в него и собирать несозревшее.
+                          e.stopPropagation();
+                          speedupField(field.idx);
+                        }}
+                      >
+                        {(() => {
+                          const price = productionSpeedupCost(remaining, good.kind);
+                          // Ноль показываем словом, а не «0 ⚛»: бесплатное действие
+                          // не должно выглядеть как покупка за ноль.
+                          return price === 0 ? 'Готово' : `${price} ⚛`;
+                        })()}
+                      </button>
+                    </>
                   )}
                 </>
               )}
