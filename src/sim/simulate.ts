@@ -130,9 +130,10 @@ export interface SimResult {
 }
 
 /** Три перерабатывающих здания. Порядок = порядок покупки, от дешевого. */
-type FactoryBuilding = 'food_module' | 'atmospheric_module' | 'textile_module';
+type FactoryBuilding = 'food_module' | 'mining_site' | 'atmospheric_module' | 'textile_module';
 const FACTORY_BUILDINGS: FactoryBuilding[] = [
   'food_module',
+  'mining_site',
   'atmospheric_module',
   'textile_module',
 ];

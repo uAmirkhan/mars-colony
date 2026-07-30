@@ -268,6 +268,9 @@ export function isPlantingSoftlocked(ctx: {
 /** Сток 2: фабрики покупаются за кредиты. Второй экземпляр — вдвое дороже. */
 export const FACTORY_PRICES = {
   food_module: { unlock_level: 3, first: 500, second: 1000 },
+  // Буровая: между пищевым и атмосферным по цене и по уровню. Открывает
+  // добычу — единственный источник товаров, не требующий ни грядки, ни сырья.
+  mining_site: { unlock_level: 6, first: 1200, second: 2400 },
   atmospheric_module: { unlock_level: 8, first: 4000, second: 8000 },
   textile_module: { unlock_level: 9, first: 5500, second: 11000 },
 } as const;
@@ -291,12 +294,14 @@ export function domeExpansionCost(n: number): number {
  */
 export const FACTORY_UNLOCK_PRICE_CREDITS = {
   food_module: FACTORY_PRICES.food_module.first,
+  mining_site: FACTORY_PRICES.mining_site.first,
   atmospheric_module: FACTORY_PRICES.atmospheric_module.first,
   textile_module: FACTORY_PRICES.textile_module.first,
 } as const;
 
 export const FACTORY_SECOND_INSTANCE_PRICE_CREDITS = {
   food_module: FACTORY_PRICES.food_module.second,
+  mining_site: FACTORY_PRICES.mining_site.second,
   atmospheric_module: FACTORY_PRICES.atmospheric_module.second,
   textile_module: FACTORY_PRICES.textile_module.second,
 } as const;
