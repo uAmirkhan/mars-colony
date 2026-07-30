@@ -1,0 +1,354 @@
+ЧЕТЫРЕ ПРОМПТА: ДРОН, СТАНЦИЯ ШАТТЛА, СТАНЦИЯ ДРОНА, ГЕРОЙ-ПАНОРАМА.
+Собраны целиком, копировать блок между линиями и вставлять как есть.
+
+ПОРЯДОК, В КОТОРОМ ИХ ГНАТЬ (важно, экономит переделки):
+  1. Сначала должен быть принят КУПОЛ — он стилевой якорь всей волны.
+  2. Потом станция шаттла, потом дрон, потом станция дрона.
+  3. Герой-панорама последней: к ней прикладываются уже принятые ассеты.
+  Каждый принятый ассет прикладывается картинкой к следующей генерации.
+  Стиль между файлами держится этим, а не повторением одних и тех же слов.
+
+ЧТО ПРИКЛАДЫВАТЬ К ПРОМПТАМ 1-3 (ассеты):
+  Принятый купол гидропоники. Если его еще нет — ничего не прикладывать,
+  но тогда первый же принятый ассет становится якорем для остальных.
+
+ЧТО ПРИКЛАДЫВАТЬ К ПРОМПТУ 4 (панорама):
+  1. raw/Playrix/tawnship_train/photo_3_2026-07-28_13-23-47.jpg — плотность цвета и предметов.
+  2. Принятые ассеты купола, шаттла и дрона — чтобы объекты не изобретались заново.
+
+ПРИЕМКА:
+  Промпты 1-3 — форма из 10 пунктов, art-prompts-assets.md раздел 6.
+  Промпт 4 — форма из 20 пунктов, art-prompts-moodboard.md.
+
+ФОН И ПРОЗРАЧНОСТЬ:
+  Промпты 1-3 идут на чисто зеленом #00FF00 под съем по цвету.
+  У станций есть стекло только в мелких деталях, зеленого экрана хватает.
+  Панорама (промпт 4) — обычный кадр, фон не снимается.
+
+
+##############################################################
+# 1. ДРОН — transport/drone.png, 512 по ширине
+##############################################################
+
+Урок шаттла применен здесь дословно: приземистость — правило для построек,
+техника опознается силуэтом. У дрона обязаны читаться четыре признака:
+кольцевые кожухи винтов, глаз-линза спереди, груз снизу, посадочные скобы.
+Без них выходит не курьер, а летающая коробка.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+A single game asset sprite for a 2D mobile city-builder game, isolated on a solid pure
+chromakey green #00FF00 background. Not an illustration, not a poster, not a concept
+art scene: one game sprite, ready to be cut out and placed in a game.
+
+NON-NEGOTIABLE RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no comic linework, no dark edge stroke
+   on any part of the object at any thickness. This is painted volume, not line art.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet, with gentle ambient-occlusion darkening in
+   deep seams only. No panel is a single flat tone.
+3. NO CUBES, NO BOXES. Soft rounded volumes with very large corner radii: capsules,
+   domes, cylinders with rounded caps. Nothing reads as a crate.
+4. ONE OBJECT ONLY, centered, complete, nothing cropped at the frame edge. No second
+   object, no sparkles, no stray highlights, no decorative flecks anywhere.
+5. NO CAST SHADOW ON THE GROUND and NO GROUND AT ALL. The object floats alone on the
+   flat green background. Self-shading on the object itself stays; the shadow it would
+   throw does not. No green spill, no green reflection on the object itself.
+
+Rendering language of Township and Hay Day: semi-gloss painted metal and ceramic
+composite with a soft sheen, stylized toy-like light falloff, not physically realistic
+lighting, the polished look of a premium mobile city-builder. A single soft key light
+from the upper left at roughly 55 degrees, so the upper left facets are lighter and
+the lower right facets are darker. Saturated painted colour, never washed out, never
+pastel, never dusty.
+
+Three-quarter view from slightly above, roughly 45 degrees.
+
+The object: a friendly little courier drone of a Mars colony, hovering level, wider
+than it is tall.
+
+Body: a fat rounded capsule in warm cream-white, softly pillowed, with brass rivets
+along a seam that runs around its middle. On top, a short rounded antenna nub and a
+small teal beacon lamp.
+Front, the face of the object: one large round lens in tinted teal glass set into a
+brass ring, clearly reading as an eye. It is the only glass on the object.
+Arms: four short thick arms sweeping out from the body, each ending in a full RING
+housing around its rotor — a closed circular guard in muted terracotta, not a bare
+propeller on a stick. The rotors inside sit still, no motion blur, no spin arcs.
+Underneath, the most important part: a hexagonal cargo pod in warm amber with a brass
+rim, held by two small rounded grippers, hanging clearly below the body so the drone
+reads as carrying something.
+Below the arms: four short rounded landing skids with soft pads.
+
+Colours: warm cream-white body, muted terracotta rotor rings, warm amber cargo pod,
+brass rims and rivets, tinted teal lens and beacon.
+
+Avoid: military or surveillance drone styling, dark metals, camera gimbals, exposed
+bare propellers, motion blur, speed lines, glow trails, exhaust, sparks, thin fragile
+arms, boxy body, photorealistic quadcopter, sharp edges, any text or markings.
+
+================ ДО СЮДА ================
+
+
+##############################################################
+# 2. СТАНЦИЯ ШАТТЛА — buildings/landing_pad.png, 512 по ширине
+##############################################################
+
+Площадка генерируется ПУСТОЙ, без шаттла на ней. Шаттл — отдельный файл,
+и в игре код ставит его поверх. Если сгенерировать вместе, шаттл нельзя
+будет ни убрать на время рейса, ни анимировать посадку.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+A single game asset sprite for a 2D mobile city-builder game, isolated on a solid pure
+chromakey green #00FF00 background. Not an illustration, not a poster, not a concept
+art scene: one game sprite, ready to be cut out and placed in a game.
+
+NON-NEGOTIABLE RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no comic linework, no dark edge stroke
+   on any part of the object at any thickness. This is painted volume, not line art.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet, with gentle ambient-occlusion darkening in
+   deep seams only. No panel is a single flat tone.
+3. NO CUBES, NO BOXES. Soft rounded volumes with very large corner radii. Nothing
+   reads as a crate.
+4. ONE OBJECT ONLY, centered, complete, nothing cropped at the frame edge. No vehicle
+   standing on it, no second structure, no sparkles, no stray highlights.
+5. NO CAST SHADOW ON THE GROUND and NO GROUND AT ALL. The object stands alone on the
+   flat green background. Self-shading on the object itself stays; the shadow it would
+   throw does not. No green spill, no green reflection on the object itself.
+
+Rendering language of Township and Hay Day: semi-gloss painted metal and ceramic
+composite with a soft sheen, stylized toy-like light falloff, not physically realistic
+lighting, the polished look of a premium mobile city-builder. A single soft key light
+from the upper left at roughly 55 degrees, so the upper left facets are lighter and
+the lower right facets are darker. Saturated painted colour, never washed out.
+
+Three-quarter view from slightly above, roughly 45 degrees.
+
+The object: the shuttle landing pad of a Mars colony, EMPTY, with no shuttle and no
+vehicle of any kind standing on it.
+
+Shape: a low circular platform read as a wide flat disc seen at 45 degrees, clearly
+wider than it is tall, raised on a softly rounded rim of ribbed metal decking. The
+deck surface is warm cream-white with brass edging around the rim.
+Deck markings: a ring of soft-orange guide stripes running around the outer edge and a
+rounded landing cross in the centre, painted flat onto the deck as decoration. These
+are decorative painted stripes, never hazard hatching, never yellow-and-black.
+Four short rounded corner posts stand on the rim. One carries a small brass radar dish
+on a short mast, another carries a rounded beacon lamp in soft orange.
+Pressed against the rim, part of the same sprite: two stacked cargo pallets in warm
+terracotta and cream, and a coiled fuel hose on a brass reel.
+A short rounded ramp with a brass handrail runs down from the deck on the near side.
+
+Colours: cream-white deck, brass edging and fittings, soft-orange stripes and beacon,
+muted terracotta on the pallets, one small teal indicator light on the mast.
+
+Avoid: any shuttle or rocket standing on the pad, yellow-and-black hazard hatching,
+warning triangles, red alarm markings, military airfield styling, dark metals, soot,
+scorch marks, cracks, rust, sharp square corners, tall vertical proportions, any text
+or numbers on the deck.
+
+================ ДО СЮДА ================
+
+
+##############################################################
+# 3. СТАНЦИЯ ДРОНА — buildings/drone_pad.png, 512 по ширине
+##############################################################
+
+ВНИМАНИЕ: этого файла нет в контракте передачи первой волны — там четыре
+постройки, и площадки дрона среди них нет. Промпт написан по таблице
+опознавательных деталей 7.7 визуального языка. Добавлять файл в контракт
+или обойтись без него — решение владельца, дизайн-дорожка контракт не меняет.
+
+Главное требование: площадка дрона обязана отличаться силуэтом от площадки
+шаттла с первого взгляда. Шаттловая — большой круглый диск с четырьмя
+столбами. Дроновая — маленькая шестиугольная тумба с мачтой и гнездом.
+Если обе выйдут круглыми дисками разного размера, игрок их спутает.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+A single game asset sprite for a 2D mobile city-builder game, isolated on a solid pure
+chromakey green #00FF00 background. Not an illustration, not a poster, not a concept
+art scene: one game sprite, ready to be cut out and placed in a game.
+
+NON-NEGOTIABLE RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no comic linework, no dark edge stroke
+   on any part of the object at any thickness. This is painted volume, not line art.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet, with gentle ambient-occlusion darkening in
+   deep seams only. No panel is a single flat tone.
+3. NO CUBES, NO BOXES. Soft rounded volumes with very large corner radii. Nothing
+   reads as a crate.
+4. ONE OBJECT ONLY, centered, complete, nothing cropped at the frame edge. No drone
+   standing on it, no second structure, no sparkles, no stray highlights.
+5. NO CAST SHADOW ON THE GROUND and NO GROUND AT ALL. The object stands alone on the
+   flat green background. Self-shading on the object itself stays; the shadow it would
+   throw does not. No green spill, no green reflection on the object itself.
+
+Rendering language of Township and Hay Day: semi-gloss painted metal and ceramic
+composite with a soft sheen, stylized toy-like light falloff, not physically realistic
+lighting, the polished look of a premium mobile city-builder. A single soft key light
+from the upper left at roughly 55 degrees, so the upper left facets are lighter and
+the lower right facets are darker. Saturated painted colour, never washed out.
+
+Three-quarter view from slightly above, roughly 45 degrees.
+
+The object: the courier drone pad of a Mars colony, EMPTY, with no drone on it. A
+small compact station, clearly much smaller and a completely different shape from a
+shuttle landing pad.
+
+Shape: a squat HEXAGONAL pedestal — a six-sided rounded plinth about as tall as it is
+wide, in cream-white with brass corner strips running up each edge and a brass ring
+around its base. Not a flat disc, not a circle.
+On top: a shallow recessed hexagonal cradle in muted teal, shaped as a soft dish with
+four small rounded contact pads inside it where a drone would settle, and a brass
+charging contact in the centre.
+At the back corner: one slim mast rising above the pedestal, carrying a rounded amber
+beacon lamp at its tip and a small folded weather vane below it.
+On the front face: a rounded brass-framed parcel hatch with a chunky latch handle, and
+above it one oversized three-dimensional emblem of a parcel with a soft-orange ribbon,
+chunky and readable from far away.
+Pressed against the base, part of the same sprite: a short stack of three small parcel
+containers striped in terracotta and cream, and a low brass bollard with a coiled
+tether.
+
+Colours: cream-white pedestal, brass edging and fittings, muted teal cradle, warm amber
+beacon, terracotta and cream on the parcels.
+
+Avoid: any drone sitting on the pad, a round flat disc shape, a landing pad for a large
+vehicle, yellow-and-black hazard hatching, warning markings, antenna farms, military
+styling, dark metals, sharp square corners, any text or numbers.
+
+================ ДО СЮДА ================
+
+
+##############################################################
+# 4. ГЕРОЙ-ПАНОРАМА КОЛОНИИ — 16:9, все механики в одном кадре
+##############################################################
+
+Это не ассет, а кадр для письма рекрутеру: одна картинка, по которой видно
+всю игру. Поэтому в ней обязаны читаться все четыре механики сразу —
+купол, шаттл со своей площадкой, дрон со своей площадкой, жилой квартал.
+
+Композиция НАША, не перерисованная планировка Township. Референс Township
+прикладывается ради плотности цвета и предметов, а не ради расстановки.
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Match the colour density, prop density and rendering of the attached reference images,
+but the composition and the subject are the Mars scene described below.
+
+NON-NEGOTIABLE RENDER RULES. These override everything else in this prompt.
+1. NO OUTLINES. No contour line, no ink line, no edge stroke, no dark rim on any
+   object at any thickness. Shapes separate through colour and value only.
+2. VOLUME, NOT FLAT FILL. Every surface carries a two-step gradient from a lighter
+   lit facet into a darker shaded facet. No wall, roof or prop is a single flat tone.
+3. NO CUBES, NO BOXES. Buildings are soft rounded volumes: barrel vaults, domes,
+   capsules, cylinders with rounded caps, very large corner radii. Nothing reads as
+   a shipping crate.
+4. EVERY BUILDING A DIFFERENT SILHOUETTE. Never the same shell repeated in another
+   colour.
+5. ONE KEY LIGHT from the upper left at 55 degrees above the horizon. Every object
+   drops a soft blurred shadow offset toward the lower right, extending past its own
+   footprint. No near-vertical light, no shadow hidden under its object.
+
+Soft volumetric shading baked into a 2D mobile game asset, in the rendering language
+of Township and Hay Day. Stylized toy-like light falloff, not physically realistic
+lighting. Finish is semi-gloss painted metal and ceramic composite with a soft sheen,
+the polished look of a premium mobile city-builder.
+
+A three-quarter view at roughly 45 degrees over a thriving Mars colony, moderate
+camera distance so individual buildings and props stay readable. The horizon sits
+about a quarter of the way down from the top, under a peach-pale sky.
+
+CENTRE, the heart of the frame: two hydroponic domes of different diameters, true
+hemispheres shaded with a smooth radial gradient, their frame ribs painted saturated
+green-teal, dense emerald crop rows glowing through the glass as the most saturated
+green in the whole frame. A rounded airlock porch at the base of the nearer dome,
+painted tile ringing its base, a weather mast on a tripod beside the entrance.
+
+LEFT: a shuttle landing pad — a low circular deck of ribbed metal in cream-white with
+brass edging and soft-orange guide stripes around its rim, four short rounded corner
+posts, one with a small radar dish. Standing on it, a chubby cargo shuttle lying
+horizontally, roughly twice as long as it is tall, cream-white hull with brass trim,
+a wide curved teal cockpit windscreen at its lifted nose, two short rounded stabiliser
+fins and two round nozzles at the rear, a row of four recessed cargo hatch doors along
+its side painted soft terracotta with brass frames and latch handles — doors, never
+round windows. Cargo pallets and a coiled fuel hose on a reel beside the pad.
+
+RIGHT FOREGROUND: a small hexagonal drone pad — a squat six-sided cream-white pedestal
+with brass corner strips, a shallow teal cradle on top and a slim mast with an amber
+beacon. Just above it, a little courier drone hovers level: a fat rounded cream-white
+capsule body, one round teal lens at the front, four short arms ending in closed
+terracotta ring housings around the rotors, a hexagonal amber cargo pod slung
+underneath. A short stack of small parcel containers striped in terracotta and cream
+sits against the pedestal base.
+
+BACKGROUND RIGHT: a residential row of four habitat modules, each a clearly different
+rounded shape, no two alike — a brick red barrel vault, a mustard yellow two-storey
+shell with a domed roof cap, a terracotta low capsule with a curved porch canopy, a
+teal blue upright cylinder with a ring walkway. Every module has a coloured lamp beside
+its door. Behind them, a field of solar panels with a cold blue-grey sheen of glass.
+
+CONNECTING THE SCENE: painted paths run between all four zones, edged by long planter
+troughs of muted sage-green moss behind a low glass rim, with a partial transparent
+canopy over one stretch. A teal coolant tank with a level gauge stands beside the
+domes, and a thin glazed ground pipe carrying visibly bluish fluid runs from it across
+the ground. Six colonists in light pastel suits walk the paths, two of them loading a
+pallet by the shuttle.
+
+Every building is a separate standalone structure spaced apart on open ground with
+clear air and visible ground around it, never fused into a shared mass, never joined
+by tube corridors or connecting walkways, linked only by thin ground-level pipes and
+painted paths. Every structure is squat, height roughly equal to its own footprint
+width, with large rounded corners and no sharp edges.
+
+At least four colour families are visible at once and exactly one of them is cool
+teal-cyan; no family except the sky covers more than 40 percent of the frame. Painted
+structures and decorative props read clearly more saturated than the sky and the ground
+behind them, by a wide and obvious margin. Pure clean blue never appears on any world
+object.
+
+Ground: warm ochre sand as the base, dark basalt gravel on the industrial apron by the
+landing pad, a paler trodden dust path, a rust-red dust band at the far edge of the
+built area, painted tile at the dome entrances. Sky is peach-pale Martian daytime
+graduating to muted blue-grey near the zenith, occupying only the top quarter of the
+frame and never spilling below the horizon line.
+
+Mood: sunny midday, a prosperous lived-in colony, calm optimism, a place where you
+would want to stay.
+
+NEGATIVE:
+any outline or contour line on world objects, thick black outline, comic ink line;
+single flat color fill with no gradient anywhere on an object;
+hard-edged two-tone shading with a sharp light/shadow cutoff;
+boxy angular crate buildings, square-cornered domes, identical repeated modules;
+monochrome beige blob, whole scene at one flat lightness, everything cream and ochre;
+cream or sand-white hull on every building, unpainted residential blocks;
+moss or plants growing loose in open ground with no glass rim or canopy;
+pure clean blue on world objects;
+yellow-and-black hazard hatching, warning stripes, alarm markings, radiation symbols;
+sky filling half the frame, sky spilling below the horizon line;
+one single flat ground material across the whole frame;
+near-vertical overhead light, shadow hidden directly under its object;
+objects floating with no visible offset shadow;
+flat 2D vector illustration, sticker-sheet look, infographic icon set, paper cutout;
+buildings fused into one mass, joined by tube corridors, shared walls;
+tall tower-like vertically stretched structures;
+empty bare ground between buildings;
+upright rocket pose, round portholes along the shuttle side, flame, exhaust, smoke;
+exposed bare propellers, motion blur, speed lines, glow trails on the drone;
+photorealistic lighting, long sunset shadows, dust storm, craters, canyons, cracks,
+ruins, abandonment;
+blue Earth sky, dark starry sky, text, UI overlay
+
+================ ДО СЮДА ================
+
+ЕСЛИ ПАНОРАМА ПРИДЕТ С ПУСТЫМ ГРУНТОМ при в остальном верном цвете — это не
+ошибка правил, а обрезка хвоста длинного промпта. Повтори абзац про дорожки,
+лотки и колонистов отдельной строкой в самом конце и прогони заново.
+
+ЕСЛИ ШАТТЛ ВЫЙДЕТ ВЕРТИКАЛЬНОЙ РАКЕТОЙ ИЛИ ЦИСТЕРНОЙ — это уже случалось
+дважды на отдельном ассете. Лечится приложением принятого спрайта шаттла
+картинкой, а не усилением слов.

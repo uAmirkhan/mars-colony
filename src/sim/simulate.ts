@@ -12,11 +12,25 @@
  * союзников, платные ускорения, генератор заказов с инвариантами И-8/И-10.
  * Шаттл платит XP с коэффициентом 8 против 2 у дрона и открывается на ур.5,
  * поэтому темп выше пятого уровня симулятор занижает.
+ *
+ * ГЛАВНЫЙ ПРОБЕЛ, и он про деньги: моделируется ОДИН кредитный сток из трех.
+ * Игрок покупает только Пищевой модуль за 500. Атмосферный (4000), Текстильный
+ * (5500) и расширения купола (200 x N^1.5) не покупаются никогда, поэтому
+ * кредиты копятся мертвым грузом — к 30-му дню около 24 тысяч.
+ *
+ * Следствие: симулятор НЕ МОЖЕТ ответить на вопрос, ради которого его звали.
+ * ТЗ производства, раздел 5.4, прямо ставит задачу: проверить, не слипаются ли
+ * два тяжелых чека 4000 и 5500 на восьмом и девятом уровне. Пока стоки не
+ * подключены, любой вывод о достаточности кредитов из этого прогона неверен.
+ *
+ * Пробел записан здесь, потому что список ограничений, умалчивающий о главном,
+ * опаснее отсутствия списка: инструмент выглядит надежнее, чем он есть.
  */
 
 import {
   CREDITS_START,
   DRONE_PREMIUM_RANGE,
+  domeExpansionCost,
   FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
@@ -108,7 +122,20 @@ export interface SimResult {
    * — но играть в нее нельзя. Без этого счетчика такая поломка не видна вообще.
    */
   planting_starved: number;
+  /** Сколько кредитов ушло в стоки построек и расширений. */
+  credits_spent_on_buildings: number;
+  /** Какие здания куплены к концу прогона. */
+  buildings_owned: string[];
+  dome_expansions: number;
 }
+
+/** Три перерабатывающих здания. Порядок = порядок покупки, от дешевого. */
+type FactoryBuilding = 'food_module' | 'atmospheric_module' | 'textile_module';
+const FACTORY_BUILDINGS: FactoryBuilding[] = [
+  'food_module',
+  'atmospheric_module',
+  'textile_module',
+];
 
 const MILESTONE_LEVELS = [5, 8, 12, 21];
 const MINUTE = 60;
@@ -130,10 +157,12 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
   let fields: FieldSlot[] = Array.from({ length: fieldsAtLevel(level) }, (_, i) =>
     createField(i),
   );
-  const factory: FactorySlot[] = Array.from({ length: FACTORY_QUEUE_BASE_SLOTS }, (_, i) =>
-    createFactorySlot(i, 'food_module'),
-  );
-  let has_food_module = false;
+  /** Все три перерабатывающих здания, а не одно. Слоты появляются с покупкой. */
+  const owned: Set<FactoryBuilding> = new Set();
+  const factory: FactorySlot[] = [];
+  /** Сколько расширений купола куплено — сток растет по 200 x N^1.5. */
+  let dome_expansions = 0;
+  let credits_spent_on_buildings = 0;
 
   const rows: DayRow[] = [];
   const milestones: Record<number, number | null> = {};
@@ -155,14 +184,12 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
     ALL_GOOD_IDS.filter((id) => GOODS[id].kind === 'crop' && GOODS[id].unlock_level <= level);
 
   const unlockedRecipes = (): GoodId[] =>
-    has_food_module
-      ? ALL_GOOD_IDS.filter(
-          (id) =>
-            GOODS[id].kind === 'factory' &&
-            GOODS[id].required_building === 'food_module' &&
-            GOODS[id].unlock_level <= level,
-        )
-      : [];
+    ALL_GOOD_IDS.filter((id) => {
+      const good = GOODS[id];
+      if (good.kind !== 'factory' || good.unlock_level > level) return false;
+      const building = good.required_building;
+      return building !== null && owned.has(building as FactoryBuilding);
+    });
 
   function gainXp(amount: number) {
     xp_total += amount;
@@ -235,7 +262,7 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
         // близко к пределу
         const near_full = totalQty(warehouse) > warehouse.capacity * 0.8;
         if (credits < replant_budget || near_full) {
-          const keep = has_food_module ? 6 : 2;
+          const keep = owned.size > 0 ? 6 : 2;
           for (const id of occupiedGoods(warehouse)) {
             const surplus = Math.min(availableOf(warehouse, id), qtyOf(warehouse, id) - keep);
             if (surplus <= 0) continue;
@@ -244,14 +271,32 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
           }
         }
 
-        // 4. Покупка пищевого модуля, как только хватает кредитов.
-        if (
-          !has_food_module &&
-          level >= FACTORY_PRICES.food_module.unlock_level &&
-          credits >= FACTORY_PRICES.food_module.first
-        ) {
-          credits -= FACTORY_PRICES.food_module.first;
-          has_food_module = true;
+        // 4. Покупка построек. Порядок — от дешевой к дорогой: игрок берет то,
+        //    что открывает новые рецепты раньше, а не копит на самое дорогое.
+        for (const building of FACTORY_BUILDINGS) {
+          const price = FACTORY_PRICES[building];
+          if (owned.has(building)) continue;
+          if (level < price.unlock_level || credits < price.first) continue;
+
+          credits -= price.first;
+          credits_spent_on_buildings += price.first;
+          owned.add(building);
+          // Здание приходит со своей очередью — слоты не общие на всю колонию.
+          for (let i = 0; i < FACTORY_QUEUE_BASE_SLOTS; i++) {
+            factory.push(createFactorySlot(factory.length, building));
+          }
+        }
+
+        // 4а. Расширение купола: второй кредитный сток. Игрок берет его, когда
+        //     все доступные здания уже куплены, иначе копит на здание.
+        const all_available_bought = FACTORY_BUILDINGS.every(
+          (b) => owned.has(b) || level < FACTORY_PRICES[b].unlock_level,
+        );
+        const expansion_price = domeExpansionCost(dome_expansions + 1);
+        if (all_available_bought && credits >= expansion_price) {
+          credits -= expansion_price;
+          credits_spent_on_buildings += expansion_price;
+          dome_expansions += 1;
         }
 
         // 5. Загрузка фабрики: самый дорогой доступный рецепт.
@@ -364,5 +409,8 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
     orders_done: orders_done_total,
     softlock_rescues,
     planting_starved,
+    credits_spent_on_buildings,
+    buildings_owned: [...owned],
+    dome_expansions,
   };
 }
