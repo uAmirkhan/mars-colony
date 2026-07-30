@@ -38,14 +38,15 @@ console.log('Обещание каркаса: ур.5 — первая-втора
 
 const widths = [34, 10, 8, 8, 9, 10, 10];
 const line = (cells: (string | number)[]) =>
-  cells.map((c, i) => String(c).padEnd(widths[i])).join('');
+  cells.map((c, i) => String(c).padEnd(widths[i] ?? 10)).join('');
 
 console.log(line(['Профиль', 'ч/неделю', 'ур.5', 'ур.8', 'ур.12', 'ур. на 30', 'кредиты']));
 console.log('-'.repeat(widths.reduce((a, b) => a + b, 0)));
 
 for (const profile of PROFILES) {
   const result = simulate(profile.config);
-  const last = result.rows[result.rows.length - 1];
+  const last = result.rows.at(-1);
+  if (!last) continue;
   const day = (level: number) =>
     result.milestones[level] === null ? '—' : `д.${result.milestones[level]}`;
 
@@ -70,10 +71,12 @@ for (const profile of PROFILES) {
 }
 
 console.log('\nПоденная динамика целевого профиля:\n');
-const target = simulate(PROFILES[1].config);
+const target_profile = PROFILES[1];
+if (!target_profile) throw new Error('нет целевого профиля');
+const target = simulate(target_profile.config);
 const dw = [6, 5, 9, 10, 9, 9];
 const dline = (cells: (string | number)[]) =>
-  cells.map((c, i) => String(c).padStart(dw[i])).join(' ');
+  cells.map((c, i) => String(c).padStart(dw[i] ?? 8)).join(' ');
 console.log(dline(['День', 'Ур.', 'XP', 'Кредиты', 'Изотопы', 'Заказов']));
 console.log(dw.map((w) => '-'.repeat(w)).join(' '));
 for (const row of target.rows) {

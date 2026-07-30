@@ -112,5 +112,5 @@ export function upgradeCapacity(w: WarehouseState): boolean {
 }
 
 export function occupiedGoods(w: WarehouseState): GoodId[] {
-  return (Object.keys(w.cells) as GoodId[]).filter((id) => w.cells[id].qty > 0);
+  return (Object.keys(w.cells) as GoodId[]).filter((id) => qtyOf(w, id) > 0);
 }

@@ -128,12 +128,15 @@ export const DRONE_REFRESH_PRICE_LADDER: Array<{
   { remaining_min_gt: 0, isotopes: 2 },
 ];
 
+/** Таймер истек — рефреш уже произошел бесплатно, платить не за что. */
+export const DRONE_REFRESH_EXPIRED_PRICE = 0;
+
 export function droneRefreshPrice(remaining_sec: number): number {
   const remaining_min = remaining_sec / 60;
   for (const step of DRONE_REFRESH_PRICE_LADDER) {
     if (remaining_min > step.remaining_min_gt) return step.isotopes;
   }
-  return DRONE_REFRESH_PRICE_LADDER[DRONE_REFRESH_PRICE_LADDER.length - 1].isotopes;
+  return DRONE_REFRESH_EXPIRED_PRICE;
 }
 
 /** Премия дрона к рыночной цене: +25..70%, медиана ~45%. */
