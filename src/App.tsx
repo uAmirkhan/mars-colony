@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import './ui/theme.css';
 import { useGame } from './state/gameStore';
+import { DroneBoard } from './ui/drone-board';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
 import { SimScreen } from './ui/sim-screen';
 
-type Modal = null | 'warehouse' | 'factory';
+type Modal = null | 'warehouse' | 'factory' | 'drone';
 type Mode = 'sim' | 'game';
 
-const HUB: Array<{ id: 'dome' | 'warehouse' | 'factory'; label: string }> = [
+const HUB: Array<{ id: 'dome' | 'warehouse' | 'factory' | 'drone'; label: string }> = [
   { id: 'dome', label: 'Купол' },
   { id: 'warehouse', label: 'Склад' },
   { id: 'factory', label: 'Фабрика' },
+  { id: 'drone', label: 'Дрон' },
 ];
 
 /**
@@ -105,6 +107,7 @@ function GameScreen() {
 
       {modal === 'warehouse' && <WarehousePanel onClose={() => setModal(null)} />}
       {modal === 'factory' && <FactoryPanel onClose={() => setModal(null)} />}
+      {modal === 'drone' && <DroneBoard onClose={() => setModal(null)} />}
     </div>
   );
 }

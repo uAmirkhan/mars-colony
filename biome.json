@@ -23,7 +23,8 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "error",
-        "noConsole": "off"
+        "noConsole": "off",
+        "noArrayIndexKey": "warn"
       },
       "style": {
         "useConst": "error",
