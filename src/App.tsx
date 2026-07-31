@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react';
 import './ui/theme.css';
 import { useGame } from './state/gameStore';
+import { ConstructionPanel } from './ui/construction';
 import { DroneBoard } from './ui/drone-board';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
+import { ShuttleStation } from './ui/shuttle-station';
 import { SimScreen } from './ui/sim-screen';
 
-type Modal = null | 'warehouse' | 'factory' | 'drone';
+type HubId = 'dome' | 'warehouse' | 'factory' | 'drone' | 'shuttle' | 'construction';
+type Modal = Exclude<HubId, 'dome'> | null;
 type Mode = 'sim' | 'game';
 
-const HUB: Array<{ id: 'dome' | 'warehouse' | 'factory' | 'drone'; label: string }> = [
+/**
+ * Хаб внимания. Порядок — приоритет бейджей каркаса (раздел 13): транспорт
+ * выше производства, потому что именно он назначает следующую сессию.
+ */
+const HUB: Array<{ id: HubId; label: string }> = [
   { id: 'dome', label: 'Купол' },
   { id: 'warehouse', label: 'Склад' },
   { id: 'factory', label: 'Фабрика' },
   { id: 'drone', label: 'Дрон' },
+  { id: 'shuttle', label: 'Шаттл' },
+  { id: 'construction', label: 'Стройка' },
 ];
 
 /**
@@ -108,6 +117,8 @@ function GameScreen() {
       {modal === 'warehouse' && <WarehousePanel onClose={() => setModal(null)} />}
       {modal === 'factory' && <FactoryPanel onClose={() => setModal(null)} />}
       {modal === 'drone' && <DroneBoard onClose={() => setModal(null)} />}
+      {modal === 'shuttle' && <ShuttleStation onClose={() => setModal(null)} />}
+      {modal === 'construction' && <ConstructionPanel onClose={() => setModal(null)} />}
     </div>
   );
 }

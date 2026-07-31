@@ -32,7 +32,7 @@ function reset(patch: Partial<ReturnType<typeof useGame.getState>> = {}) {
     warehouse: createWarehouse(),
     fields: [createField(0), createField(1)],
     factory_slots: [createFactorySlot(0, 'food_module')],
-    has_food_module: false,
+    buildings: [],
     toasts: [],
     ...patch,
   });
@@ -180,22 +180,22 @@ describe('Ускорение', () => {
 describe('Покупка фабрики', () => {
   it('списывает цену и открывает здание', () => {
     reset({ credits: FACTORY_PRICES.food_module.first });
-    s().buyFoodModule();
-    expect(s().has_food_module).toBe(true);
+    s().buyBuilding('food_module');
+    expect(s().buildings).toContain('food_module');
     expect(s().credits).toBe(0);
   });
 
   it('без денег не покупает и не списывает', () => {
     reset({ credits: FACTORY_PRICES.food_module.first - 1 });
-    s().buyFoodModule();
-    expect(s().has_food_module).toBe(false);
+    s().buyBuilding('food_module');
+    expect(s().buildings).not.toContain('food_module');
     expect(s().credits).toBe(FACTORY_PRICES.food_module.first - 1);
   });
 
   it('до нужного уровня не покупает даже при деньгах', () => {
     reset({ credits: 100_000, level: 1 });
-    s().buyFoodModule();
-    expect(s().has_food_module).toBe(false);
+    s().buyBuilding('food_module');
+    expect(s().buildings).not.toContain('food_module');
     expect(s().credits).toBe(100_000);
   });
 });

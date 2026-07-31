@@ -10,6 +10,7 @@ import {
   DRONE_PREMIUM_RANGE,
   DRONE_REFRESH_FREE_SEC,
   droneRefreshPrice,
+  EASY_PRODUCE_MAX_MIN,
   MAX_DEFICIT_SLOTS,
   TRANSPORT_XP_K,
 } from '../config/economy';
@@ -159,6 +160,28 @@ describe('Генератор: инварианты анти-фрустрации
     }
   });
 
+  /**
+   * Регрессия, найденная замером распределения. При пустом складе генератор
+   * считал дефицитной каждую позицию, тратил бюджет дефицита на первой и
+   * выбрасывал остальные — вся доска состояла из однопозиционных заказов.
+   * Тестов это не роняло: заказ был непустым и инвариант И-8 формально держался.
+   */
+  it('пустой склад не вырождает заказ в одну позицию', () => {
+    const rng = makeRng(3);
+    let multi = 0;
+    for (let i = 0; i < 60; i++) {
+      const order = generateOrder(0, {
+        level: 9,
+        warehouse: createWarehouse(),
+        available_goods: goods,
+        board: [],
+        rng,
+      });
+      if (order.positions.length > 1) multi += 1;
+    }
+    expect(multi).toBeGreaterThan(50);
+  });
+
   it('И-8: не больше одной дефицитной позиции на заказ', () => {
     const rng = makeRng(7);
     for (let i = 0; i < 60; i++) {
@@ -172,7 +195,16 @@ describe('Генератор: инварианты анти-фрустрации
         board: [],
         rng,
       });
-      const deficit = order.positions.filter((p) => p.qty > availableOf(w, p.good_id)).length;
+      // Дефицит по каркасу — это преднамеренный пинч «+1..+3 сверх склада»,
+      // а не все, чего нет на полке. Позиция, которую игрок вырастит за
+      // полчаса, дефицитом не считается: И-8 прямо пишет «покрыто складом
+      // ИЛИ производимо <=30 мин». Прежняя редакция теста меряла первое
+      // условие и молчала о втором, поэтому пропустила вырождение заказа.
+      const deficit = order.positions.filter(
+        (p) =>
+          p.qty > availableOf(w, p.good_id) &&
+          GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60,
+      ).length;
       expect(deficit).toBeLessThanOrEqual(MAX_DEFICIT_SLOTS);
     }
   });

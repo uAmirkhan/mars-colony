@@ -83,6 +83,92 @@ export function shuttleSkipPrice(
   return Math.max(SPEEDUP_FLOOR_ISOTOPES.shuttle, Math.round(raw));
 }
 
+// --- Шаттл: отсеки, рейс, кулдаун ---------------------------------------
+
+/** Только у шаттла число слотов переменное: 3-5 (ТЗ шаттла 4). */
+export const SLOT_COUNT_MIN = 3;
+export const SLOT_COUNT_MAX = 5;
+
+/** Распределение числа отсеков по уровневым брекетам (ТЗ шаттла 4). */
+export const SLOT_COUNT_WEIGHTS: Array<{
+  from_level: number;
+  weights: Record<number, number>;
+}> = [
+  { from_level: 15, weights: { 3: 0.15, 4: 0.4, 5: 0.45 } },
+  { from_level: 9, weights: { 3: 0.3, 4: 0.45, 5: 0.25 } },
+  { from_level: 5, weights: { 3: 0.6, 4: 0.3, 5: 0.1 } },
+];
+
+/** Предохранитель цикла подбора товаров генератором (ТЗ шаттла 4). */
+export const GEN_MAX_ATTEMPTS = 40;
+
+/** Длина рейса по брекетам уровня (ТЗ шаттла 4). */
+export const FLIGHT_TIMER_MIN: Array<{ from_level: number; minutes: number }> = [
+  { from_level: 15, minutes: 90 },
+  { from_level: 9, minutes: 75 },
+  { from_level: 5, minutes: 60 },
+];
+
+export function flightTimerMin(level: number): number {
+  return FLIGHT_TIMER_MIN.find((b) => level >= b.from_level)?.minutes ?? 60;
+}
+
+export function slotCountFor(level: number, roll: number): number {
+  const row = SLOT_COUNT_WEIGHTS.find((r) => level >= r.from_level);
+  const weights = row?.weights ?? { [SLOT_COUNT_MIN]: 1 };
+  let acc = 0;
+  for (const [count, weight] of Object.entries(weights)) {
+    acc += weight;
+    if (roll <= acc) return Number(count);
+  }
+  return SLOT_COUNT_MIN;
+}
+
+/** Пауза после сбора всех контейнеров, защита от чейн-фарма (ТЗ шаттла 4). */
+export const COLLECT_COOLDOWN_MIN = 5;
+
+/**
+ * FTUE: первые прибытия форсируют гарантию на 100% сверх И-11. Доверие к
+ * механике без превью наград формируется серией, а не одним эпизодом.
+ */
+export const FRONT_LOADED_LUCK_ARRIVALS = 3;
+
+/** FTUE: первый рейс короче брекета, чтобы весь цикл прошел в одну сессию. */
+export const FTUE_FIRST_TRIP_TIMER_MIN = 12;
+
+/** Порог «заказ брошен» для health-метрики (ТЗ шаттла 4). */
+export const IDLE_ORDER_ABANDON_ALERT_H = 24;
+
+/**
+ * Пороги табло рейса (ТЗ шаттла 6.1/6.3). Живут в конфиге, а не в верстке:
+ * это правила игры, а не оформление. Ниже минуты кнопка скипа исчезает —
+ * платить пол цены за минуту ожидания игроку продавать нечестно.
+ */
+export const SKIP_HIDE_BELOW_SEC = 60;
+export const SKIP_ARRIVING_SOON_SEC = 5 * 60;
+
+// --- Стройка: ускорение --------------------------------------------------
+
+/**
+ * Ставка ускорения стройки. ТЗ производства помечает ее экстраполяцией из И-5,
+ * а не прямым чтением: И-5 описывает грядки, фабрики, шаттл и лайнер, стройку —
+ * нет. Число между фабрикой (6) и фоновым шаттлом (2.3-3.9).
+ */
+export const CONSTRUCTION_SPEEDUP_RATE_ISO_PER_MIN = 3;
+/** Стройка идет часами, минимальный чек выше производственного. */
+export const SPEEDUP_FLOOR_ISO_CONSTRUCTION = 20;
+export const CONSTRUCTION_ACTIVE_LINES_BASE = 1;
+
+export function constructionSpeedupCost(remaining_sec: number): number {
+  if (remaining_sec <= 0) return 0;
+  if (remaining_sec <= SPEEDUP_FREE_THRESHOLD_SEC) return 0;
+  const minutes = Math.floor(remaining_sec / 60);
+  return Math.max(
+    SPEEDUP_FLOOR_ISO_CONSTRUCTION,
+    minutes * CONSTRUCTION_SPEEDUP_RATE_ISO_PER_MIN,
+  );
+}
+
 // --- Строй-модули: дроп, докупка, EV ------------------------------------
 
 export const MODULE_BUYOUT_ISOTOPES: Record<ModuleTier, number> = {

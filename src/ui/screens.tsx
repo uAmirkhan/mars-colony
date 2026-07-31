@@ -230,14 +230,15 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
     factory_slots,
     now,
     level,
-    has_food_module,
-    buyFoodModule,
+    buildings,
+    buyBuilding,
     enqueue,
     collectFactory,
     warehouse,
   } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
 
+  const has_food_module = buildings.includes('food_module');
   const price = FACTORY_PRICES.food_module.first;
   const unlock = FACTORY_PRICES.food_module.unlock_level;
 
@@ -263,7 +264,7 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
                   ? `Откроется на уровне ${unlock}.`
                   : 'Перерабатывает сырье в товары подороже.'}
               </div>
-              <Button full disabled={level < unlock} onClick={buyFoodModule}>
+              <Button full disabled={level < unlock} onClick={() => buyBuilding('food_module')}>
                 Построить за {price} кр
               </Button>
             </div>
