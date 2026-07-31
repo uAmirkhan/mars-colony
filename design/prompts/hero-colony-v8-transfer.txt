@@ -1,0 +1,155 @@
+ПЕРЕНОС ТРЕХ ОБЪЕКТОВ ИЗ ДОНОРА В УТВЕРЖДЕННУЮ БАЗУ.
+
+ЧТО ЗДЕСЬ НОВОГО ПО СРАВНЕНИЮ СО ВСЕМИ ПРЕДЫДУЩИМИ ПОПЫТКАМИ.
+Раньше к запросу прикладывалась ОДНА картинка, и модель должна была изобрести
+крупный объект из текста. Она этого не умеет: шесть прогонов, объект либо не
+появлялся, либо появлялся ценой сноса соседей. Здесь прикладываются ДВЕ
+картинки, и модель ничего не изобретает — она переносит уже нарисованный
+объект из одной в другую. Это задача другого класса, и у нее есть шанс.
+
+ЧТО ПРИКЛАДЫВАТЬ, СТРОГО В ЭТОМ ПОРЯДКЕ:
+  ПЕРВОЙ  — `design/raw-generations/gemini-0731-0010-ff4hl8.png`
+            Утвержденная база. Крупный кадр: купола, шаттл на площадке, дрон
+            на шестиугольной тумбе, склад, пищевой, текстильный, атмосферный,
+            энергостанция, карьер, дорожки, лотки, колонисты.
+  ВТОРОЙ  — кадр v7, тот из двух последних, где есть стройка с краном и
+            карьер с машиной внутри ямы:
+            `gemini-0731-0105-2r1q2j.png` или `gemini-0731-0108-500jvf.png`.
+            Это донор. Из него берутся ровно три объекта, больше ничего.
+
+ЧТО ПЕРЕНОСИМ (ровно три объекта):
+  1. Стройплощадка: недостроенный купол с открытым каркасом ребер и краном.
+  2. Ледяной карьер с режущей машиной, работающей внутри ямы.
+  3. Буровая с конвейером и белым ровером.
+
+ЧЕГО НЕ ДЕЛАЕМ:
+  - Масс-драйвер (разгонная рельса) в кадр НЕ переносится. На прогоне v7 он
+    вышел трубой на опорах, читается мостом, и до переписи каркаса и ТЗ он
+    все равно заблокирован. Из кадра убираем совсем.
+  - Шаттл и дрон из базы НЕ трогаем. У шаттла в базе есть претензия по
+    крыльям, но чинить ее надо на отдельном спрайте, а не здесь: одна цель
+    за проход — единственное правило, которое у нас стабильно работает.
+
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+You are given two images of the same Mars colony game world, drawn in the same style.
+
+IMAGE 1 is the BASE. IMAGE 2 is the DONOR.
+
+Your task: reproduce IMAGE 1 exactly as it is, and add into it three specific objects
+copied from IMAGE 2. Nothing else changes.
+
+=== RULE ONE: IMAGE 1 IS FROZEN ===
+
+Every single thing in IMAGE 1 stays exactly as it is: the two green hydroponic domes, the
+cargo shuttle on its round landing pad, the courier drone above its hexagonal pedestal
+pad, the warehouse, the food module with its striped awning, the purple textile module,
+the teal atmosphere module, the power station, the ice pool at the top left, the water
+tank, the paths, the planter troughs, the benches, the crates, the pipes and every
+colonist. Same shapes, same colours, same positions, same sizes, same style, same
+lighting. Do not redesign, restyle, move, resize, recolour or remove anything. Do not
+"improve" anything. The base image is approved and finished; you are only adding to it.
+
+=== RULE TWO: TAKE EXACTLY THREE OBJECTS FROM IMAGE 2 ===
+
+Copy these three objects out of IMAGE 2 and place them into the open empty sand of IMAGE
+1. Redraw each one at the scale, camera angle and lighting of IMAGE 1 so it belongs there,
+but keep its design, its colours and its details exactly as they are in IMAGE 2.
+
+OBJECT A — THE BUILDING SITE UNDER CONSTRUCTION.
+In IMAGE 2 it is the large golden-yellow dome that is only half built. Take the whole
+scene around it: the rounded foundation platform, the finished lower part of the dome in
+saturated mustard yellow, the OPEN SKELETON of cream-white ribs curving up above it with
+open air between them so the dome is obviously unfinished, the small orange-and-cream
+crane standing beside it holding a curved panel in the air, the stacks of building
+materials around the base — the tied bundle of flat panels, the rack of curved ribs, the
+rolls of sealant, the coils of cable, the tool chest — and the low boundary of short posts
+joined by a soft-orange rope. Place it in the open sand in the LOWER LEFT area of the
+base image, standing clear of everything already there.
+
+OBJECT B — THE ICE QUARRY WITH ITS CUTTING MACHINE.
+IMAGE 1 already has a pale ice pool at its top left, but nothing is happening in it.
+Take from IMAGE 2 the working machinery and put it into that existing ice pool: the small
+rounded cutting machine on fat wheels with its drum head, sitting down inside the pit on
+the ice and cutting a fresh block, several cut ice blocks as pale translucent cubes with
+rounded corners stacked on the ice beside it, and one or two colonists working at the
+edge. Keep the existing pool shape and the existing pump building of IMAGE 1 as they are;
+only add the machine, the ice blocks and the workers into it.
+
+OBJECT C — THE DRILL RIG WITH ITS CONVEYOR AND WHITE ROVER.
+In IMAGE 2 it stands on dark gravel at the upper right. Take the whole group: the rounded
+drill rig with its open derrick and mustard collar, the conveyor belt on rounded drums
+carrying rust-red ore lumps up to the ore hoppers, the hoppers themselves with one heaped
+full of rust-red ore, the small white rover with its teal cabin parked underneath with a
+half-loaded bed, the colour-coded canisters and the workers beside it. Place it in the
+open sand in the UPPER RIGHT area of the base image, on a patch of dark basalt gravel,
+standing clear of everything already there.
+
+=== RULE THREE: WHAT MUST NOT APPEAR ===
+
+Do NOT bring the long tube-like rail on pylons from IMAGE 2. No launch rail, no
+accelerator, no row of rings, no bridge, no elevated tube, no pipeline on legs, no
+viaduct. That object is deliberately excluded.
+
+Do not bring anything else from IMAGE 2: not its buildings, not its ground, not its sky,
+not its paths, not its layout. Only the three objects listed above.
+
+=== RULE FOUR: MAKE THE ADDITIONS BELONG ===
+
+Each added object stands alone on the sand with clear air and visible ground around it,
+touching and overlapping nothing. Each casts a soft blurred shadow offset toward the
+lower right, matching the lighting of the base image, which comes from the upper left.
+Connect each one to the colony with a short painted cream path and a thin ground-level
+pipe running along the sand, in the same style as the paths already in the base image.
+
+=== NEGATIVE ===
+
+a long rail, tube, bridge, viaduct, pipeline on pylons or row of rings anywhere;
+a finished completed building on the construction foundation;
+any change to the shuttle, the drone, the domes, the habitat modules, the factory
+buildings, the power station or the pump building of the base image;
+new buildings other than the three objects listed;
+yellow tracked excavators, earth-moving diggers, bulldozers, real-world construction
+machinery;
+radiation symbols, yellow-and-black hazard hatching, warning tape, safety cones, alarm
+markings;
+craters, canyons, cracks, rubble, debris, wreckage, ruins;
+any outline, contour line, ink line or dark edge stroke on any object;
+flat single-tone fill with no gradient;
+objects with no cast shadow;
+text, numbers, letters, labels, signage lettering, watermark;
+sparkles, glints, lens flare.
+
+=== FINAL CHECK ===
+
+Before finishing, confirm all of these:
+- Everything from IMAGE 1 is still present, unchanged and in the same place.
+- The half-built dome with its open rib skeleton and its crane is present in the lower left.
+- The cutting machine is working down inside the existing ice pit, with cut ice blocks.
+- The drill rig with its conveyor, ore hoppers and white rover is present in the upper right.
+- There is no rail, tube, bridge or row of rings anywhere in the picture.
+
+================ ДО СЮДА ================
+
+
+ПРИЕМКА
+
+  1. База цела: купола, шаттл, дрон, склад, пищевой, текстильный, атмосферный,
+     энергостанция, дорожки, лотки, колонисты — все на местах и не перерисовано.
+     Это главный пункт. Если база поехала, дальше можно не смотреть.
+  2. Стройка на месте, купол НЕДОСТРОЕН, каркас открыт, кран держит панель.
+  3. Режущая машина работает внутри ледяной ямы, рядом нарезанные блоки.
+  4. Буровая с конвейером и белым ровером на месте, на базальтовом пятне.
+  5. Никакой рельсы, трубы, моста и колец в кадре нет.
+  6. Три добавленных объекта стоят отдельно, ни на что не налезли, у каждого
+     тень вправо-вниз и дорожка к колонии.
+
+
+ЕСЛИ НЕ СРАБОТАЕТ
+
+Если база опять поедет или объекты не перенесутся — прекращаем воевать с
+генератором. Оба файла уже лежат в проекте, и я соберу кадр кодом: вырежу три
+объекта из донора, впишу в базу, подгоню масштаб и растушую края. Стиль и
+палитра у кадров одинаковые, склейка будет незаметна. Результат предсказуем,
+итераций сколько угодно, ничего не переизобретается. Скажи слово — сделаю.
