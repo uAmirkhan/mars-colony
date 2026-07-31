@@ -363,6 +363,26 @@ export const FACTORY_PRICES = {
 
 export const FACTORY_SECOND_INSTANCE_LEVEL = 15;
 
+/**
+ * Названия зданий класса А. Живут рядом с ценами, а не в верстке: здание
+ * показывается на двух экранах, и разъехавшиеся названия читаются как два
+ * разных здания.
+ */
+export const FACTORY_NAMES: Record<keyof typeof FACTORY_PRICES, string> = {
+  food_module: 'Пищевой модуль',
+  mining_site: 'Буровая площадка',
+  atmospheric_module: 'Атмосферный модуль',
+  textile_module: 'Текстильный модуль',
+};
+
+/** Что здание делает. Одной строкой — это подпись под кнопкой покупки. */
+export const FACTORY_HINTS: Record<keyof typeof FACTORY_PRICES, string> = {
+  food_module: 'Перерабатывает сырье в товары подороже.',
+  mining_site: 'Добывает реголит и водяной лед. Не требует ни грядки, ни сырья.',
+  atmospheric_module: 'Дает кислород и воду для дальних заказов.',
+  textile_module: 'Ткань и комбинезоны — самые дорогие товары среза.',
+};
+
 /** Сток 3: расширение зоны застройки, 200 x N^1.5, округление к сотням. */
 export const DOME_EXPANSION_BASE = 200;
 export const DOME_EXPANSION_EXPONENT = 1.5;

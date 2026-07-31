@@ -71,8 +71,8 @@ export function addModule(stock: ModuleCounts, module_id: ModuleId, qty = 1): bo
 
 /**
  * Рецепт тира. Повторяемые здания по ТЗ «шкалируются по тиру», но формулы
- * шкалирования ни один документ не задает — в MVP рецепт плоский, тир на него
- * не влияет. Отмечено как открытый вопрос, а не додумано молча.
+ * шкалирования ни один документ не задает. Рецепт плоский: тир на цену не
+ * влияет — решение владельца 2026-08-01.
  */
 export function recipeFor(kind: BuildKind): Partial<Record<ModuleId, number>> {
   return CONSTRUCTION_RECIPE[kind].recipe;
