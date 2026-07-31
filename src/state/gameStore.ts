@@ -240,7 +240,7 @@ export const useGame = create<GameState>((set, get) => {
       const s = get();
       const orders = s.orders.map((o) => ({ ...o }));
       const slot = orders[slot_idx];
-      if (!slot || slot.state !== 'empty_cooldown') return;
+      if (slot?.state !== 'empty_cooldown') return;
 
       const price = droneRefreshPrice(slot.refresh_at - s.now);
       if (price > s.isotopes) {
@@ -322,7 +322,7 @@ export const useGame = create<GameState>((set, get) => {
       const s = get();
       const fields = s.fields.map((f) => ({ ...f }));
       const field = fields[idx];
-      if (!field || field.state !== 'GROWING') return;
+      if (field?.state !== 'GROWING') return;
 
       const good = field.good_id ? GOODS[field.good_id] : null;
       if (!good) return;
@@ -343,7 +343,7 @@ export const useGame = create<GameState>((set, get) => {
       const s = get();
       const slots = s.factory_slots.map((sl) => ({ ...sl }));
       const slot = slots[idx];
-      if (!slot || slot.state !== 'PRODUCING' || !slot.good_id) return;
+      if (slot?.state !== 'PRODUCING' || !slot.good_id) return;
 
       const price = productionSpeedupCost(slot.ends_at - s.now, 'factory');
       if (price > s.isotopes) {

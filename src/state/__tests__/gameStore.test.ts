@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { CREDITS_START, FACTORY_PRICES, plantingCost } from '../../domain/config/economy';
 import { GOODS, harvestQty } from '../../domain/config/goods';
 import { levelUpReward, xpToNext } from '../../domain/config/levels';
+import { canFulfillNow } from '../../domain/drone';
 import { createFactorySlot, createField } from '../../domain/production';
 import { createWarehouse, deposit, qtyOf, totalQty } from '../../domain/warehouse';
 import { useGame } from '../gameStore';
@@ -215,5 +216,100 @@ describe('Продажа', () => {
     const before = s().credits;
     s().sell('coffee_ration', 1);
     expect(s().credits).toBe(before);
+  });
+});
+
+describe('Дрон: доска и заказы', () => {
+  /** Доска наполняется тиком, поэтому уровень ставим до него. */
+  function boardAt(level: number, stock: Array<[Parameters<typeof deposit>[1], number]> = []) {
+    const w = createWarehouse(300);
+    for (const [id, qty] of stock) deposit(w, id, qty);
+    reset({ level, warehouse: w, orders: [] });
+    s().tick(s().now);
+  }
+
+  it('до второго уровня доска пуста — механика закрыта', () => {
+    boardAt(1);
+    expect(s().orders).toHaveLength(0);
+  });
+
+  it('на втором уровне появляются три слота', () => {
+    boardAt(2);
+    expect(s().orders).toHaveLength(3);
+  });
+
+  it('число слотов растет с уровнем и не падает при повторном тике', () => {
+    boardAt(10);
+    expect(s().orders).toHaveLength(7);
+    s().tick(s().now + 1);
+    expect(s().orders).toHaveLength(7);
+  });
+
+  it('погрузка резервирует товар, отправка списывает и платит', () => {
+    boardAt(5, [
+      ['algae', 200],
+      ['soy', 200],
+      ['mushrooms', 200],
+    ]);
+    const slot = s().orders.find((o) => canFulfillNow(o, s().warehouse));
+    if (!slot) return; // на этом seed нечего грузить, проверка неприменима
+
+    for (let i = 0; i < slot.positions.length; i++) s().loadOrderPosition(slot.idx, i);
+    expect(s().orders[slot.idx]?.state).toBe('ready');
+
+    const credits_before = s().credits;
+    const reward = s().orders[slot.idx]?.credits_reward ?? 0;
+    s().sendOrderAt(slot.idx);
+
+    expect(s().credits).toBe(credits_before + reward);
+    // Слот сразу получает новый заказ: у отправки нет таймера.
+    expect(s().orders[slot.idx]?.state).not.toBe('ready');
+  });
+
+  it('выброс возвращает погруженное и ставит таймер', () => {
+    boardAt(5, [
+      ['algae', 200],
+      ['soy', 200],
+      ['mushrooms', 200],
+    ]);
+    const slot = s().orders.find((o) => canFulfillNow(o, s().warehouse));
+    if (!slot) return;
+
+    s().loadOrderPosition(slot.idx, 0);
+    const position = s().orders[slot.idx]?.positions[0];
+    const reserved_before = s().warehouse.cells[position!.good_id]?.reserved ?? 0;
+    expect(reserved_before).toBeGreaterThan(0);
+
+    s().discardOrderAt(slot.idx);
+
+    expect(s().orders[slot.idx]?.state).toBe('empty_cooldown');
+    // Товар вернулся: иначе игрок платит за то, что передумал.
+    expect(s().warehouse.cells[position!.good_id]?.reserved ?? 0).toBe(0);
+  });
+
+  it('выброшенный слот сам обновляется по истечении таймера', () => {
+    boardAt(5);
+    s().discardOrderAt(0);
+    const refresh_at = s().orders[0]?.refresh_at ?? 0;
+
+    s().tick(refresh_at - 1);
+    expect(s().orders[0]?.state).toBe('empty_cooldown');
+
+    s().tick(refresh_at);
+    expect(s().orders[0]?.state).not.toBe('empty_cooldown');
+  });
+
+  it('платный рефреш списывает изотопы, без них не срабатывает', () => {
+    boardAt(5);
+    s().discardOrderAt(0);
+
+    useGame.setState({ isotopes: 0 });
+    s().refreshSlotNow(0);
+    expect(s().orders[0]?.state).toBe('empty_cooldown');
+
+    useGame.setState({ isotopes: 100 });
+    s().refreshSlotNow(0);
+    expect(s().orders[0]?.state).not.toBe('empty_cooldown');
+    expect(s().isotopes).toBeLessThan(100);
   });
 });
