@@ -1,0 +1,48 @@
+ГЕРОЙ-КАДР: ПРАВКА МАСШТАБА ТРАНСПОРТА. Композиция остается, меняются размеры.
+
+ЧТО НЕ ТАК. В последнем кадре шаттл вышел гигантским: по длине примерно как шесть
+жилых куполов, занимает четверть кадра, спорит с колонией за внимание. Дрон
+наоборот потерялся: площадка размером с ящик, механику не видно. Транспорт в
+казуальном сити-билдере не должен быть крупнее кварталов.
+
+ПРИЛОЖИТЬ: последний кадр колонии (тот, где шаттл на площадке справа внизу).
+
+================ КОПИРОВАТЬ ОТСЮДА ================
+
+Keep this exact Mars colony scene: same layout, same buildings, same zones, same
+lighting, same style, same camera. Change only the scale of two things.
+
+CHANGE 1: THE SHUTTLE IS FAR TOO BIG.
+Shrink the shuttle and its round landing pad to about one third of their current
+size. The shuttle should read as a cargo vehicle roughly two housing domes long,
+comfortably smaller than the nearby buildings, not the biggest object in the frame.
+Keep its shape, its cream and orange colours and its landing pad, just much smaller,
+in the same spot. Fill the sand freed up around it with ground detail that already
+exists elsewhere in the scene: crates, small rovers, a few colonists, cargo pallets,
+rocks and wheel tracks.
+
+CHANGE 2: THE DRONE IS HARD TO NOTICE.
+Do not make the drone much bigger. It stays a small vehicle, far smaller than the
+shuttle. Make it READABLE instead: lift the drone into the air, hovering just above
+its landing pad, carrying a small cargo container slung underneath, with a soft
+blurred shadow on the pad below it. Give it a bright accent colour and small glowing
+lights on its rotors so the eye catches it. Its hexagonal pad must look clearly
+different from the shuttle's round pad. Add one or two colonists and a couple of
+small cargo boxes beside the pad so it reads as a working delivery point.
+
+Everything else stays exactly as it is.
+
+================ ДО СЮДА ================
+
+ПРИЕМКА:
+  1. Шаттл заметно меньше, не крупнее соседних зданий, примерно два купола в длину.
+  2. Освободившийся песок вокруг шаттла застроен мелочью, пустого пятна нет.
+  3. Дрон остался маленьким, но стал заметным: висит в воздухе с грузом, под ним
+     тень на площадке, акцентный цвет и огоньки. Читается как второй канал доставки.
+  4. Площадка дрона шестиугольная, площадка шаттла круглая, силуэты разные.
+  5. Все остальное не поехало: зоны, здания, свет, стиль на местах.
+
+ОСТАЛОСЬ НА СЛЕДУЮЩИЙ ПРОХОД (не в этой правке, чтобы не ломать одну цель за раз):
+  - убрать весь текст и плашки-подписи (PASTA PASTEV, SMELTER A ALLOYFAXNT и прочий
+    нечитаемый мусор);
+  - убрать вшитый интерфейс по углам.
