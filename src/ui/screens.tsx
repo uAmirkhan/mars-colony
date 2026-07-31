@@ -6,11 +6,31 @@
 
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { FACTORY_PRICES, plantingCost, productionSpeedupCost } from '../domain/config/economy';
+import {
+  FACTORY_HINTS,
+  FACTORY_NAMES,
+  FACTORY_PRICES,
+  plantingCost,
+  productionSpeedupCost,
+} from '../domain/config/economy';
 import { ALL_GOOD_IDS, GOODS } from '../domain/config/goods';
 import type { GoodId } from '../domain/types';
 import { availableOf, occupiedGoods, qtyOf } from '../domain/warehouse';
-import { selectWarehouseLoad, selectXpProgress, useGame } from '../state/gameStore';
+import {
+  type PurchasableBuilding,
+  selectWarehouseLoad,
+  selectXpProgress,
+  useGame,
+} from '../state/gameStore';
+
+/** Порядок карточек — порядок открытия по уровню, он же порядок покупки. */
+const PURCHASABLE_BUILDINGS: PurchasableBuilding[] = [
+  'food_module',
+  'mining_site',
+  'atmospheric_module',
+  'textile_module',
+];
+
 import { Button, Currency, GoodIcon, Panel, ProgressBar, Timer } from './kit';
 
 export function Hud() {
@@ -225,102 +245,122 @@ export function WarehousePanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * Производство: все здания класса А на одном экране.
+ *
+ * Раньше экран знал ровно про Пищевой модуль, а Буровая, Атмосферный и
+ * Текстильный имели цены в конфиге и ни одной кнопки в игре — часть рецептов
+ * была недостижима. Правило каркаса: механика, у которой есть цена и нет
+ * кнопки, считается багом, а не незаконченной работой.
+ */
+function BuildingCard({
+  type,
+  onPick,
+}: {
+  type: PurchasableBuilding;
+  onPick: (slot_idx: number) => void;
+}) {
+  const { factory_slots, now, level, buildings, buyBuilding, collectFactory, warehouse } =
+    useGame();
+
+  const def = FACTORY_PRICES[type];
+  const owned = buildings.includes(type);
+  const slots = factory_slots.filter((s) => s.building_type === type);
+
+  if (!owned) {
+    return (
+      <div className="slot" style={{ padding: 12, gap: 8, alignItems: 'stretch' }}>
+        <div style={{ fontWeight: 800, color: 'var(--title)' }}>{FACTORY_NAMES[type]}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'left' }}>
+          {level < def.unlock_level
+            ? `Откроется на уровне ${def.unlock_level}. Сейчас ${level}-й.`
+            : FACTORY_HINTS[type]}
+        </div>
+        <Button full disabled={level < def.unlock_level} onClick={() => buyBuilding(type)}>
+          Построить за {def.first} кр
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <div style={{ fontWeight: 800, color: 'var(--title)' }}>{FACTORY_NAMES[type]}</div>
+      {slots.map((slot) => {
+        const good = slot.good_id ? GOODS[slot.good_id] : null;
+        const ready = slot.state === 'READY';
+        return (
+          <div
+            key={slot.idx}
+            className={`slot ${ready ? 'slot-ready' : ''}`}
+            style={{ flexDirection: 'row', gap: 10, padding: 10, minHeight: 62 }}
+            onClick={() =>
+              ready
+                ? collectFactory(slot.idx)
+                : slot.state === 'EMPTY'
+                  ? onPick(slot.idx)
+                  : null
+            }
+          >
+            {!good && <span style={{ color: 'var(--text-muted)' }}>Пустой слот</span>}
+            {good && (
+              <>
+                <GoodIcon name={good.name} />
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                  <div style={{ fontSize: 12 }}>
+                    {slot.state === 'QUEUED' ? (
+                      <span style={{ color: 'var(--secondary-dark)', fontWeight: 700 }}>
+                        Ждет:{' '}
+                        {good.inputs
+                          .filter((i) => availableOf(warehouse, i.good_id) < i.qty)
+                          .map((i) => GOODS[i.good_id].name)
+                          .join(', ')}
+                      </span>
+                    ) : ready ? (
+                      <span style={{ color: 'var(--action-dark)', fontWeight: 800 }}>
+                        Забрать
+                      </span>
+                    ) : (
+                      <Timer remaining_sec={slot.ends_at - now} />
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function FactoryPanel({ onClose }: { onClose: () => void }) {
-  const {
-    factory_slots,
-    now,
-    level,
-    buildings,
-    buyBuilding,
-    enqueue,
-    collectFactory,
-    warehouse,
-  } = useGame();
+  const { factory_slots, level, enqueue } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
 
-  const has_food_module = buildings.includes('food_module');
-  const price = FACTORY_PRICES.food_module.first;
-  const unlock = FACTORY_PRICES.food_module.unlock_level;
-
+  // Рецепты берутся у здания, которому принадлежит выбранный слот: иначе в
+  // очередь буровой можно было бы поставить ткань.
+  const picked = picker === null ? null : (factory_slots.find((s) => s.idx === picker) ?? null);
   const recipes = ALL_GOOD_IDS.filter(
     (id) =>
       GOODS[id].kind === 'factory' &&
-      GOODS[id].required_building === 'food_module' &&
+      picked !== null &&
+      GOODS[id].required_building === picked.building_type &&
       GOODS[id].unlock_level <= level,
   );
 
   return (
     <div className="scrim" onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()}>
-        <Panel
-          title="Пищевой модуль"
-          onClose={onClose}
-          style={{ maxWidth: 460, width: '92vw' }}
-        >
-          {!has_food_module ? (
-            <div style={{ display: 'grid', gap: 12, textAlign: 'center' }}>
-              <div>
-                {level < unlock
-                  ? `Откроется на уровне ${unlock}.`
-                  : 'Перерабатывает сырье в товары подороже.'}
-              </div>
-              <Button full disabled={level < unlock} onClick={() => buyBuilding('food_module')}>
-                Построить за {price} кр
-              </Button>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gap: 10 }}>
-              {factory_slots.map((slot) => {
-                const good = slot.good_id ? GOODS[slot.good_id] : null;
-                const ready = slot.state === 'READY';
-                return (
-                  <div
-                    key={slot.idx}
-                    className={`slot ${ready ? 'slot-ready' : ''}`}
-                    style={{ flexDirection: 'row', gap: 10, padding: 10, minHeight: 62 }}
-                    onClick={() =>
-                      ready
-                        ? collectFactory(slot.idx)
-                        : slot.state === 'EMPTY'
-                          ? setPicker(slot.idx)
-                          : null
-                    }
-                  >
-                    {!good && <span style={{ color: 'var(--text-muted)' }}>Пустой слот</span>}
-                    {good && (
-                      <>
-                        <GoodIcon name={good.name} />
-                        <div style={{ flex: 1, textAlign: 'left' }}>
-                          <div style={{ fontWeight: 800, color: 'var(--title)' }}>
-                            {good.name}
-                          </div>
-                          <div style={{ fontSize: 12 }}>
-                            {slot.state === 'QUEUED' ? (
-                              <span style={{ color: 'var(--secondary-dark)', fontWeight: 700 }}>
-                                Ждет:{' '}
-                                {good.inputs
-                                  .filter((i) => availableOf(warehouse, i.good_id) < i.qty)
-                                  .map((i) => GOODS[i.good_id].name)
-                                  .join(', ')}
-                              </span>
-                            ) : ready ? (
-                              <span style={{ color: 'var(--action-dark)', fontWeight: 800 }}>
-                                Забрать
-                              </span>
-                            ) : (
-                              <Timer remaining_sec={slot.ends_at - now} />
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <Panel title="Производство" onClose={onClose} style={{ maxWidth: 460, width: '92vw' }}>
+          <div style={{ display: 'grid', gap: 14, maxHeight: '58vh', overflowY: 'auto' }}>
+            {PURCHASABLE_BUILDINGS.map((type) => (
+              <BuildingCard key={type} type={type} onPick={setPicker} />
+            ))}
+          </div>
 
-          {picker !== null && (
+          {picked && (
             <div
               style={{
                 marginTop: 14,
@@ -342,15 +382,17 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
                           {good.name}
                         </div>
                         <div style={{ fontSize: 12 }}>
-                          {good.inputs
-                            .map((i) => `${GOODS[i.good_id].name} x${i.qty}`)
-                            .join(' + ')}{' '}
+                          {good.inputs.length === 0
+                            ? 'Без сырья'
+                            : good.inputs
+                                .map((i) => `${GOODS[i.good_id].name} x${i.qty}`)
+                                .join(' + ')}{' '}
                           → {good.price} кр
                         </div>
                       </div>
                       <Button
                         onClick={() => {
-                          enqueue(picker, id as GoodId);
+                          enqueue(picked.idx, id as GoodId);
                           setPicker(null);
                         }}
                       >

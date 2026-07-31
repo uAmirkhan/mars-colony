@@ -129,3 +129,39 @@ test('до пятого уровня станция закрыта и не пр�
   await page.getByRole('button', { name: 'Шаттл' }).click();
   await expect(page.getByText(/Шаттл открывается на пятом уровне/)).toBeVisible();
 });
+
+/**
+ * Правило каркаса: механика, у которой есть цена в конфиге и нет кнопки в
+ * игре, считается багом. Буровая, Атмосферный и Текстильный полторы недели
+ * имели цены и ни одного пути покупки — часть рецептов была недостижима, и
+ * симулятор их покупал, а игрок нет. Проверка стоит, чтобы это не вернулось.
+ */
+test('все четыре здания класса А покупаются в интерфейсе', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+
+  await openGame(page);
+  await page.evaluate(() => {
+    const store = (window as unknown as { __game: { getState: () => any } }).__game;
+    (store as unknown as { setState: (p: unknown) => void }).setState({
+      level: 21,
+      credits: 1_000_000,
+    });
+  });
+
+  await page.getByRole('button', { name: 'Фабрика' }).click();
+  const buy = page.getByRole('button', { name: /Построить за \d+ кр/ });
+  await expect(buy, 'у каждого здания класса А обязана быть кнопка покупки').toHaveCount(4);
+
+  for (let i = 0; i < 4; i++) await buy.first().click();
+  await expect(buy, 'после покупки кнопок не остается').toHaveCount(0);
+
+  // Купленное здание обязано дать очередь: здание без слотов — это оплаченный
+  // интерфейс, в котором нечего делать.
+  const slots = await page.evaluate(() => {
+    const store = (window as unknown as { __game: { getState: () => any } }).__game;
+    return store.getState().factory_slots.length as number;
+  });
+  expect(slots).toBe(8);
+  expect(errors).toEqual([]);
+});

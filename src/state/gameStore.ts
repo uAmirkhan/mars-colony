@@ -9,6 +9,7 @@ import {
   CREDITS_START,
   constructionSpeedupCost,
   droneRefreshPrice,
+  FACTORY_NAMES,
   FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
@@ -262,9 +263,9 @@ export const useGame = create<GameState>((set, get) => {
     isotopes: 0,
     warehouse: createWarehouse(),
     fields: Array.from({ length: fieldsAtLevel(1) }, (_, i) => createField(i)),
-    factory_slots: Array.from({ length: FACTORY_QUEUE_BASE_SLOTS }, (_, i) =>
-      createFactorySlot(i, 'food_module'),
-    ),
+    // Слотов нет, пока не куплено ни одного здания: очередь без здания —
+    // это интерфейс, обещающий производство, которого игрок не покупал.
+    factory_slots: [],
     buildings: [],
     toasts: [],
     orders: [],
@@ -620,8 +621,19 @@ export const useGame = create<GameState>((set, get) => {
         pushToast(`Нужно ${def.first} кредитов`, 'warn');
         return;
       }
-      set({ credits: s.credits - def.first, buildings: [...s.buildings, type] });
-      pushToast('Здание построено', 'reward');
+      // Здание без очереди — здание, в котором нечего делать. Слоты заводятся
+      // вместе с покупкой, иначе игрок платит и не видит никакой разницы.
+      const slots = [...s.factory_slots];
+      for (let i = 0; i < FACTORY_QUEUE_BASE_SLOTS; i++) {
+        slots.push(createFactorySlot(slots.length, type));
+      }
+
+      set({
+        credits: s.credits - def.first,
+        buildings: [...s.buildings, type],
+        factory_slots: slots,
+      });
+      pushToast(`${FACTORY_NAMES[type]} построен`, 'reward');
     },
 
     dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
