@@ -96,25 +96,16 @@ const SRC = resolve(process.cwd(), 'src');
  * Каждая строка — обещание, а не отговорка: при реализации строку удаляют.
  */
 const DEFERRED: Record<string, string> = {
-  // Стройка — день 5+, вместе с шаттлом и строй-модулями
-  CONSTRUCTION_ACTIVE_LINES_BASE: 'стройка не реализована, день 5+',
-  CONSTRUCTION_RECIPE: 'стройка не реализована, день 5+',
-  CONSTRUCTION_SPEEDUP_RATE: 'стройка не реализована, день 5+',
-  CONSTRUCTION_SPEEDUP_RATE_ISO_PER_MIN: 'стройка не реализована, день 5+',
-  SPEEDUP_FLOOR_ISO_CONSTRUCTION: 'стройка не реализована, день 5+',
+  // Ставка ускорения стройки: канон дает два имени одному числу, реализовано
+  // длинное (`..._ISO_PER_MIN`), короткое остается синонимом из текста ТЗ.
+  CONSTRUCTION_SPEEDUP_RATE: 'синоним CONSTRUCTION_SPEEDUP_RATE_ISO_PER_MIN',
 
-  // Обучение — отдельный проход
-  FTUE_FIRST_HARVEST_TIME_SEC: 'FTUE не реализован, отдельный проход',
+  // Обучение производства — отдельный проход (FTUE шаттла уже реализован)
+  FTUE_FIRST_HARVEST_TIME_SEC: 'FTUE производства не реализован, отдельный проход',
 
   // Пуши и алерты — вне веб-прототипа
   IDLE_READY_PUSH_DELAY_MIN: 'пушей в веб-срезе нет',
   QUEUE_STARVATION_ALERT_MIN: 'health-метрика, нужен сервер',
-
-  // Состояния стройки как строковые литералы появятся вместе со стройкой
-  LOCKED: 'состояние стройки, день 5+',
-  AVAILABLE: 'состояние стройки, день 5+',
-  IN_PROGRESS: 'состояние стройки, день 5+',
-  DONE: 'состояние стройки, день 5+',
 };
 
 /**

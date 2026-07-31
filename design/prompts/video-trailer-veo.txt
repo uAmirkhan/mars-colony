@@ -1,0 +1,187 @@
+========================================================================
+MARS COLONY — ПРОМПТЫ ДЛЯ ГЕНЕРАЦИИ ВИДЕО (Veo / Gemini)
+========================================================================
+
+Редакция 2 от 2026-07-31. Первая редакция получила отказ «I can't
+generate that video». Что в ней было не так, по убыванию вероятности:
+
+1. НАЗВАНИЯ ЧУЖИХ ИГР. В тексте стояли Township и Hay Day как описание
+   стиля. Просьба сделать «как вот эта коммерческая игра» читается как
+   запрос на копирование чужого продукта. Убрано полностью: стиль
+   теперь описан своими словами.
+2. БЛОК NEGATIVE. В приложении Gemini нет отдельного поля для негатива,
+   весь текст идет одной строкой в модель. Список из explosion, fire,
+   weapons, soldiers, military, radiation, hazard, damage, wreckage,
+   danger фильтр читает как перечень того, что просят показать.
+   Запреты через «no» вообще плохо работают в видеомоделях. Убрано:
+   все нужное сформулировано утвердительно.
+3. ДЛИНА. Простыня на две страницы. Veo лучше работает с плотным
+   абзацем на пять-восемь предложений.
+4. Мелочи: NASA, Unreal Engine — тоже чужие имена, убраны.
+
+Правило на будущее: **описываем то, что должно быть в кадре, а не то,
+чего не должно.** Вместо «no engine flame» — «engines cold and dark».
+Вместо «no craters, no wreckage» — «smooth clean settled ground».
+
+Прикладывать картинками к каждой генерации: лист ассетов и герой-кадр
+колонии. Начинать с варианта 1 — он самый проходной.
+
+========================================================================
+ВАРИАНТ 1 — КОРОТКИЙ. С НЕГО НАЧИНАТЬ
+========================================================================
+
+A hand-painted 2D mobile game scene brought to life: a cheerful Mars
+colony at golden hour, seen from a three-quarter view slightly above,
+matching the attached illustration exactly. A cream-white cargo shuttle
+with swept wings and teal cockpit glass rests on an octagonal cream and
+brass landing pad, its engines cold and dark, amber lamps pulsing
+slowly around the rim. Behind it, glass greenhouses full of green
+crops, rounded white domes with teal panels, small cream factory
+buildings breathing soft white steam, and a field of blue solar panels
+catching the low sun. A small courier drone with terracotta rotor rings
+lifts a crate from its hexagonal pad and flies gently across the frame.
+Tiny figures in cream suits walk the dust paths. The camera pushes in
+slowly and smoothly. Warm ochre ground, peach sky, soft golden light
+from the upper left, painted illustration style with soft volumetric
+shading, calm and cosy.
+
+========================================================================
+ВАРИАНТ 2 — СРЕДНИЙ. ЕСЛИ ПЕРВЫЙ ПРОШЕЛ И ХОЧЕТСЯ ПОДРОБНЕЕ
+========================================================================
+
+An eight-second animated scene in the style of a hand-painted casual
+mobile city-building game, matching the attached art exactly.
+
+A thriving Mars settlement at golden hour, seen from a three-quarter
+view about 45 degrees above. The camera pushes in slowly and steadily
+across the whole shot, smooth and locked, like a player leaning into
+their own town.
+
+In the foreground a cream-white cargo shuttle rests on an octagonal
+landing pad of cream deck and warm brass edging. The shuttle has swept
+delta wings, a tall tail fin, a dark charcoal belly, a wide wrap-around
+windscreen of tinted teal glass and two chunky grey landing skids. Its
+engines are cold and dark. Round amber lamps set into the pad rim pulse
+slowly in sequence.
+
+Behind it the colony works quietly: long barrel-vault glass greenhouses
+with rows of bright green crops, rounded white habitat domes with teal
+glass panels, small cream factory modules with brass trim releasing
+thin white steam that rises and dissolves, and a field of dark blue
+solar panels glinting one after another. A courier drone with a cream
+capsule body and four terracotta rotor rings lifts a plain crate from
+its hexagonal pad, rises with a soft bounce and drifts across the frame.
+Small rounded figures in cream suits walk between the buildings.
+
+Warm ochre and rust ground, smooth and clean, with pale trodden paths.
+Flat-topped mesas on the horizon under a peach sky with a band of rosy
+haze. One soft golden key light from the upper left, every surface
+carrying a gentle two-step gradient, every object dropping one soft
+shadow to the lower right.
+
+Painted illustration style with soft volumetric shading, semi-gloss
+ceramic and metal with a warm sheen, stylized and toy-like. Motion is
+soft and springy with a small overshoot, the light timing of a friendly
+mobile game. Calm, warm, prosperous, cosy.
+
+Audio: a warm soundtrack of soft marimba, plucked strings and gentle
+woodwind, friendly and optimistic. Underneath, soft wind, a distant
+machinery hum, faint cheerful chatter, a light servo whirr as the drone
+lifts, one quiet chime.
+
+========================================================================
+ВАРИАНТ 3 — ОТДЕЛЬНЫЕ КАДРЫ. КАЖДЫЙ ГЕНЕРИТЬ ОТДЕЛЬНО
+========================================================================
+
+Каждый кадр самостоятельный, стилевую строку внизу приписывать к
+любому из них.
+
+--- КАДР: ПОСАДКА ШАТТЛА ---
+A cream-white cargo shuttle with swept wings, a tall tail fin and
+tinted teal cockpit glass glides in from the upper left and lands
+softly on an octagonal cream and brass pad. The amber lamps around the
+pad rim light up one by one to welcome it. The shuttle levels out and
+settles straight down onto two chunky grey skids with a gentle bounce,
+a low ring of soft ochre dust puffing outward and fading. Its engines
+stay cold and dark throughout. Two small figures in cream suits walk in
+from the right and wait beside a stack of crates. Static camera, three
+quarter view slightly above.
+
+--- КАДР: ДРОН ЗАБИРАЕТ ГРУЗ ---
+A small courier drone with a rounded cream capsule body and four
+terracotta rotor rings descends onto a hexagonal cream and brass pad.
+The polished steel platter on top of the pad turns a quarter and stops,
+presenting a plain cardboard crate. The drone hovers, dips, closes its
+four slim grey legs around the crate, then rises with a soft overshoot
+and flies out toward the upper right over glass greenhouses. An orange
+beacon lamp on the pad pulses twice. The camera rises gently with the
+drone.
+
+--- КАДР: ТЕПЛИЦА ---
+Inside a long barrel-vault glass greenhouse on Mars, rows of bright
+green plants stand in warm ochre beds. A wave of growth travels down
+one row: small shoots push up, unfurl and swell into ripe produce with
+a soft springy bounce. Two small figures in cream suits move along the
+row lifting full crates, a little burst of soft green leaves lifting
+and fading each time. Warm sunlight rakes across the curved glass and
+throws soft diagonal highlights. The camera drifts slowly to the right
+along the greenhouse.
+
+--- КАДР: ФАБРИКА ---
+A small cream factory module with brass trim and a teal indicator panel
+turns crops into finished goods. A short conveyor carries crates in
+through a side hatch that slides open with a soft mechanical motion.
+The module hums, its indicator panel pulses, clean white steam rises
+from a vent and dissolves. An output hatch opens and finished goods
+rise into view on a small lifting platter with a springy overshoot. Two
+small figures in cream suits carry them away. Static camera, gentle
+push-in.
+
+--- КАДР: СТРОЙКА ---
+An empty marked-out plot of ochre ground between colony buildings
+becomes a finished building. Slim cream struts rise from the ground
+with light springy timing, panels swing up into place one after another
+and lock, a domed roof settles down with a small overshoot, the
+scaffolding folds away, and the finished building settles with one
+gentle bounce as a ring of warm dust puffs outward and fades. Its teal
+window panels light up softly and two small figures in cream suits walk
+in through the door. Static camera, three quarter view.
+
+--- КАДР: ЗАКРЫВАЮЩИЙ ОТЪЕЗД ---
+The camera pulls back slowly and smoothly from a landing pad with a
+cream shuttle resting on it, revealing more and more of a thriving Mars
+colony at golden hour: white domes, glass greenhouses, cream factories
+with thin steam plumes, blue solar panels, dust paths busy with tiny
+figures in cream suits, a courier drone crossing the frame. In the last
+moments the low sun glows warmly behind flat-topped mesas and a band of
+rosy haze settles across the horizon.
+
+--- СТИЛЕВАЯ СТРОКА, ПРИПИСЫВАТЬ К ЛЮБОМУ КАДРУ ---
+Hand-painted 2D mobile game illustration brought to life, matching the
+attached art exactly: warm cream, brass and terracotta palette, tinted
+teal glass, warm ochre ground, peach sky. Soft volumetric shading with
+a two-step gradient on every surface, semi-gloss ceramic and metal with
+a warm sheen, stylized and toy-like. One soft golden key light from the
+upper left, one soft shadow per object to the lower right. Smooth
+locked camera, springy playful motion with a small overshoot. Calm,
+warm, cosy, prosperous.
+
+========================================================================
+ЕСЛИ ОТКАЗ ПОВТОРИТСЯ
+========================================================================
+
+Резать по одному и пробовать снова:
+
+1. Убрать слово colony и заменить на settlement или town. Иногда
+   срабатывает на «колонизацию».
+2. Убрать фигуры людей совсем — оставить только технику и здания.
+   Люди в кадре чаще всего и есть причина отказа.
+3. Убрать Mars, оставить «a warm ochre desert world».
+4. Убрать звуковую строку, сгенерировать без звука.
+5. Сократить до пяти предложений: одна сцена, одно действие, одна
+   камера.
+6. Убрать «matching the attached art exactly» — иногда просьба
+   воспроизвести приложенное читается как копирование чужого.
+
+Если отказ идет только на конкретный кадр — дело в нем, а не в стиле.
+Посадка шаттла и стройка проходят чаще всего, теплица с людьми реже.

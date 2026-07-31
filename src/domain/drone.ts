@@ -16,6 +16,7 @@ import {
   COVERAGE_MIN,
   DRONE_PREMIUM_RANGE,
   DRONE_REFRESH_FREE_SEC,
+  EASY_PRODUCE_MAX_MIN,
   MAX_DEFICIT_SLOTS,
   PINCH_MAX,
   PINCH_MIN,
@@ -112,10 +113,22 @@ export interface GeneratorContext {
   rng: () => number;
 }
 
+/**
+ * «Легкая» позиция по И-8: покрыта складом ИЛИ производится не дольше
+ * EASY_PRODUCE_MAX_MIN. Вторая половина условия долго отсутствовала, и это
+ * было не придиркой к букве: без нее пустой склад делал дефицитной каждую
+ * позицию, бюджет дефицита выедался первой же, а все остальные генератор
+ * выбрасывал. Замер показал доску из одних однопозиционных заказов.
+ */
+function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolean {
+  if (availableOf(warehouse, good_id) >= qty) return true;
+  return GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.drone * 60;
+}
+
 /** Доля позиций, которые игрок может закрыть прямо сейчас или быстро произвести. */
 function easyRatio(positions: OrderPosition[], warehouse: WarehouseState): number {
   if (positions.length === 0) return 1;
-  const easy = positions.filter((p) => availableOf(warehouse, p.good_id) >= p.qty).length;
+  const easy = positions.filter((p) => isEasy(p.good_id, p.qty, warehouse)).length;
   return easy / positions.length;
 }
 
@@ -158,10 +171,12 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
       let qty = slotQuantity(good_id, 'drone', ctx.level, ctx.rng());
 
       // И-8: не больше одной дефицитной позиции на заказ. Дефицит — это
-      // «чуть больше, чем на складе», а не «недостижимо много».
+      // «чуть больше, чем на складе», а не «недостижимо много». Товар с
+      // коротким циклом дефицитом не считается: игрок его просто вырастит.
       const have = availableOf(ctx.warehouse, good_id);
+      const quick = GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.drone * 60;
 
-      if (qty > have) {
+      if (qty > have && !quick) {
         if (deficit_used >= MAX_DEFICIT_SLOTS) {
           // Бюджет дефицита исчерпан. Урезать до складского остатка можно,
           // только если остаток есть. При нуле на складе позиция осталась бы

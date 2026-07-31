@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import {
   CREDITS_START,
+  constructionSpeedupCost,
   droneRefreshPrice,
   FACTORY_PRICES,
   FACTORY_QUEUE_BASE_SLOTS,
@@ -20,6 +21,16 @@ import {
   MECHANIC_UNLOCK_LEVEL,
   xpToNext,
 } from '../domain/config/levels';
+import type { BuildKind } from '../domain/config/modules';
+import { CONSTRUCTION_RECIPE, MODULES } from '../domain/config/modules';
+import {
+  activeNeed,
+  addModule,
+  type ConstructionState,
+  createConstruction,
+  refreshBuilds,
+  startBuild,
+} from '../domain/construction';
 import {
   availableGoodsFor,
   discardOrder,
@@ -30,6 +41,7 @@ import {
   sendOrder,
   slotsAtLevel,
 } from '../domain/drone';
+import type { DropContext, ModuleCounts } from '../domain/droproller';
 import {
   createFactorySlot,
   createField,
@@ -45,8 +57,25 @@ import {
   refreshFactorySlot,
   refreshField,
 } from '../domain/production';
-import type { GoodId } from '../domain/types';
+import {
+  allCollected,
+  buyoutSlot,
+  collectContainer,
+  generateTrip,
+  loadSlot,
+  refreshTrip,
+  type ShuttleTrip,
+  skipFlight,
+  skipPrice,
+  slotBuyoutPrice,
+  startCooldown,
+  tripXp,
+} from '../domain/shuttle';
+import type { BuildingType, GoodId } from '../domain/types';
 import { createWarehouse, totalQty, type WarehouseState } from '../domain/warehouse';
+
+/** Здания класса А: покупаются за кредиты по достижении уровня. */
+export type PurchasableBuilding = keyof typeof FACTORY_PRICES;
 
 export interface Toast {
   id: number;
@@ -63,7 +92,12 @@ interface GameState {
   warehouse: WarehouseState;
   fields: FieldSlot[];
   factory_slots: FactorySlot[];
-  has_food_module: boolean;
+  /**
+   * Построенные здания класса А. Раньше здесь стоял булев `has_food_module` —
+   * он перестал работать в тот момент, когда зданий стало больше одного:
+   * каждое новое требовало бы своего флага и своего ветвления в трех местах.
+   */
+  buildings: BuildingType[];
   toasts: Toast[];
 
   tick: (now: number) => void;
@@ -79,7 +113,25 @@ interface GameState {
   sendOrderAt: (slot_idx: number) => void;
   discardOrderAt: (slot_idx: number) => void;
   refreshSlotNow: (slot_idx: number) => void;
-  buyFoodModule: () => void;
+  buyBuilding: (type: PurchasableBuilding) => void;
+
+  /** Шаттл: ровно один рейс на игрока, поэтому не массив. */
+  shuttle: ShuttleTrip | null;
+  /** Сколько прибытий уже случилось. Вход FTUE-удачи и окна И-11. */
+  shuttle_arrivals: number;
+  drop_pity: ModuleCounts;
+  drop_without_needed: number;
+  drop_last_floor: number;
+  loadShuttleSlot: (idx: number) => void;
+  buyoutShuttleSlot: (idx: number) => void;
+  skipShuttle: () => void;
+  collectContainerAt: (idx: number) => void;
+  collectAllContainers: () => void;
+
+  construction: ConstructionState;
+  startConstruction: (kind: BuildKind) => void;
+  speedupConstruction: (kind: BuildKind) => void;
+
   dismissToast: (id: number) => void;
 }
 
@@ -131,7 +183,7 @@ export const useGame = create<GameState>((set, get) => {
   /** Новый заказ в слот. Пул товаров — то, что игрок реально умеет производить. */
   const makeOrder = (idx: number, now: number): OrderSlot => {
     const s = get();
-    const buildings = new Set<string>(s.has_food_module ? ['food_module'] : []);
+    const buildings = new Set<string>(s.buildings);
     const order = generateOrder(idx, {
       level: s.level,
       warehouse: s.warehouse,
@@ -150,6 +202,58 @@ export const useGame = create<GameState>((set, get) => {
     if (started > 0) set({ factory_slots: slots });
   };
 
+  /**
+   * Контекст дроп-роллера. Собирается на каждый вызов, а не хранится: половина
+   * его полей — производные от склада модулей и списка доступных строек, и
+   * копия этих полей разъехалась бы с оригиналом на первой же постройке.
+   */
+  const dropCtx = (): DropContext => {
+    const s = get();
+    return {
+      pity: s.drop_pity,
+      stock: s.construction.stock,
+      need: activeNeed(s.construction),
+      // Гейтовый тир требует построенных зданий, которых в MVP нет (ТЗ 7).
+      gated_open: false,
+      arrival_no: s.shuttle_arrivals + 1,
+      arrivals_without_needed: s.drop_without_needed,
+      last_floor_arrival: s.drop_last_floor,
+      rng: Math.random,
+    };
+  };
+
+  /** Новый рейс шаттла. Первый в жизни игрока идет по FTUE-правилам. */
+  const makeTrip = (): ShuttleTrip => {
+    const s = get();
+    return generateTrip({
+      level: s.level,
+      warehouse: s.warehouse,
+      available_goods: availableGoodsFor(s.level, new Set<string>(s.buildings)),
+      previous: s.shuttle,
+      is_first_trip: s.shuttle_arrivals === 0,
+      arrival_no: s.shuttle_arrivals + 1,
+      rng: Math.random,
+    });
+  };
+
+  /** Отправка случилась внутри домена — стор фиксирует ее последствия. */
+  const applyDeparture = (
+    trip: ShuttleTrip,
+    drop_state: NonNullable<ReturnType<typeof loadSlot>['drop_state']>,
+  ) => {
+    const s = get();
+    set({
+      shuttle: trip,
+      warehouse: { ...s.warehouse },
+      shuttle_arrivals: s.shuttle_arrivals + 1,
+      drop_pity: drop_state.next_pity,
+      drop_without_needed: drop_state.next_arrivals_without_needed,
+      drop_last_floor: drop_state.next_last_floor_arrival,
+    });
+    applyXp(tripXp(trip));
+    pushToast('Шаттл ушел на орбиту', 'reward');
+  };
+
   return {
     now: Math.floor(Date.now() / 1000),
     level: 1,
@@ -161,9 +265,15 @@ export const useGame = create<GameState>((set, get) => {
     factory_slots: Array.from({ length: FACTORY_QUEUE_BASE_SLOTS }, (_, i) =>
       createFactorySlot(i, 'food_module'),
     ),
-    has_food_module: false,
+    buildings: [],
     toasts: [],
     orders: [],
+    shuttle: null,
+    shuttle_arrivals: 0,
+    drop_pity: {},
+    drop_without_needed: 0,
+    drop_last_floor: 0,
+    construction: createConstruction(),
 
     tick: (now) => {
       const s = get();
@@ -184,7 +294,146 @@ export const useGame = create<GameState>((set, get) => {
         );
       }
 
-      set({ now, fields, factory_slots, orders });
+      // Шаттл: прибытие по времени и новый заказ после кулдауна. Заказ не
+      // выдается, пока не собран прошлый груз, — иначе контейнеры прошлого
+      // рейса молча исчезли бы вместе с рейсом.
+      let shuttle = s.shuttle;
+      if (s.level >= MECHANIC_UNLOCK_LEVEL.shuttle) {
+        if (shuttle === null) shuttle = makeTrip();
+        else if (shuttle.state === 'COOLDOWN' && now >= shuttle.cooldown_until)
+          shuttle = makeTrip();
+        else shuttle = refreshTrip({ ...shuttle }, now);
+      }
+
+      const construction = {
+        ...s.construction,
+        builds: refreshBuilds(s.construction, s.level, now, s.warehouse),
+      };
+
+      set({
+        now,
+        fields,
+        factory_slots,
+        orders,
+        shuttle,
+        construction,
+        warehouse: { ...s.warehouse },
+      });
+    },
+
+    /**
+     * Погрузка отсека шаттла. Кнопки «Отправить» нет: домен сам стартует рейс,
+     * когда закрылся последний отсек (ТЗ 2.3). Стор об этом узнает по флагу.
+     */
+    loadShuttleSlot: (idx) => {
+      const s = get();
+      if (!s.shuttle) return;
+      const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
+
+      const result = loadSlot(trip, idx, s.warehouse, s.now, dropCtx());
+      if (!result.ok) {
+        pushToast('Нет на складе', 'warn');
+        return;
+      }
+      if (result.departed && result.drop_state) applyDeparture(trip, result.drop_state);
+      else set({ shuttle: trip, warehouse: { ...s.warehouse } });
+    },
+
+    buyoutShuttleSlot: (idx) => {
+      const s = get();
+      if (!s.shuttle) return;
+      const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
+      const slot = trip.slots[idx];
+      if (!slot) return;
+
+      const price = slotBuyoutPrice(slot, s.warehouse);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+
+      const result = buyoutSlot(trip, idx, s.warehouse, s.now, dropCtx());
+      if (!result.ok) return;
+
+      set({ isotopes: s.isotopes - result.price });
+      if (result.departed && result.drop_state) applyDeparture(trip, result.drop_state);
+      else set({ shuttle: trip });
+    },
+
+    skipShuttle: () => {
+      const s = get();
+      if (s.shuttle?.state !== 'IN_TRANSIT') return;
+      const price = skipPrice(s.shuttle, s.now);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+      const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
+      if (!skipFlight(trip, s.now)) return;
+      set({ shuttle: trip, isotopes: s.isotopes - price });
+    },
+
+    /**
+     * Вскрытие контейнера. Переполнение склада модулей отказывает целиком:
+     * контейнер остается закрытым и ждет, а не растворяется наполовину.
+     */
+    collectContainerAt: (idx) => {
+      const s = get();
+      if (s.shuttle?.state !== 'ARRIVED') return;
+      const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
+      const stock: ModuleCounts = { ...s.construction.stock };
+
+      const module_id = collectContainer(trip, idx);
+      if (module_id === null) return;
+      if (!addModule(stock, module_id)) {
+        pushToast('Склад модулей полон', 'warn');
+        return;
+      }
+
+      const construction = { ...s.construction, stock };
+      if (allCollected(trip)) startCooldown(trip, s.now);
+      set({ shuttle: trip, construction });
+      pushToast(`+1 ${MODULES[module_id].name}`, 'reward');
+    },
+
+    collectAllContainers: () => {
+      const count = get().shuttle?.slots.length ?? 0;
+      for (let i = 0; i < count; i++) get().collectContainerAt(i);
+    },
+
+    startConstruction: (kind) => {
+      const s = get();
+      const construction = {
+        ...s.construction,
+        stock: { ...s.construction.stock },
+        builds: s.construction.builds.map((b) => ({ ...b })),
+      };
+      const result = startBuild(construction, kind, s.now);
+      if (!result.ok) {
+        if (result.reason === 'missing_modules') pushToast('Не хватает модулей', 'warn');
+        if (result.reason === 'no_free_line') pushToast('Линия стройки занята', 'warn');
+        return;
+      }
+      set({ construction });
+      pushToast(`Стройка начата: ${CONSTRUCTION_RECIPE[kind].name}`, 'reward');
+    },
+
+    speedupConstruction: (kind) => {
+      const s = get();
+      const builds = s.construction.builds.map((b) => ({ ...b }));
+      const build = builds.find((b) => b.kind === kind);
+      if (build?.state !== 'IN_PROGRESS') return;
+
+      const price = constructionSpeedupCost(build.ends_at - s.now);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+      build.ends_at = s.now;
+      set({
+        construction: { ...s.construction, builds },
+        isotopes: s.isotopes - price,
+      });
     },
 
     /** Погрузка позиции: резерв со склада, состояние слота пересчитывается доменом. */
@@ -357,16 +606,22 @@ export const useGame = create<GameState>((set, get) => {
       if (price === 0) pushToast('Готово', 'info');
     },
 
-    buyFoodModule: () => {
+    /**
+     * Покупка здания класса А за кредиты. Мгновенно, без фазы стройки и без
+     * модулей: обязательный прогрессионный контент не должен зависеть от
+     * дропа механики, которая открывается позже него.
+     */
+    buyBuilding: (type) => {
       const s = get();
-      const price = FACTORY_PRICES.food_module.first;
-      if (s.level < FACTORY_PRICES.food_module.unlock_level) return;
-      if (s.credits < price) {
-        pushToast(`Нужно ${price} кредитов`, 'warn');
+      const def = FACTORY_PRICES[type];
+      if (s.level < def.unlock_level) return;
+      if (s.buildings.includes(type)) return;
+      if (s.credits < def.first) {
+        pushToast(`Нужно ${def.first} кредитов`, 'warn');
         return;
       }
-      set({ credits: s.credits - price, has_food_module: true });
-      pushToast('Пищевой модуль построен', 'reward');
+      set({ credits: s.credits - def.first, buildings: [...s.buildings, type] });
+      pushToast('Здание построено', 'reward');
     },
 
     dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
@@ -383,3 +638,16 @@ export const selectXpProgress = (s: GameState) => ({
   into: s.xp_into_level,
   need: xpToNext(s.level),
 });
+
+/**
+ * Тестовый шов для браузерных проверок. Петля шаттла занимает час игрового
+ * времени, и пройти ее живым кликом в e2e невозможно — состояние приходится
+ * ставить снаружи. Шов открыт только в dev-сборке: в прод-бандле этой ветки
+ * нет, ее вырезает сборщик по константе.
+ */
+if (
+  (import.meta.env.DEV || import.meta.env.VITE_E2E === '1') &&
+  typeof window !== 'undefined'
+) {
+  (window as unknown as { __game?: typeof useGame }).__game = useGame;
+}
