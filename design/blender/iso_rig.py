@@ -1,119 +1,72 @@
 """
-Изометрический риг для запекания спрайтов зданий.
+Изометрический риг для запекания спрайтов зданий колонии.
 
-Смысл существования: генерации в Gemini дают каждый раз свой угол, свой свет
-и свой масштаб, и собрать из них одну сцену нельзя — здания не встают в общую
-систему. Здесь угол и свет заданы один раз камерой и лампами, поэтому все
-здания выходят согласованными по построению, а не по везению.
+Зачем: генерации в Gemini дают каждый раз свой угол, свой свет и свой масштаб,
+поэтому здания не встают в одну сцену. Здесь угол и свет заданы один раз, и все
+здания выходят согласованными по построению, а не по везению. Так работает
+настоящий цех — мобильные ситибилдеры отгружают 2.5D-спрайты, запеченные из 3D.
 
-Так работает настоящий цех: мобильные ситибилдеры отгружают 2.5D-спрайты,
-запеченные из 3D под фиксированной ортокамерой.
+Версия вторая. Первая делала здания из голых цилиндров с плоской заливкой и
+рендерила в Cycles — вышел программистский арт. Что изменено по итогам разбора
+казуального игрового арта:
+
+- **Движок EEVEE вместо Cycles.** Не ради скорости: тун-шейдинг делается узлом
+  Shader to RGB, а в Cycles его не существует вовсе.
+- **Свет полосами** вместо гладкого градиента, тень уходит в холод, свет в тепло.
+- **Силуэт вместо стопки примитивов.** У ангара бочкообразная крыша со свесом,
+  у стройки — стрела крана, у силоса — конус и лестница. Здание обязано
+  опознаваться по одному черному силуэту, это первое правило жанра.
+- **Три уровня детали:** крупная форма, средние объемы, мелкие пропсы. Без
+  третьего уровня объект читается как макет.
+- **Щедрые фаски.** Острых ребер в казуальном арте не бывает.
 
 Запуск:
-    blender --background --python design/blender/iso_rig.py -- <имя_здания> <выход.png>
+    blender --background --python design/blender/iso_rig.py -- <здание> <выход.png>
 """
 
 import math
+import os
 import sys
 
 import bpy
 
-# --- Параметры рига. Меняются здесь и только здесь ---------------------------
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from toon import apply, barrel, box, cone, cyl, dome, glass_material, toon_material  # noqa: E402
 
-# Классический изометрический угол: наклон 60 градусов, поворот 45.
+# --- Риг ---------------------------------------------------------------------
+
 CAM_TILT_DEG = 60.0
 CAM_SPIN_DEG = 45.0
-CAM_DISTANCE = 12.0
-ORTHO_SCALE = 9.5
+CAM_DISTANCE = 14.0
+ORTHO_SCALE = 9.0
 
 RESOLUTION = 1024
-SAMPLES = 96
+SAMPLES = 64
 
-# Палитра эталонов колонии: кремовый корпус, темные панели, оранжевый акцент,
-# бирюзовое стекло. Взята с принятых кадров, не придумана здесь.
-#
-# Значения подняты по насыщенности после первого прогона: холодное небо
-# обесцвечивало корпус до серого пластика. Материал в рендере всегда выходит
-# бледнее собственного цвета, поэтому исходник берется с запасом.
-CREAM = (0.95, 0.86, 0.68, 1.0)
-DARK = (0.18, 0.20, 0.26, 1.0)
-ORANGE = (0.95, 0.40, 0.08, 1.0)
-TEAL = (0.10, 0.78, 0.82, 1.0)
-SAND = (0.82, 0.62, 0.38, 1.0)
-GREEN = (0.30, 0.70, 0.22, 1.0)
+OUTLINE_COLOR = (0.09, 0.06, 0.05)
+OUTLINE_THICKNESS = 3.0
 
-# Обводка. У принятых эталонов она есть, и без нее рендер читается как
-# служебный макет, а не как игровой ассет: силуэт теряется на любом фоне.
-OUTLINE_COLOR = (0.10, 0.07, 0.06)
-OUTLINE_THICKNESS = 2.6
+# Палитра колонии. Значения с запасом по насыщенности: в рендере материал
+# всегда выходит бледнее собственного цвета.
+CREAM = (0.96, 0.87, 0.70)
+BONE = (0.88, 0.83, 0.74)
+DARK = (0.20, 0.22, 0.29)
+STEEL = (0.42, 0.47, 0.56)
+ORANGE = (0.97, 0.42, 0.10)
+RUST = (0.72, 0.28, 0.12)
+TEAL = (0.15, 0.80, 0.84)
+SAND = (0.76, 0.60, 0.44)
+GREEN = (0.34, 0.72, 0.24)
+SOIL = (0.36, 0.24, 0.17)
+YELLOW = (0.99, 0.78, 0.20)
 
 
 def clear_scene():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    for block in (bpy.data.meshes, bpy.data.materials, bpy.data.lights):
+    for block in (bpy.data.meshes, bpy.data.materials, bpy.data.lights, bpy.data.worlds):
         for item in list(block):
             block.remove(item)
-
-
-def find_node(node_tree, type_name, create=True):
-    """
-    Узел по ТИПУ, а не по имени.
-
-    Blender 5.2 не гарантирует узел с именем «Background» или «Principled BSDF»
-    сразу после создания блока данных: `use_nodes` объявлен устаревшим, и дерево
-    иногда приезжает пустым. Поиск по имени падал через раз — буквально один
-    рендер проходил, следующий с тем же скриптом валился с KeyError.
-    """
-    for node in node_tree.nodes:
-        if node.type == type_name:
-            return node
-    if not create:
-        return None
-    node = node_tree.nodes.new(
-        {"BSDF_PRINCIPLED": "ShaderNodeBsdfPrincipled", "BACKGROUND": "ShaderNodeBackground"}[
-            type_name
-        ]
-    )
-    output = find_node_output(node_tree)
-    if output:
-        node_tree.links.new(node.outputs[0], output.inputs[0])
-    return node
-
-
-def find_node_output(node_tree):
-    for node in node_tree.nodes:
-        if node.type in ("OUTPUT_MATERIAL", "OUTPUT_WORLD"):
-            return node
-    return None
-
-
-def make_material(name, color, metallic=0.0, roughness=0.55, emission=0.0):
-    """Материал на Principled BSDF. Имена входов сверяются с версией Blender."""
-    mat = bpy.data.materials.new(name)
-    mat.use_nodes = True
-    bsdf = find_node(mat.node_tree, "BSDF_PRINCIPLED")
-    bsdf.inputs["Base Color"].default_value = color
-    bsdf.inputs["Metallic"].default_value = metallic
-    bsdf.inputs["Roughness"].default_value = roughness
-    if emission > 0:
-        # В 4.x вход переименован в Emission Color; поддерживаем оба имени.
-        key = "Emission Color" if "Emission Color" in bsdf.inputs else "Emission"
-        bsdf.inputs[key].default_value = color
-        bsdf.inputs["Emission Strength"].default_value = emission
-    return mat
-
-
-def shade(obj, mat, bevel=0.02, smooth=False):
-    """Фаска обязательна: острые ребра в мелком спрайте читаются как мусор."""
-    obj.data.materials.append(mat)
-    if bevel > 0:
-        mod = obj.modifiers.new("bevel", "BEVEL")
-        mod.width = bevel
-        mod.segments = 3
-        mod.limit_method = "ANGLE"
-    if smooth:
-        bpy.ops.object.shade_smooth()
 
 
 def setup_camera():
@@ -136,344 +89,420 @@ def setup_camera():
 
 def setup_lights():
     """
-    Свет слева сверху — то же правило, что в контракте передачи арта.
+    Свет слева сверху, как записано в контракте передачи арта.
 
-    После первого прогона схема переписана: ключевой свет сделан теплым и
-    сильным, заполняющий приглушен, добавлен контровой. Прежняя схема с
-    холодным небом в шесть десятых мощности съедала всю палитру — кремовый
-    корпус приезжал серым, оранжевый кант пропадал.
+    Материалы тут тоновые и сами задают полосы, поэтому лампы нужны не для
+    яркости, а чтобы определить, где проходит граница света и тени. Отсюда
+    один жесткий ключевой и мягкий заполняющий — второй только чтобы теневая
+    сторона не сваливалась в самую темную полосу целиком.
     """
     key = bpy.data.lights.new("key", type="SUN")
-    key.energy = 5.5
-    key.color = (1.0, 0.94, 0.84)  # теплый, как солнце сквозь марсианскую пыль
-    key.angle = math.radians(9)
+    key.energy = 3.2
+    key.color = (1.0, 0.95, 0.86)
     key_obj = bpy.data.objects.new("key", key)
-    key_obj.rotation_euler = (math.radians(48), 0, math.radians(-40))
+    key_obj.rotation_euler = (math.radians(46), 0, math.radians(-42))
     bpy.context.collection.objects.link(key_obj)
 
-    fill = bpy.data.lights.new("fill", type="AREA")
-    fill.energy = 140.0
-    fill.color = (0.78, 0.86, 1.0)
-    fill.size = 14.0
+    fill = bpy.data.lights.new("fill", type="SUN")
+    fill.energy = 1.1
+    fill.color = (0.74, 0.83, 1.0)
     fill_obj = bpy.data.objects.new("fill", fill)
-    fill_obj.location = (-7, 6, 4)
-    fill_obj.rotation_euler = (math.radians(62), 0, math.radians(200))
+    fill_obj.rotation_euler = (math.radians(62), 0, math.radians(150))
     bpy.context.collection.objects.link(fill_obj)
-
-    # Контровой отделяет силуэт от фона. В изометрии объекты стоят вплотную,
-    # и без него соседние здания слипаются в одно пятно.
-    rim = bpy.data.lights.new("rim", type="AREA")
-    rim.energy = 260.0
-    rim.color = (1.0, 0.82, 0.62)
-    rim.size = 8.0
-    rim_obj = bpy.data.objects.new("rim", rim)
-    rim_obj.location = (6, -7, 5)
-    rim_obj.rotation_euler = (math.radians(60), 0, math.radians(40))
-    bpy.context.collection.objects.link(rim_obj)
 
     world = bpy.data.worlds.new("w")
     world.use_nodes = True
-    bg = find_node(world.node_tree, "BACKGROUND")
-    bg.inputs[0].default_value = (0.62, 0.60, 0.58, 1)
-    bg.inputs[1].default_value = 0.35
+    bg = None
+    for n in world.node_tree.nodes:
+        if n.type == "BACKGROUND":
+            bg = n
+    if bg is None:
+        bg = world.node_tree.nodes.new("ShaderNodeBackground")
+        for n in world.node_tree.nodes:
+            if n.type == "OUTPUT_WORLD":
+                world.node_tree.links.new(bg.outputs[0], n.inputs[0])
+    bg.inputs[0].default_value = (0.55, 0.58, 0.66, 1)
+    bg.inputs[1].default_value = 0.30
     bpy.context.scene.world = world
 
 
 def setup_outline():
-    """
-    Обводка средствами Freestyle. Дает ту же темную линию по силуэту и
-    складкам, что у принятых эталонов, и не требует ни шейдера, ни второго
-    прохода — рендерится вместе с картинкой.
-    """
+    """Обводка Freestyle: у принятых эталонов она есть, без нее теряется силуэт."""
     scene = bpy.context.scene
     scene.render.use_freestyle = True
     scene.render.line_thickness_mode = "ABSOLUTE"
     scene.render.line_thickness = OUTLINE_THICKNESS
 
-    view_layer = bpy.context.view_layer
-    view_layer.use_freestyle = True
-    settings = view_layer.freestyle_settings
+    vl = bpy.context.view_layer
+    vl.use_freestyle = True
+    settings = vl.freestyle_settings
     settings.as_render_pass = False
-
     lineset = settings.linesets.new("outline")
     lineset.select_silhouette = True
     lineset.select_border = True
     lineset.select_crease = True
-    lineset.select_edge_mark = False
     lineset.linestyle.color = OUTLINE_COLOR
     lineset.linestyle.thickness = OUTLINE_THICKNESS
-    lineset.linestyle.alpha = 0.9
+    lineset.linestyle.alpha = 0.95
 
 
-def add_cylinder(radius, depth, location, verts=48):
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=verts, radius=radius, depth=depth, location=location
+def palette():
+    """Материалы одного набора. Общие на все здания — иначе стиль разъедется."""
+    return {
+        "cream": toon_material("cream", CREAM),
+        "bone": toon_material("bone", BONE, gradient=0.12),
+        "dark": toon_material("dark", DARK, bands=(0.55, 0.80, 1.10), rim_strength=0.55),
+        "steel": toon_material("steel", STEEL, bands=(0.50, 0.78, 1.08), rim_strength=0.5),
+        "orange": toon_material("orange", ORANGE, rim_strength=0.35),
+        "rust": toon_material("rust", RUST, rim_strength=0.35),
+        "teal": toon_material("teal", TEAL, rim_strength=0.4, emission=0.7),
+        "sand": toon_material("sand", SAND, gradient=0.0, rim_strength=0.2),
+        "green": toon_material("green", GREEN, gradient=0.22),
+        "soil": toon_material("soil", SOIL, gradient=0.0, rim_strength=0.15),
+        "yellow": toon_material("yellow", YELLOW, rim_strength=0.3, emission=0.5),
+        "glass": glass_material("glass"),
+    }
+
+
+# --- Общие узлы --------------------------------------------------------------
+
+
+def platform(m, half=3.1, depth=2.7, tone="sand"):
+    """Основание с крашеным кантом. Даёт зданию опору и место под пропсы."""
+    slab = box((0, 0, 0.14), (half * 2, depth * 2, 0.28))
+    apply(slab, m[tone], bevel=0.09)
+    trim = box((0, 0, 0.30), (half * 2 + 0.12, depth * 2 + 0.12, 0.07))
+    apply(trim, m["orange"], bevel=0.03)
+    return slab
+
+
+def crate(m, loc, size=0.34, tone="cream", rot=0.0):
+    c = box(loc, (size, size, size), rot_z=rot)
+    apply(c, m[tone], bevel=0.05)
+    for axis in (0, 1):
+        for sign in (-1, 1):
+            off = [0, 0, 0]
+            off[axis] = sign * size * 0.5
+            band = box(
+                (loc[0] + off[0], loc[1] + off[1], loc[2]),
+                (size * 0.08 if axis == 0 else size * 0.9,
+                 size * 0.9 if axis == 0 else size * 0.08,
+                 size * 0.9),
+                rot_z=rot,
+            )
+            apply(band, m["dark"], bevel=0.01)
+    return c
+
+
+def ladder(m, loc, height, rot_z=0.0):
+    for side in (-0.11, 0.11):
+        rail = cyl(0.028, height, (loc[0], loc[1] + side, loc[2]), verts=10)
+        apply(rail, m["steel"], bevel=0)
+    steps = max(3, int(height / 0.26))
+    for i in range(steps):
+        z = loc[2] - height / 2 + 0.16 + i * (height - 0.3) / max(1, steps - 1)
+        rung = cyl(0.02, 0.22, (loc[0], loc[1], z), verts=8, rot=(math.radians(90), 0, rot_z))
+        apply(rung, m["steel"], bevel=0)
+
+
+def antenna(m, loc, height=0.9):
+    mast = cyl(0.03, height, (loc[0], loc[1], loc[2] + height / 2), verts=10)
+    apply(mast, m["steel"], bevel=0)
+    tip = cyl(0.07, 0.07, (loc[0], loc[1], loc[2] + height), verts=12)
+    apply(tip, m["yellow"], bevel=0.02)
+
+
+def pipe_elbow(m, start, height, run, radius=0.09):
+    """Труба с коленом. Прямая труба читается как палка, колено — как труба."""
+    v = cyl(radius, height, (start[0], start[1], start[2] + height / 2), verts=14)
+    apply(v, m["steel"], bevel=0)
+    h = cyl(
+        radius,
+        run,
+        (start[0] + run / 2, start[1], start[2] + height),
+        verts=14,
+        rot=(0, math.radians(90), 0),
     )
-    return bpy.context.object
+    apply(h, m["steel"], bevel=0)
+    knee = cyl(radius * 1.25, radius * 1.6, (start[0], start[1], start[2] + height), verts=14)
+    apply(knee, m["dark"], bevel=0.02)
 
 
-def add_dome(radius, height, location, segments=48):
+# --- Здания ------------------------------------------------------------------
+
+
+def build_warehouse(m):
     """
-    Полусфера, а не шар.
+    Склад: ангар с бочкообразной крышей, силос, ворота.
 
-    Первый прогон ставил целый эллипсоид: нижняя половина торчала из-под пола
-    и в изометрии читалась как второй купол под землей. Срезаем все, что ниже
-    экватора, средствами bmesh — модификатор Boolean тут дороже и капризнее.
+    Силуэт строится на контрасте вертикали силоса и горизонтали ангара —
+    без этого склад не отличить от любой другой коробки на карте.
     """
-    import bmesh
+    platform(m, half=3.2, depth=2.6)
 
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=radius, location=(0, 0, 0), segments=segments)
-    obj = bpy.context.object
+    hall = box((-0.35, 0, 1.05), (3.4, 3.6, 1.5))
+    apply(hall, m["cream"], bevel=0.1)
 
-    mesh = obj.data
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    doomed = [v for v in bm.verts if v.co.z < -1e-4]
-    bmesh.ops.delete(bm, geom=doomed, context="VERTS")
-    bm.to_mesh(mesh)
-    bm.free()
+    roof = barrel(1.74, 3.7, (-0.35, 0, 1.72))
+    roof.rotation_euler = (0, 0, math.radians(90))
+    apply(roof, m["rust"], bevel=0.04, smooth=True)
 
-    obj.scale = (1, 1, height / radius)
-    obj.location = location
-    return obj
+    # Свес крыши за стену — главный признак «построено», а не «выдавлено».
+    eave = box((-0.35, 0, 1.73), (3.62, 3.86, 0.1))
+    apply(eave, m["dark"], bevel=0.03)
 
+    stripe = box((-0.35, 1.82, 1.05), (3.44, 0.06, 0.22))
+    apply(stripe, m["orange"], bevel=0.02)
+    stripe2 = box((-0.35, -1.82, 1.05), (3.44, 0.06, 0.22))
+    apply(stripe2, m["orange"], bevel=0.02)
 
-def add_box(size, location, scale=(1, 1, 1)):
-    bpy.ops.mesh.primitive_cube_add(size=size, location=location)
-    obj = bpy.context.object
-    obj.scale = scale
-    return obj
+    # Ворота: арка, а не прямоугольник. Арка сразу говорит «сюда въезжают».
+    gate_frame = box((1.38, 0, 0.95), (0.14, 2.1, 1.3))
+    apply(gate_frame, m["dark"], bevel=0.04)
+    gate = box((1.44, 0, 0.9), (0.08, 1.8, 1.1))
+    apply(gate, m["steel"], bevel=0.03)
+    gate_arch = cyl(0.9, 0.1, (1.44, 0, 1.5), verts=32, rot=(0, math.radians(90), 0))
+    apply(gate_arch, m["dark"], bevel=0.02)
+    for y in (-0.6, -0.2, 0.2, 0.6):
+        slat = box((1.49, y, 0.9), (0.04, 0.26, 1.02))
+        apply(slat, m["bone"], bevel=0.015)
 
+    lamp = box((1.44, 0, 1.72), (0.24, 0.5, 0.14))
+    apply(lamp, m["yellow"], bevel=0.04)
 
-def build_food_module():
-    """Пищевой модуль: платформа, корпус-цилиндр, купол, пристройка, трубы."""
-    cream = make_material("cream", CREAM, roughness=0.5)
-    dark = make_material("dark", DARK, metallic=0.6, roughness=0.4)
-    orange = make_material("orange", ORANGE, roughness=0.45)
-    teal = make_material("teal", TEAL, roughness=0.15, emission=2.2)
-    sand = make_material("sand", SAND, roughness=0.85)
+    # Силос: цилиндр, конус, пояс, лестница. Четыре элемента, и он опознается.
+    silo = cyl(0.72, 2.5, (-2.55, -1.62, 1.53))
+    apply(silo, m["bone"], bevel=0.06)
+    silo_band = cyl(0.75, 0.2, (-2.55, -1.62, 2.15))
+    apply(silo_band, m["teal"], bevel=0.02)
+    silo_band2 = cyl(0.75, 0.16, (-2.55, -1.62, 1.0))
+    apply(silo_band2, m["orange"], bevel=0.02)
+    silo_top = cone(0.86, 0.16, 0.6, (-2.55, -1.62, 3.05))
+    apply(silo_top, m["dark"], bevel=0.03, smooth=True)
+    ladder(m, (-1.9, -1.62, 1.6), 2.4)
 
-    base = add_box(1.0, (0, 0, 0.15), scale=(3.2, 3.2, 0.3))
-    shade(base, sand, bevel=0.05)
+    pipe_elbow(m, (-2.55, -0.7, 2.55), 0.45, 1.2)
 
-    rim = add_box(1.0, (0, 0, 0.32), scale=(3.3, 3.3, 0.06))
-    shade(rim, orange, bevel=0.02)
+    crate(m, (2.3, 1.35, 0.62), 0.42, "cream", rot=0.3)
+    crate(m, (2.42, 0.62, 0.62), 0.42, "steel", rot=-0.2)
+    crate(m, (2.3, 1.35, 1.24), 0.36, "orange", rot=0.1)
 
-    body = add_cylinder(1.5, 1.6, (0, 0, 1.1))
-    shade(body, cream, bevel=0.04)
+    barrel_prop = cyl(0.26, 0.6, (2.6, -1.4, 0.72), verts=20)
+    apply(barrel_prop, m["orange"], bevel=0.05)
 
-    band = add_cylinder(1.53, 0.34, (0, 0, 1.45))
-    shade(band, teal, bevel=0.01)
-
-    dome = add_dome(1.5, 0.85, (0, 0, 1.88), segments=48)
-    shade(dome, cream, bevel=0, smooth=True)
-
-    collar = add_cylinder(1.56, 0.14, (0, 0, 1.9))
-    shade(collar, dark, bevel=0.02)
-
-    annex = add_box(1.0, (2.0, 0.4, 0.85), scale=(1.0, 1.4, 1.1))
-    shade(annex, cream, bevel=0.05)
-
-    annex_roof = add_box(1.0, (2.0, 0.4, 1.44), scale=(1.08, 1.48, 0.08))
-    shade(annex_roof, dark, bevel=0.02)
-
-    for i, y in enumerate((-0.3, 0.4, 1.1)):
-        win = add_box(1.0, (2.55, y, 0.9), scale=(0.06, 0.34, 0.34))
-        shade(win, teal, bevel=0.01)
-
-    for x in (-1.9, -1.45):
-        pipe = add_cylinder(0.16, 2.4, (x, -1.7, 1.2), verts=24)
-        shade(pipe, dark, bevel=0.02)
-
-    vent = add_cylinder(0.35, 0.5, (-0.6, -0.6, 2.85), verts=32)
-    shade(vent, dark, bevel=0.03)
+    antenna(m, (-2.0, 1.85, 1.85), 0.8)
 
 
-def build_dome_greenhouse():
-    """
-    Купол-гидропоника: стеклянный купол, под ним видны грядки.
+def build_dome_greenhouse(m):
+    """Купол-гидропоника: стекло, ребра, грядки внутри, шлюз-труба."""
+    platform(m, half=3.3, depth=3.3)
 
-    Переписано после первого прогона: непрозрачное стекло превращало купол в
-    белое яйцо, и главное — грядки, ради которых игрок сюда тапает, — не было
-    видно вовсе. Теперь купол приземистый и полупрозрачный, ребра идут поверх
-    него темной сеткой, внутри лежит пол и три грядки с урожаем.
-    """
-    cream = make_material("cream", CREAM, roughness=0.5)
-    dark = make_material("dark", DARK, metallic=0.5, roughness=0.4)
-    orange = make_material("orange", ORANGE, roughness=0.45)
-    sand = make_material("sand", SAND, roughness=0.85)
-    green = make_material("green", GREEN, roughness=0.7)
-    soil = make_material("soil", (0.28, 0.20, 0.15, 1.0), roughness=0.9)
+    ring = cyl(2.62, 0.5, (0, 0, 0.52))
+    apply(ring, m["bone"], bevel=0.07)
+    ring_top = cyl(2.66, 0.14, (0, 0, 0.76))
+    apply(ring_top, m["dark"], bevel=0.03)
 
-    glass = bpy.data.materials.new("glass")
-    glass.use_nodes = True
-    gb = find_node(glass.node_tree, "BSDF_PRINCIPLED")
-    gb.inputs["Base Color"].default_value = (0.60, 0.90, 0.95, 1.0)
-    gb.inputs["Roughness"].default_value = 0.08
-    gb.inputs["Alpha"].default_value = 0.30  # сквозь него обязаны читаться грядки
-    glass.blend_method = "BLEND" if hasattr(glass, "blend_method") else glass.blend_method
+    # Сегменты пояса: без них кольцо читается как гладкая шайба.
+    for i in range(10):
+        a = i * math.pi / 5
+        seg = box((math.cos(a) * 2.62, math.sin(a) * 2.62, 0.52), (0.1, 0.1, 0.44), rot_z=a)
+        apply(seg, m["steel"], bevel=0.02)
 
-    base = add_box(1.0, (0, 0, 0.15), scale=(3.4, 3.4, 0.3))
-    shade(base, sand, bevel=0.05)
+    floor = cyl(2.5, 0.12, (0, 0, 0.72))
+    apply(floor, m["bone"], bevel=0.02)
 
-    rim = add_box(1.0, (0, 0, 0.34), scale=(3.5, 3.5, 0.07))
-    shade(rim, orange, bevel=0.02)
+    for i, x in enumerate((-1.15, 0.0, 1.15)):
+        bed = box((x, 0, 0.84), (0.78, 3.3, 0.16))
+        apply(bed, m["soil"], bevel=0.04)
+        for j in range(5):
+            y = -1.3 + j * 0.65
+            bush = dome(0.26, 0.2, (x, y, 0.9), segments=18)
+            apply(bush, m["green"], bevel=0, smooth=True)
 
-    floor = add_cylinder(2.45, 0.16, (0, 0, 0.45))
-    shade(floor, cream, bevel=0.02)
+    glass_dome = dome(2.52, 1.85, (0, 0, 0.8), segments=56)
+    apply(glass_dome, m["glass"], bevel=0, smooth=True)
 
-    ring = add_cylinder(2.5, 0.34, (0, 0, 0.62))
-    shade(ring, dark, bevel=0.03)
-
-    # Грядки: земля и урожай над ней. Две ступени, иначе в мелком размере
-    # читается одна зеленая полоска без смысла.
-    for x in (-1.1, 0.0, 1.1):
-        bed = add_box(1.0, (x, 0, 0.62), scale=(0.44, 1.8, 0.14))
-        shade(bed, soil, bevel=0.03)
-        crop = add_box(1.0, (x, 0, 0.80), scale=(0.38, 1.7, 0.12))
-        shade(crop, green, bevel=0.05)
-
-    dome = add_dome(2.5, 1.7, (0, 0, 0.72), segments=56)
-    shade(dome, glass, bevel=0, smooth=True)
-
-    # Ребра — дуги ТОЛЬКО над полом. Кольца-торы в прошлом прогоне опоясывали
-    # купол целиком, включая подземную половину, и здание читалось как мяч.
+    # Меридианы: тонкие дуги поверх стекла, собранные из полусфер с вырезом.
     for angle in (0, 45, 90, 135):
-        rib = add_dome(2.53, 1.73, (0, 0, 0.72), segments=56)
+        rib = dome(2.56, 1.88, (0, 0, 0.8), segments=56)
         solid = rib.modifiers.new("solid", "SOLIDIFY")
-        solid.thickness = 0.03
-        mask = add_box(1.0, (0, 0, 1.6), scale=(5.4, 0.07, 2.2))
-        mask.rotation_euler = (0, 0, math.radians(angle))
-        boolean = rib.modifiers.new("cut", "BOOLEAN")
-        boolean.operation = "INTERSECT"
-        boolean.object = mask
+        solid.thickness = 0.05
+        mask = box((0, 0, 1.7), (5.6, 0.11, 2.4), rot_z=math.radians(angle))
+        cut = rib.modifiers.new("cut", "BOOLEAN")
+        cut.operation = "INTERSECT"
+        cut.object = mask
         mask.hide_render = True
-        shade(rib, dark, bevel=0, smooth=True)
+        apply(rib, m["steel"], bevel=0, smooth=True)
 
-    cap = add_cylinder(0.42, 0.22, (0, 0, 1.94), verts=32)
-    shade(cap, dark, bevel=0.03)
+    equator = cyl(2.58, 0.09, (0, 0, 1.45), verts=48)
+    apply(equator, m["steel"], bevel=0.02)
 
-    airlock = add_box(1.0, (2.55, 0, 0.78), scale=(0.72, 0.85, 0.6))
-    shade(airlock, cream, bevel=0.06)
+    cap = cone(0.5, 0.34, 0.28, (0, 0, 2.72))
+    apply(cap, m["dark"], bevel=0.03)
+    antenna(m, (0, 0, 2.84), 0.5)
 
-    door = add_box(1.0, (3.16, 0, 0.74), scale=(0.06, 0.48, 0.44))
-    shade(door, dark, bevel=0.01)
-
-
-def build_warehouse():
-    """Склад: два бака-силоса, крытая площадка и ворота погрузки."""
-    cream = make_material("cream", CREAM, roughness=0.5)
-    dark = make_material("dark", DARK, metallic=0.5, roughness=0.4)
-    orange = make_material("orange", ORANGE, roughness=0.45)
-    sand = make_material("sand", SAND, roughness=0.85)
-    teal = make_material("teal", TEAL, roughness=0.2, emission=1.8)
-
-    base = add_box(1.0, (0, 0, 0.15), scale=(3.4, 3.0, 0.3))
-    shade(base, sand, bevel=0.05)
-
-    rim = add_box(1.0, (0, 0, 0.34), scale=(3.5, 3.1, 0.07))
-    shade(rim, orange, bevel=0.02)
-
-    hall = add_box(1.0, (-0.5, 0, 1.05), scale=(2.0, 2.4, 1.5))
-    shade(hall, cream, bevel=0.08)
-
-    roof = add_box(1.0, (-0.5, 0, 1.85), scale=(2.15, 2.55, 0.12))
-    shade(roof, dark, bevel=0.03)
-
-    stripe = add_box(1.0, (-0.5, 0, 1.62), scale=(2.03, 2.43, 0.1))
-    shade(stripe, orange, bevel=0.02)
-
-    # Ворота: главный опознавательный знак склада в мелком размере.
-    gate = add_box(1.0, (0.52, 0, 0.85), scale=(0.08, 1.3, 1.05))
-    shade(gate, dark, bevel=0.02)
-    for y in (-0.55, 0.0, 0.55):
-        slat = add_box(1.0, (0.57, y, 0.85), scale=(0.04, 0.34, 1.0))
-        shade(slat, cream, bevel=0.01)
-
-    for y in (-1.6, 1.6):
-        silo = add_cylinder(0.62, 2.2, (-1.9, y, 1.4))
-        shade(silo, cream, bevel=0.05)
-        top = add_cylinder(0.66, 0.2, (-1.9, y, 2.55), verts=32)
-        shade(top, dark, bevel=0.03)
-        band = add_cylinder(0.64, 0.18, (-1.9, y, 1.9))
-        shade(band, teal, bevel=0.01)
-
-    for i, (x, y) in enumerate(((1.3, -0.9), (1.55, -0.35), (1.3, 0.85))):
-        crate = add_box(1.0, (x, y, 0.62), scale=(0.34, 0.34, 0.34))
-        shade(crate, dark if i % 2 else cream, bevel=0.04)
+    # Шлюз: лежачая труба со скруглением и дверью. Вход обязан быть виден.
+    tube = cyl(0.62, 1.5, (3.05, 0, 0.92), verts=28, rot=(0, math.radians(90), 0))
+    apply(tube, m["cream"], bevel=0.05, smooth=True)
+    tube_ring = cyl(0.68, 0.14, (3.6, 0, 0.92), verts=28, rot=(0, math.radians(90), 0))
+    apply(tube_ring, m["orange"], bevel=0.02)
+    door = cyl(0.44, 0.1, (3.72, 0, 0.92), verts=24, rot=(0, math.radians(90), 0))
+    apply(door, m["teal"], bevel=0.02)
 
 
-def build_construction_site():
-    """Стройплощадка: фундамент, леса, ящики модулей, кран."""
-    cream = make_material("cream", CREAM, roughness=0.5)
-    dark = make_material("dark", DARK, metallic=0.6, roughness=0.4)
-    orange = make_material("orange", ORANGE, roughness=0.45)
-    sand = make_material("sand", SAND, roughness=0.85)
-    teal = make_material("teal", TEAL, roughness=0.2, emission=1.6)
+def build_food_module(m):
+    """Пищевой модуль: корпус со скошенной крышей, бак, труба, навес."""
+    platform(m, half=3.0, depth=2.6)
 
-    base = add_box(1.0, (0, 0, 0.14), scale=(3.2, 3.2, 0.28))
-    shade(base, sand, bevel=0.05)
+    body = box((-0.4, 0, 1.1), (3.0, 3.2, 1.6))
+    apply(body, m["cream"], bevel=0.12)
 
-    slab = add_box(1.0, (0, 0, 0.34), scale=(2.4, 2.4, 0.12))
-    shade(slab, dark, bevel=0.03)
+    roof = barrel(1.55, 3.3, (-0.4, 0, 1.82))
+    roof.rotation_euler = (0, 0, math.radians(90))
+    apply(roof, m["teal"], bevel=0.04, smooth=True)
 
-    # Леса: четыре стойки и обвязка. Читаются как стройка в любом размере.
-    for x in (-1.9, 1.9):
-        for y in (-1.9, 1.9):
-            post = add_box(1.0, (x, y, 1.1), scale=(0.12, 0.12, 1.5))
-            shade(post, orange, bevel=0.02)
+    eave = box((-0.4, 0, 1.83), (3.1, 3.42, 0.09))
+    apply(eave, m["steel"], bevel=0.03)
 
-    for z in (1.0, 2.0):
-        for axis in range(2):
-            for sign in (-1, 1):
-                loc = (sign * 1.9, 0, z) if axis == 0 else (0, sign * 1.9, z)
-                scale = (0.09, 1.9, 0.09) if axis == 0 else (1.9, 0.09, 0.09)
-                beam = add_box(1.0, loc, scale=scale)
-                shade(beam, orange, bevel=0.02)
+    window_band = box((1.08, 0, 1.28), (0.08, 2.5, 0.5))
+    apply(window_band, m["teal"], bevel=0.03)
+    for y in (-0.85, 0.0, 0.85):
+        mullion = box((1.12, y, 1.28), (0.05, 0.07, 0.54))
+        apply(mullion, m["dark"], bevel=0.01)
 
-    for i, (x, y, z) in enumerate(((-0.7, -0.7, 0.75), (0.1, -0.9, 0.75), (-0.4, 0.0, 1.25))):
-        crate = add_box(1.0, (x, y, z), scale=(0.42, 0.42, 0.42))
-        shade(crate, cream if i % 2 else dark, bevel=0.04)
+    # Навес над окном: маленькая деталь, которая читается как «жилое».
+    awning = box((1.38, 0, 1.62), (0.66, 2.7, 0.08))
+    awning.rotation_euler = (0, math.radians(16), 0)
+    apply(awning, m["orange"], bevel=0.03)
 
-    beacon = add_cylinder(0.12, 0.3, (1.6, -1.6, 2.5), verts=20)
-    shade(beacon, teal, bevel=0.02)
+    tank = cyl(0.78, 1.9, (2.05, -0.55, 1.25))
+    apply(tank, m["bone"], bevel=0.07)
+    tank_top = dome(0.79, 0.36, (2.05, -0.55, 2.2), segments=28)
+    apply(tank_top, m["steel"], bevel=0, smooth=True)
+    tank_band = cyl(0.81, 0.18, (2.05, -0.55, 1.62))
+    apply(tank_band, m["orange"], bevel=0.02)
+    ladder(m, (1.32, -0.55, 1.3), 1.9)
+
+    pipe_elbow(m, (2.05, 0.35, 1.9), 0.42, -1.1)
+
+    chimney = cyl(0.3, 1.1, (-1.7, -0.9, 2.35))
+    apply(chimney, m["steel"], bevel=0.05)
+    cap = cone(0.46, 0.4, 0.22, (-1.7, -0.9, 2.98))
+    apply(cap, m["dark"], bevel=0.03)
+
+    vent = cyl(0.34, 0.3, (-1.7, 1.0, 2.05), verts=24)
+    apply(vent, m["dark"], bevel=0.04)
+
+    crate(m, (-1.0, 2.1, 0.64), 0.42, "steel", rot=0.25)
+    crate(m, (-1.85, 2.05, 0.64), 0.42, "orange", rot=-0.15)
+
+    lamp = box((1.14, 1.35, 1.72), (0.16, 0.22, 0.13))
+    apply(lamp, m["yellow"], bevel=0.03)
+
+
+def build_construction_site(m):
+    """
+    Стройплощадка: фундамент, леса с раскосами, кран, ящики модулей.
+
+    Стрела крана — единственный элемент, по которому стройка опознается
+    в мелком размере. Без нее это просто ящики на плите.
+    """
+    platform(m, half=3.1, depth=2.9)
+
+    slab = box((0, 0, 0.38), (4.4, 4.0, 0.2))
+    apply(slab, m["steel"], bevel=0.05)
+
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            post = box((sx * 1.85, sy * 1.7, 1.35), (0.16, 0.16, 2.0))
+            apply(post, m["orange"], bevel=0.03)
+
+    for z in (0.95, 1.85, 2.3):
+        for sy in (-1, 1):
+            beam = box((0, sy * 1.7, z), (3.86, 0.11, 0.11))
+            apply(beam, m["orange"], bevel=0.02)
+        for sx in (-1, 1):
+            beam = box((sx * 1.85, 0, z), (0.11, 3.5, 0.11))
+            apply(beam, m["orange"], bevel=0.02)
+
+    # Раскосы: без диагоналей леса читаются как решетка, а не как каркас.
+    for sy in (-1, 1):
+        brace = box((0, sy * 1.7, 1.4), (0.09, 0.09, 3.7))
+        brace.rotation_euler = (0, math.radians(62), 0)
+        apply(brace, m["rust"], bevel=0.02)
+
+    mast = box((-2.55, 2.0, 1.55), (0.22, 0.22, 2.4))
+    apply(mast, m["yellow"], bevel=0.03)
+    jib = box((-1.25, 2.0, 2.68), (2.9, 0.15, 0.15))
+    apply(jib, m["yellow"], bevel=0.02)
+    counter = box((-3.1, 2.0, 2.68), (0.55, 0.32, 0.32))
+    apply(counter, m["dark"], bevel=0.04)
+    cable = cyl(0.022, 0.95, (-0.1, 2.0, 2.16), verts=8)
+    apply(cable, m["dark"], bevel=0)
+    hook = box((-0.1, 2.0, 1.62), (0.3, 0.3, 0.22))
+    apply(hook, m["steel"], bevel=0.04)
+
+    crate(m, (0.55, -2.35, 0.66), 0.5, "cream", rot=0.2)
+    crate(m, (1.5, -2.05, 0.66), 0.5, "teal", rot=-0.3)
+    crate(m, (-0.4, -2.5, 0.66), 0.5, "orange", rot=0.05)
+    crate(m, (0.55, -2.35, 1.3), 0.42, "steel", rot=-0.1)
+
+    for x, y in ((2.55, -0.6), (-2.4, -1.1)):
+        marker = cone(0.22, 0.05, 0.42, (x, y, 0.52))
+        apply(marker, m["orange"], bevel=0.02)
 
 
 BUILDERS = {
-    "food_module": build_food_module,
-    "dome_greenhouse": build_dome_greenhouse,
-    "construction_site": build_construction_site,
     "warehouse": build_warehouse,
+    "dome_greenhouse": build_dome_greenhouse,
+    "food_module": build_food_module,
+    "construction_site": build_construction_site,
 }
 
 
 def render(out_path):
     scene = bpy.context.scene
-    scene.render.engine = "CYCLES"
-    # CPU намеренно: headless-рендер на GPU требует настроенного HIP и молча
-    # падает обратно на процессор. Предсказуемость важнее пары минут.
-    scene.cycles.device = "CPU"
-    scene.cycles.samples = SAMPLES
-    scene.cycles.use_denoising = True
+    scene.render.engine = "BLENDER_EEVEE"
+
+    ee = scene.eevee
+    for attr, value in (
+        ("taa_render_samples", SAMPLES),
+        ("use_gtao", True),
+        ("gtao_distance", 0.6),
+        ("gtao_factor", 1.0),
+        ("use_soft_shadows", True),
+        ("use_shadow_high_bitdepth", True),
+    ):
+        if hasattr(ee, attr):
+            setattr(ee, attr, value)
+
     scene.render.resolution_x = RESOLUTION
     scene.render.resolution_y = RESOLUTION
-    scene.render.film_transparent = True  # прозрачный фон, хромакей не нужен
+    scene.render.film_transparent = True
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.filepath = out_path
+
+    # Контраст и легкая подкрутка насыщенности: тоновые полосы без этого
+    # выглядят стерильно, а с этим — как крашеный пластик игрушки.
+    scene.view_settings.view_transform = "Standard"
+    scene.view_settings.look = "None"
+    scene.view_settings.exposure = 0.0
+    scene.sequencer_colorspace_settings.name = "sRGB"
+
     bpy.ops.render.render(write_still=True)
 
 
 def main():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    name = argv[0] if argv else "food_module"
-    out = argv[1] if len(argv) > 1 else f"design/blender/out/{name}.png"
+    name = argv[0] if argv else "warehouse"
+    out = argv[1] if len(argv) > 1 else f"out/{name}.png"
 
     clear_scene()
     setup_camera()
     setup_lights()
     setup_outline()
-    BUILDERS[name]()
+    BUILDERS[name](palette())
     render(out)
     print(f"ГОТОВО: {out}")
 
