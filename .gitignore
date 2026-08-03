@@ -31,3 +31,6 @@ playwright-report
 
 # Служебное
 .obsidian
+design/cut/
+design/check/
+cut-gallery.html
