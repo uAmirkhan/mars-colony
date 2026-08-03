@@ -160,6 +160,113 @@ def toon_material(
     return mat
 
 
+def toon_over_texture(name, image, rim_strength=0.5, gradient=0.10, tint=None):
+    """
+    Тоновые полосы ПОВЕРХ готовой текстуры.
+
+    Нужен для чужих наборов: у KayKit и Kenney весь цвет живет в текстурном
+    атласе, а базовый цвет материала белый. Первый заход подменял материал
+    плоской заливкой по оттенку — и весь набор приехал одинаково стальным,
+    вся работа художника пропала.
+
+    Здесь рампа отдает не цвет, а множитель яркости, и умножается на текстуру.
+    Тень дополнительно уводится в холод отдельным смешиванием — иначе полосы
+    читаются как грязь, а не как свет.
+    """
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    for n in list(nt.nodes):
+        if n.type != "OUTPUT_MATERIAL":
+            nt.nodes.remove(n)
+    out = _find(nt, "OUTPUT_MATERIAL")
+
+    tex = _node(nt, "ShaderNodeTexImage", -1400, 400)
+    tex.image = image
+    tex.interpolation = "Closest"  # атлас: сглаживание тянет соседние клетки
+
+    base = tex.outputs["Color"]
+    if tint is not None:
+        tint_mix = _node(nt, "ShaderNodeMix", -1200, 400)
+        tint_mix.data_type = "RGBA"
+        tint_mix.blend_type = "COLOR"
+        tint_mix.inputs["Factor"].default_value = 0.55
+        nt.links.new(base, tint_mix.inputs[6])
+        tint_mix.inputs[7].default_value = (*tint, 1.0)
+        base = tint_mix.outputs[2]
+
+    diffuse = _node(nt, "ShaderNodeBsdfDiffuse", -1200, 0)
+    diffuse.inputs["Color"].default_value = (1, 1, 1, 1)
+    to_rgb = _node(nt, "ShaderNodeShaderToRGB", -1020, 0)
+    nt.links.new(diffuse.outputs[0], to_rgb.inputs[0])
+
+    ramp = _node(nt, "ShaderNodeValToRGB", -840, 0)
+    ramp.color_ramp.interpolation = "CONSTANT"
+    ramp.color_ramp.elements[0].position = 0.0
+    ramp.color_ramp.elements[0].color = (0.62, 0.68, 0.82, 1)  # тень с холодом
+    ramp.color_ramp.elements[1].position = 0.34
+    ramp.color_ramp.elements[1].color = (0.88, 0.89, 0.92, 1)
+    ramp.color_ramp.elements.new(0.68).color = (1.06, 1.03, 0.96, 1)  # свет с теплом
+    nt.links.new(to_rgb.outputs[0], ramp.inputs[0])
+
+    shade_mix = _node(nt, "ShaderNodeMix", -600, 200)
+    shade_mix.data_type = "RGBA"
+    shade_mix.blend_type = "MULTIPLY"
+    shade_mix.inputs["Factor"].default_value = 1.0
+    nt.links.new(base, shade_mix.inputs[6])
+    nt.links.new(ramp.outputs[0], shade_mix.inputs[7])
+    shaded = shade_mix.outputs[2]
+
+    if gradient > 0:
+        tex_co = _node(nt, "ShaderNodeTexCoord", -1400, -300)
+        sep = _node(nt, "ShaderNodeSeparateXYZ", -1220, -300)
+        nt.links.new(tex_co.outputs["Object"], sep.inputs[0])
+        rng = _node(nt, "ShaderNodeMapRange", -1040, -300)
+        rng.inputs[1].default_value = -1.0
+        rng.inputs[2].default_value = 2.0
+        rng.inputs[3].default_value = 1.0 - gradient
+        rng.inputs[4].default_value = 1.0 + gradient
+        nt.links.new(sep.outputs["Z"], rng.inputs[0])
+        comb = _node(nt, "ShaderNodeCombineColor", -860, -300)
+        for i in range(3):
+            nt.links.new(rng.outputs[0], comb.inputs[i])
+        gmix = _node(nt, "ShaderNodeMix", -420, 160)
+        gmix.data_type = "RGBA"
+        gmix.blend_type = "MULTIPLY"
+        gmix.inputs["Factor"].default_value = 1.0
+        nt.links.new(shaded, gmix.inputs[6])
+        nt.links.new(comb.outputs[0], gmix.inputs[7])
+        shaded = gmix.outputs[2]
+
+    if rim_strength > 0:
+        lw = _node(nt, "ShaderNodeLayerWeight", -1000, -560)
+        lw.inputs["Blend"].default_value = 0.55
+        rr = _node(nt, "ShaderNodeValToRGB", -820, -560)
+        rr.color_ramp.elements[0].position = 0.80
+        rr.color_ramp.elements[0].color = (0, 0, 0, 1)
+        rr.color_ramp.elements[1].position = 0.99
+        rr.color_ramp.elements[1].color = (1, 1, 1, 1)
+        nt.links.new(lw.outputs["Fresnel"], rr.inputs[0])
+        rc = _node(nt, "ShaderNodeMix", -620, -560)
+        rc.data_type = "RGBA"
+        rc.blend_type = "MULTIPLY"
+        rc.inputs["Factor"].default_value = 1.0
+        rc.inputs[6].default_value = (1.0, 0.86, 0.62, 1.0)
+        nt.links.new(rr.outputs[0], rc.inputs[7])
+        add = _node(nt, "ShaderNodeMix", -240, 0)
+        add.data_type = "RGBA"
+        add.blend_type = "ADD"
+        add.inputs["Factor"].default_value = rim_strength
+        nt.links.new(shaded, add.inputs[6])
+        nt.links.new(rc.outputs[2], add.inputs[7])
+        shaded = add.outputs[2]
+
+    emit = _node(nt, "ShaderNodeEmission", -60, 0)
+    nt.links.new(shaded, emit.inputs["Color"])
+    nt.links.new(emit.outputs[0], out.inputs["Surface"])
+    return mat
+
+
 def glass_material(name, color=(0.42, 0.86, 0.92), alpha=0.26):
     """Стекло: почти прозрачное, с холодной кромкой и легким свечением."""
     mat = bpy.data.materials.new(name)

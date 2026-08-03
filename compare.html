@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Три пути к ассетам — что вышло</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 26px 30px 70px;
+    background: linear-gradient(180deg, #5e3423 0%, #82462a 45%, #a05a35 100%);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #ffeede;
+  }
+  h1 { font-size: 23px; margin: 0 0 6px; }
+  .sub { opacity: .78; margin: 0 0 8px; max-width: 78ch; }
+  h2 { font-size: 15px; letter-spacing: .05em; text-transform: uppercase;
+       margin: 34px 0 4px; }
+  .verdict { font-size: 14px; margin: 0 0 14px; max-width: 78ch; }
+  .good { color: #b6ea94; } .bad { color: #ffb0a0; } .mid { color: #ffdb8a; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .card { background: rgba(0,0,0,.18); border: 1px solid rgba(255,230,200,.16);
+          border-radius: 13px; padding: 8px 8px 6px; text-align: center; }
+  .card img { display: block; width: 190px; height: 190px; object-fit: contain; }
+  .card .name { font-size: 11.5px; opacity: .78; margin-top: 3px; }
+  .toggle { position: fixed; right: 18px; top: 16px; z-index: 5;
+    background: rgba(0,0,0,.5); border: 1px solid rgba(255,230,200,.3);
+    color: #ffeede; border-radius: 10px; padding: 8px 14px; cursor: pointer; font: inherit; font-size: 13px; }
+  body.plain { background: #cdd2d8; color: #222831; }
+  body.plain .card { background: rgba(255,255,255,.6); border-color: rgba(0,0,0,.14); }
+  body.plain .good { color: #1d7a2e; } body.plain .bad { color: #a52c14; } body.plain .mid { color: #8a6410; }
+</style>
+</head>
+<body>
+<button class="toggle" onclick="document.body.classList.toggle('plain')">Сменить фон</button>
+
+<h1>Три пути к игровым ассетам</h1>
+<p class="sub">
+  Все три прогнаны через один и тот же изометрический риг: угол 60/45, один свет,
+  тоновые полосы, обводка, прозрачный фон. Отличается только источник геометрии.
+</p>
+
+<h2 class="bad">Путь 1. Лепить кодом из примитивов</h2>
+<p class="verdict bad">
+  Провал. Обаяние формы не набирается перечислением координат кубов.
+  Читается как макет из тестовой сцены, а не как ассет.
+</p>
+<div class="row">
+  <div class="card"><img src="design/blender/out/warehouse.png" alt=""><div class="name">склад</div></div>
+  <div class="card"><img src="design/blender/out/dome_greenhouse.png" alt=""><div class="name">купол</div></div>
+  <div class="card"><img src="design/blender/out/food_module.png" alt=""><div class="name">пищевой модуль</div></div>
+  <div class="card"><img src="design/blender/out/construction_site.png" alt=""><div class="name">стройка</div></div>
+</div>
+
+<h2 class="good">Путь 2. Готовая геометрия CC0 через тот же риг</h2>
+<p class="verdict good">
+  Работает. KayKit Space Base Bits с GitHub, лицензия CC0, без указания авторства.
+  Профессиональная форма плюс наш единый угол, свет и обводка.
+  Тема совпала точно: буровая, склад, посадочная площадка, посадочный модуль, модули базы.
+</p>
+<div class="row">
+  <div class="card"><img src="design/blender/out/space/drill_structure.png" alt=""><div class="name">буровая</div></div>
+  <div class="card"><img src="design/blender/out/space/cargodepot_A.png" alt=""><div class="name">склад-депо</div></div>
+  <div class="card"><img src="design/blender/out/space/basemodule_A.png" alt=""><div class="name">модуль базы</div></div>
+  <div class="card"><img src="design/blender/out/space/landingpad_large.png" alt=""><div class="name">посадочная площадка</div></div>
+  <div class="card"><img src="design/blender/out/space/lander_A.png" alt=""><div class="name">посадочный модуль</div></div>
+  <div class="card"><img src="design/blender/out/space/solarpanel.png" alt=""><div class="name">солнечная панель</div></div>
+</div>
+<div class="row" style="margin-top:12px">
+  <div class="card"><img src="design/blender/out/kit/building_G.png" alt=""><div class="name">городской набор, тот же риг</div></div>
+  <div class="card"><img src="design/blender/out/kit/building_D.png" alt=""><div class="name">городской набор, тот же риг</div></div>
+</div>
+
+<h2 class="mid">Путь 3. Твои генерации в Gemini</h2>
+<p class="verdict mid">
+  Теплее и обаятельнее по фактуре, но угол, свет и масштаб у каждой свои —
+  в одну сцену без ручной подгонки не встают.
+</p>
+<div class="row">
+  <div class="card"><img src="public/assets/transport/shuttle.png" alt=""><div class="name">шаттл</div></div>
+  <div class="card"><img src="public/assets/buildings/landing_pad.png" alt=""><div class="name">площадка</div></div>
+  <div class="card"><img src="public/assets/buildings/drone_pad.png" alt=""><div class="name">тумба дрона</div></div>
+  <div class="card"><img src="public/assets/transport/drone.png" alt=""><div class="name">дрон</div></div>
+</div>
+</body>
+</html>
