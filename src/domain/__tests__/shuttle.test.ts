@@ -20,7 +20,8 @@ import {
   SPEEDUP_FLOOR_ISOTOPES,
   TRANSPORT_XP_K,
 } from '../config/economy';
-import { GOODS } from '../config/goods';
+import { GOOD_BASE_QTY, GOODS } from '../config/goods';
+import { availableGoodsFor } from '../drone';
 import type { DropContext } from '../droproller';
 import {
   allCollected,
@@ -135,10 +136,27 @@ describe('Генератор рейса', () => {
     }
   });
 
-  it('пустой пул товаров дает пустой рейс, а не падение', () => {
+  /**
+   * Переписан против спеки. Тест требовал пустого рейса на пустом пуле — то
+   * есть ровно того софтлока, который канон запрещает: [[tz-common-systems-mars]]
+   * 1.6 и AC4 («возвращается валидный fallbackMinimalOrder — не ошибка, не
+   * пустой заказ»). Рейс из нуля отсеков нельзя ни закрыть, ни отменить, а
+   * новый выдается только из кулдауна — прогрессия умирает вместе с ним.
+   */
+  it('пустой пул товаров дает деградированный рейс из одного отсека, а не пустой', () => {
     const trip = generateTrip(genCtx({ available_goods: [] }));
-    expect(trip.slots).toHaveLength(0);
+    expect(trip.slots).toHaveLength(1);
     expect(allSlotsLoaded(trip)).toBe(false);
+
+    // Канон 1.6: самый быстрый доступный товар в количестве GOOD_BASE_QTY.min.
+    const slot = trip.slots[0]!;
+    expect(slot.qty_required).toBe(GOOD_BASE_QTY[slot.good_id].min);
+    const fastest = Math.min(
+      ...availableGoodsFor(genCtx().level, new Set<string>()).map(
+        (id) => GOODS[id].prod_time_sec,
+      ),
+    );
+    expect(GOODS[slot.good_id].prod_time_sec).toBe(fastest);
   });
 
   it('таймер рейса берется из брекета уровня', () => {
