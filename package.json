@@ -10,9 +10,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:gate": "vitest run --exclude \"**/*defects-*.test.ts\"",
+    "defects": "vitest run defects-",
     "sim": "tsx src/sim/run.ts",
     "e2e": "playwright test",
     "check": "biome check src && tsc -b && vitest run --coverage",
+    "check:gate": "biome check src && tsc -b && npm run test:gate",
     "format": "biome check --write src",
     "metrics": "node scripts/metrics.mjs"
   },

@@ -28,7 +28,8 @@ import {
   slotCountFor,
   TRANSPORT_XP_K,
 } from './config/economy';
-import { GOODS, slotQuantity } from './config/goods';
+import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
+import { availableGoodsFor } from './drone';
 import { type DropContext, rollArrival } from './droproller';
 import { buyoutPrice } from './rushcost';
 import type { GoodId, ModuleId } from './types';
@@ -113,13 +114,76 @@ function repeatRatio(slots: ShuttleSlot[], previous: ShuttleTrip | null | undefi
 }
 
 /**
+ * Крайний случай канона ([[tz-common-systems-mars]] 1.6): пул товаров пуст или
+ * ни один кандидат не прошел отбор. Канон предписывает `fallbackMinimalOrder` —
+ * «одна позиция самого дешевого/быстрого доступного товара (обычно водоросли),
+ * количество = GOOD_BASE_QTY.min, форма заказа урезается ниже нормального
+ * минимума (для шаттла — допустим 1 отсек вместо 3)».
+ *
+ * Пул выбирается тремя ступенями: заказанный вызывающим, затем товары без
+ * здания на уровне игрока (POOL_MODE канона), затем весь субстрат. Последняя
+ * ступень недостижима при level >= 1 (водоросли открыты с первого), но она
+ * гарантирует тотальность функции: рейс из нуля отсеков не должен получаться
+ * ни на каком входе — его нельзя ни закрыть, ни отменить, а шаттл единственный
+ * источник строй-модулей (И-1), поэтому пустой рейс это софтлок насмерть.
+ */
+function fallbackMinimalSlots(ctx: ShuttleGenContext, reason: string): ShuttleSlot[] {
+  const pools: GoodId[][] = [
+    ctx.available_goods,
+    availableGoodsFor(ctx.level, new Set<string>()),
+    ALL_GOOD_IDS,
+  ];
+  const candidates = pools.find((p) => p.length > 0) ?? ALL_GOOD_IDS;
+  const good_id = [...candidates].sort((a, b) => {
+    const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
+    return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
+  })[0]!;
+
+  // Канон 1.6 и 1.8: деградация генератора логируется как алерт, а не глотается
+  // молча. Сервера у прототипа нет, поэтому событие уходит в консоль тем же
+  // именем, каким оно заведено в таблице событий общего движка.
+  console.warn('order_generation_degraded', {
+    mechanic: 'shuttle',
+    reason,
+    player_level: ctx.level,
+  });
+
+  return [
+    {
+      idx: 0,
+      good_id,
+      qty_required: GOOD_BASE_QTY[good_id].min,
+      qty_filled: 0,
+      filled_by: null,
+      reward: null,
+      collected: false,
+      floor_forced: false,
+    },
+  ];
+}
+
+/**
  * Генерация заказа. Тот же движок, что у дрона, с шаттл-специфичным конфигом:
  * переменное число отсеков 3-5 и собственный анти-повтор (сравнение с прошлым
  * рейсом, а не с доской — рейс у шаттла ровно один).
  *
- * FTUE переопределяет генератор целиком: ровно три отсека, все закрываются
- * складом, ни одного дефицитного. Первый цикл обязан пройтись бесплатно —
- * иначе игрок знакомится с необратимым таймером и платным выходом одновременно.
+ * FTUE переопределяет генератор целиком (ТЗ шаттла 2.1): ровно три отсека, все
+ * три позиции easy, COVERAGE_MIN=1.0 и MAX_DEFICIT_SLOTS=0 на этот заказ.
+ * Первый цикл обязан пройтись бесплатно — иначе игрок знакомится с необратимым
+ * таймером и платным выходом одновременно.
+ *
+ * **Решение исполнителя, требует утверждения владельцем.** ТЗ шаттла 2.1
+ * требует «ровно 3 отсека, все easy», но не говорит, что делать, если пул
+ * физически не дает трех easy-кандидатов (пустой склад + узкий пул тяжелых
+ * товаров). Принято: (1) «easy» в FTUE читается по определению И-8 — покрыто
+ * складом ИЛИ производится не дольше EASY_PRODUCE_MAX_MIN, а не «обязательно
+ * лежит на складе», как было раньше; на реальном пуле уровня 5 (водоросли,
+ * соя, грибы — все быстрее порога) это дает три easy-отсека даже с нуля;
+ * (2) если и после этого кандидатов меньше, форма урезается по крайнему случаю
+ * канона [[tz-common-systems-mars]] 1.6 вплоть до одного отсека — короткий
+ * рейс проходим, пустой рейс это софтлок. Вопрос владельцу: допустим ли
+ * укороченный ПЕРВЫЙ рейс, или FTUE должен вместо этого ждать, пока склад
+ * наберет три позиции?
  */
 export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
   const trip_min = ctx.is_first_trip ? FTUE_FIRST_TRIP_TIMER_MIN : flightTimerMin(ctx.level);
@@ -131,22 +195,25 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
     const slots: ShuttleSlot[] = [];
     let deficit_used = 0;
 
-    for (let i = 0; i < count && pool.length > 0; i++) {
+    // Цикл идет по числу набранных отсеков, а не по счетчику попыток: товар,
+    // не прошедший отбор, отбраковывается и заменяется следующим кандидатом из
+    // пула, а не съедает отсек (канон 1.3 — `continue` без append). Раньше
+    // здесь стоял `i -= 1; continue` внутри for по i: отбраковка возвращала
+    // счетчик, но выход из цикла все равно рвался по опустевшему пулу, и рейс
+    // выходил короче формы вплоть до нуля отсеков.
+    while (slots.length < count && pool.length > 0) {
       const pick_at = Math.min(pool.length - 1, Math.floor(ctx.rng() * pool.length));
       const good_id = pool.splice(pick_at, 1)[0]!;
       let qty = slotQuantity(good_id, 'shuttle', ctx.level, ctx.rng());
       const have = availableOf(ctx.warehouse, good_id);
       const quick = GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.shuttle * 60;
 
-      // FTUE: дефицита нет вовсе (MAX_DEFICIT_SLOTS=0 на первом рейсе), и
-      // быстрое производство поблажкой не считается — первый рейс обязан
-      // закрываться прямо со склада, без похода на грядку.
+      // FTUE: дефицита нет вовсе (MAX_DEFICIT_SLOTS=0 на первом рейсе). «Easy»
+      // читается ровно как в И-8 — склад ИЛИ быстрое производство, — поэтому
+      // товар с коротким циклом годится в первый рейс и с пустого склада.
       if (ctx.is_first_trip) {
-        if (qty > have) {
-          if (have === 0) {
-            i -= 1;
-            continue;
-          }
+        if (qty > have && !quick) {
+          if (have === 0) continue;
           qty = have;
         }
       } else if (qty > have && !quick) {
@@ -154,10 +221,7 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
         // быстро произвести. Товар с коротким циклом дефицитом не считается,
         // иначе пустой склад делал бы дефицитным вообще все.
         if (deficit_used >= MAX_DEFICIT_SLOTS) {
-          if (have === 0) {
-            i -= 1;
-            continue;
-          }
+          if (have === 0) continue;
           qty = have;
         } else {
           deficit_used += 1;
@@ -178,15 +242,25 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
       });
     }
 
-    best = slots;
     const coverage_ok = easyRatio(slots, ctx.warehouse) >= COVERAGE_MIN.shuttle;
     const repeat_ok = repeatRatio(slots, ctx.previous) <= REPEAT_CAP;
-    if (coverage_ok && repeat_ok) break;
+    if (coverage_ok && repeat_ok) {
+      best = slots;
+      break;
+    }
+    // Из невалидных попыток удерживается самая полная по форме, а не последняя:
+    // короткий рейс — это меньше модулей за тот же таймер, а нулевой — софтлок.
+    if (slots.length > best.length) best = slots;
   }
+
+  // Финальный предохранитель канона 1.3/1.6. Ни один путь наружу не отдает
+  // рейс из нуля отсеков: пустой пул, пул из одних тяжелых товаров при пустом
+  // складе, исчерпанные попытки — все сводятся сюда.
+  const slots = best.length > 0 ? best : fallbackMinimalSlots(ctx, 'empty_pool');
 
   return {
     state: 'ORDER',
-    slots: best,
+    slots,
     trip_min,
     departed_at: 0,
     arrives_at: 0,
