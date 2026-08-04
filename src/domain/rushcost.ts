@@ -86,6 +86,42 @@ function expandProductionChain(
   return links;
 }
 
+/** Сколько единиц звена реально придется произвести: склад уже лежит готовым. */
+function missingOf(link: ChainLink, warehouse: WarehouseState): number {
+  return Math.max(0, link.qty_needed - availableOf(warehouse, link.good_id));
+}
+
+/**
+ * `productionTimeMinutes` канона ([[tz-common-systems-mars]] 1.4): сколько минут
+ * займет получить `qty` единиц товара вместе со всей недостающей цепочкой
+ * рецепта. Вход порога «легко произвести» (И-8) и проверки реализуемости (И-10).
+ *
+ * Цепочка обязательна: комбинезон проходит порог сам по себе (30 мин), но до
+ * него нужны две ткани и четыре хлопка, и заказ, собранный по времени одного
+ * звена, врет игроку в разы.
+ *
+ * Склад вычитается на каждом звене — то, что уже лежит, производить не нужно.
+ *
+ * **Отступление от канона, требует решения владельца.** Канон (1.4, псевдокод
+ * `productionTimeMinutes`/`productionSlotsFor`) делит выпуск звена на
+ * параллельные слоты игрока — грядки и слоты очереди фабрик. Здесь этого нет:
+ * функция получает склад, а не `player`, и числа слотов не знает. Оценка
+ * сверху (один слот на звено) — единственная безопасная: занизить время значит
+ * снова назвать легкой позицию, которую игрок собирает час.
+ */
+export function productionTimeMinutes(
+  good_id: GoodId,
+  qty = 1,
+  warehouse: WarehouseState = createWarehouse(),
+): number {
+  const chain = expandProductionChain(good_id, qty, warehouse, new Set());
+  let minutes = 0;
+  for (const link of chain) {
+    minutes += missingOf(link, warehouse) * link.minutes_per_unit;
+  }
+  return minutes;
+}
+
 /**
  * Стоимость мгновенно получить `qty` единиц товара со всей недостающей цепочкой,
  * в изотопах, до наценки.
@@ -102,8 +138,7 @@ export function rushCost(
 
   let total = 0;
   for (const link of chain) {
-    const owned = availableOf(warehouse, link.good_id);
-    const missing = Math.max(0, link.qty_needed - owned);
+    const missing = missingOf(link, warehouse);
     if (missing === 0) continue;
 
     const rate = SPEEDUP_RATE_ISOTOPES_PER_MIN[link.kind];
@@ -114,7 +149,15 @@ export function rushCost(
   return total;
 }
 
-/** И-4: цена докупки qty единиц товара в слот заказа. */
+/**
+ * И-4: цена докупки qty единиц товара в слот заказа.
+ *
+ * Склад передает только тот вызывающий, который этот склад и спишет. Докупка,
+ * идущая мимо склада (И-12: товар зачисляется прямо в слот и не возвратим),
+ * складского остатка не трогает — и скидки за него не получает, иначе тот же
+ * арбитраж открывается со стороны цены: заплатил за недостачу, закрыл слот
+ * целиком, остаток продал.
+ */
 export function buyoutPrice(good_id: GoodId, qty: number, warehouse?: WarehouseState): number {
   return roundToShowcase(rushCost(good_id, qty, warehouse) * PURCHASE_MARGIN);
 }

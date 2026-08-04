@@ -20,6 +20,7 @@ import {
   flightTimerMin,
   GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
+  type OrderGenerationDegradedReason,
   PINCH_MAX,
   PINCH_MIN,
   REPEAT_CAP,
@@ -31,7 +32,7 @@ import {
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
 import { availableGoodsFor } from './drone';
 import { type DropContext, rollArrival } from './droproller';
-import { buyoutPrice } from './rushcost';
+import { buyoutPrice, productionTimeMinutes } from './rushcost';
 import type { GoodId, ModuleId } from './types';
 import { availableOf, reserve, shipReserved, type WarehouseState } from './warehouse';
 
@@ -92,10 +93,17 @@ export function slotCovered(slot: ShuttleSlot, warehouse: WarehouseState): boole
  * производится не дольше EASY_PRODUCE_MAX_MIN. Вторая половина условия важнее
  * первой — без нее генератор считает пустой склад безвыходным положением и
  * вырождает рейс до одного отсека, хотя игрок собирает водоросли за две минуты.
+ *
+ * Время берется по всей цепочке рецепта и на все количество отсека — канон
+ * ([[tz-common-systems-mars]] 1.3) считает порог через `productionTimeMinutes`,
+ * а не через `prod_time_sec` одного звена. Раньше здесь стояло второе:
+ * комбинезон проходил порог ровно в 30 минут, хотя до него нужны две ткани и
+ * четыре хлопка, то есть два часа, — рейс из таких отсеков объявлялся легким
+ * целиком и не пересобирался.
  */
 function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolean {
   if (availableOf(warehouse, good_id) >= qty) return true;
-  return GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.shuttle * 60;
+  return productionTimeMinutes(good_id, qty, warehouse) <= EASY_PRODUCE_MAX_MIN.shuttle;
 }
 
 /** Доля легких отсеков в рейсе. Вход инварианта И-8. */
@@ -126,14 +134,28 @@ function repeatRatio(slots: ShuttleSlot[], previous: ShuttleTrip | null | undefi
  * гарантирует тотальность функции: рейс из нуля отсеков не должен получаться
  * ни на каком входе — его нельзя ни закрыть, ни отменить, а шаттл единственный
  * источник строй-модулей (И-1), поэтому пустой рейс это софтлок насмерть.
+ *
+ * Ступень берется первая, где есть ЛЕГКИЙ по И-8 кандидат, а не первая
+ * непустая. Канон 1.9 требует от фолбэка валидного заказа, а единственный
+ * тяжелый отсек дает easyRatio = 0 и нарушает И-8 в одиночку: деградация не
+ * должна подсовывать игроку двухчасовой комбинезон вместо трех обычных
+ * отсеков. Если легкого нет нигде (недостижимо, пока водоросли открыты с
+ * первого уровня), берется первая непустая ступень — тотальность важнее.
  */
-function fallbackMinimalSlots(ctx: ShuttleGenContext, reason: string): ShuttleSlot[] {
+function fallbackMinimalSlots(
+  ctx: ShuttleGenContext,
+  reason: OrderGenerationDegradedReason,
+): ShuttleSlot[] {
   const pools: GoodId[][] = [
     ctx.available_goods,
     availableGoodsFor(ctx.level, new Set<string>()),
     ALL_GOOD_IDS,
   ];
-  const candidates = pools.find((p) => p.length > 0) ?? ALL_GOOD_IDS;
+  const easy_pools = pools.map((pool) =>
+    pool.filter((id) => isEasy(id, GOOD_BASE_QTY[id].min, ctx.warehouse)),
+  );
+  const candidates =
+    easy_pools.find((p) => p.length > 0) ?? pools.find((p) => p.length > 0) ?? ALL_GOOD_IDS;
   const good_id = [...candidates].sort((a, b) => {
     const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
     return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
@@ -206,17 +228,21 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
       const good_id = pool.splice(pick_at, 1)[0]!;
       let qty = slotQuantity(good_id, 'shuttle', ctx.level, ctx.rng());
       const have = availableOf(ctx.warehouse, good_id);
-      const quick = GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.shuttle * 60;
+      // Тот же предикат И-8, что и в проверке покрытия: склад ИЛИ цепочка
+      // рецепта в пределах порога. Две разные формулы «легкого» в одной
+      // функции разъезжаются молча — отбор пропускал бы то, что покрытие потом
+      // считает тяжелым.
+      const easy = isEasy(good_id, qty, ctx.warehouse);
 
       // FTUE: дефицита нет вовсе (MAX_DEFICIT_SLOTS=0 на первом рейсе). «Easy»
       // читается ровно как в И-8 — склад ИЛИ быстрое производство, — поэтому
       // товар с коротким циклом годится в первый рейс и с пустого склада.
       if (ctx.is_first_trip) {
-        if (qty > have && !quick) {
+        if (!easy) {
           if (have === 0) continue;
           qty = have;
         }
-      } else if (qty > have && !quick) {
+      } else if (!easy) {
         // Дефицит по И-8 — это то, что игрок не может ни взять со склада, ни
         // быстро произвести. Товар с коротким циклом дефицитом не считается,
         // иначе пустой склад делал бы дефицитным вообще все.
@@ -256,7 +282,15 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
   // Финальный предохранитель канона 1.3/1.6. Ни один путь наружу не отдает
   // рейс из нуля отсеков: пустой пул, пул из одних тяжелых товаров при пустом
   // складе, исчерпанные попытки — все сводятся сюда.
-  const slots = best.length > 0 ? best : fallbackMinimalSlots(ctx, 'empty_pool');
+  //
+  // Сюда же уходит набор, не добравший покрытия ни за одну попытку: канон 1.3
+  // считает такой заказ невалидным («if not isValidOrder → fallbackMinimalOrder»),
+  // а 1.6 разрешает урезать форму ради И-8. Анти-повтор в проверку не входит —
+  // приоритет фолбэков канона ставит покрытие выше повтора.
+  const covered = best.length > 0 && easyRatio(best, ctx.warehouse) >= COVERAGE_MIN.shuttle;
+  const slots = covered
+    ? best
+    : fallbackMinimalSlots(ctx, best.length === 0 ? 'empty_pool' : 'unresolvable_invariant');
 
   return {
     state: 'ORDER',
@@ -279,11 +313,25 @@ export function tripXp(trip: ShuttleTrip): number {
   return trip.slots.reduce((sum, s) => sum + slotXp(s), 0);
 }
 
-/** Цена докупки остатка отсека: И-4, rush-cost цепочки x 1.2 с округлением. */
-export function slotBuyoutPrice(slot: ShuttleSlot, warehouse: WarehouseState): number {
+/**
+ * Цена докупки остатка отсека: И-4, rush-cost цепочки x 1.2 с округлением.
+ *
+ * Складской остаток в цену НЕ входит, хотя `rushCost` умеет его вычитать. Так
+ * считается ускорение производства, где склад и есть то, что производить не
+ * надо. Докупка отсека — другой случай: по И-12 она кладет товар прямо в отсек
+ * мимо склада (`buyoutSlot` ниже), закрывает отсек ЦЕЛИКОМ и складского
+ * остатка не трогает. Скидка за остаток, который никуда не делся, открывает
+ * ровно тот арбитраж, против которого написана И-12, только со стороны цены:
+ * комбинезон при нужде 2 и одном на складе стоил 800 вместо 1600, а
+ * сэкономленная штука оставалась свободной и продавалась.
+ *
+ * Склад остается в сигнатуре: цена считается по состоянию отсека, а не по
+ * полке, и вызывающему не нужно знать об этом различии.
+ */
+export function slotBuyoutPrice(slot: ShuttleSlot, _warehouse?: WarehouseState): number {
   const short = slotShort(slot);
   if (short === 0) return 0;
-  return buyoutPrice(slot.good_id, short, warehouse);
+  return buyoutPrice(slot.good_id, short);
 }
 
 export function allSlotsLoaded(trip: ShuttleTrip): boolean {
@@ -359,6 +407,15 @@ export function loadSlot(
  * Докупка остатка за изотопы. И-12: товар зачисляется прямо в отсек, минуя
  * склад, и не может быть изъят обратно. Это закрывает арбитраж «докупить
  * дешево тут, скормить другой механике там».
+ *
+ * Единица докупки — весь незакрытый остаток отсека (`slotShort`), а не разница
+ * с полкой. ТЗ шаттла 6.2 подписывает кнопку «Докупить {qty-stock}», и это
+ * место расходилось само с собой: домен закрывал остаток целиком, а цену брал
+ * за разницу. Из двух прочтений выбрано «остаток», потому что второе половину
+ * И-12 отменяет: чтобы {qty-stock} было честной единицей, докупка обязана
+ * дополнительно списать складскую часть, то есть пройти через склад. Тот же
+ * абзац ТЗ описывает действие как «мгновенное заполнение остатка», а соседняя
+ * кнопка «Погрузить {stock}» и есть способ отдать полку самому.
  */
 export function buyoutSlot(
   trip: ShuttleTrip,
@@ -376,7 +433,7 @@ export function buyoutSlot(
   const short = slotShort(slot);
   if (short === 0) return empty;
 
-  const price = slotBuyoutPrice(slot, warehouse);
+  const price = slotBuyoutPrice(slot);
   slot.qty_filled += short;
   slot.filled_by = 'purchase';
 

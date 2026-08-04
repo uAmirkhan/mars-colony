@@ -34,10 +34,12 @@ import {
 } from '../domain/construction';
 import {
   availableGoodsFor,
+  buyoutPosition,
   discardOrder,
   generateOrder,
   loadPosition,
   type OrderSlot,
+  positionBuyoutPrice,
   releaseReserved,
   sendOrder,
   slotsAtLevel,
@@ -111,6 +113,7 @@ interface GameState {
   speedupFactory: (idx: number) => void;
   orders: OrderSlot[];
   loadOrderPosition: (slot_idx: number, position_idx: number) => void;
+  buyoutOrderPosition: (slot_idx: number, position_idx: number) => void;
   sendOrderAt: (slot_idx: number) => void;
   discardOrderAt: (slot_idx: number) => void;
   refreshSlotNow: (slot_idx: number) => void;
@@ -451,6 +454,39 @@ export const useGame = create<GameState>((set, get) => {
         return;
       }
       set({ orders, warehouse: { ...get().warehouse } });
+    },
+
+    /**
+     * Докупка позиции заказа за изотопы.
+     *
+     * До этой правки кнопка «Докупить» на доске дрона показывала цену и
+     * вызывала обработчик погрузки: изотопы не списывались, позиция не
+     * закрывалась, игрок получал тост «Не хватает товара на складе». Цена за
+     * действие, которого не существует, хуже отсутствия кнопки.
+     */
+    buyoutOrderPosition: (slot_idx, position_idx) => {
+      const s = get();
+      const orders = s.orders.map((o) => ({
+        ...o,
+        positions: o.positions.map((p) => ({ ...p })),
+      }));
+      const slot = orders[slot_idx];
+      if (!slot) return;
+
+      const position = slot.positions[position_idx];
+      if (!position) return;
+
+      const price = positionBuyoutPrice(position);
+      if (price > s.isotopes) {
+        pushToast(`Нужно ${price} изотопов`, 'warn');
+        return;
+      }
+
+      if (!buyoutPosition(slot, position_idx)) return;
+
+      // Склад не трогаем сознательно: по И-12 докупленный товар приходит извне
+      // и на полке не появляется. Отправка отличит его по `filled_by`.
+      set({ orders, isotopes: s.isotopes - price });
     },
 
     sendOrderAt: (slot_idx) => {

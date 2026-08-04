@@ -31,7 +31,7 @@ const PURCHASABLE_BUILDINGS: PurchasableBuilding[] = [
   'textile_module',
 ];
 
-import { Button, Currency, GoodIcon, Panel, ProgressBar, Timer } from './kit';
+import { Button, Currency, GoodIcon, ISOTOPE_GLYPH, Panel, ProgressBar, Timer } from './kit';
 
 export function Hud() {
   const { level, credits, isotopes } = useGame();
@@ -140,7 +140,7 @@ export function DomeScreen() {
                           const price = productionSpeedupCost(remaining, good.kind);
                           // Ноль показываем словом, а не «0 ⚛»: бесплатное действие
                           // не должно выглядеть как покупка за ноль.
-                          return price === 0 ? 'Готово' : `${price} ⚛`;
+                          return price === 0 ? 'Готово' : `${price} ${ISOTOPE_GLYPH}`;
                         })()}
                       </button>
                     </>
@@ -260,8 +260,16 @@ function BuildingCard({
   type: PurchasableBuilding;
   onPick: (slot_idx: number) => void;
 }) {
-  const { factory_slots, now, level, buildings, buyBuilding, collectFactory, warehouse } =
-    useGame();
+  const {
+    factory_slots,
+    now,
+    level,
+    buildings,
+    buyBuilding,
+    collectFactory,
+    speedupFactory,
+    warehouse,
+  } = useGame();
 
   const def = FACTORY_PRICES[type];
   const owned = buildings.includes(type);
@@ -326,6 +334,34 @@ function BuildingCard({
                     )}
                   </div>
                 </div>
+                {/* ТЗ производства 9.3: у слота в PRODUCING под таймером стоит
+                    «Ускорить за {price} ⚛». Ставка ускорения фабрики жила в
+                    конфиге без единой кнопки в игре, а каркас (раздел 13)
+                    называет ровно это багом: «Любая механика с таймером обязана
+                    иметь экран или состояние с кнопкой ускорения». */}
+                {slot.state === 'PRODUCING' && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '3px 10px', fontSize: 11, borderRadius: 12 }}
+                    onClick={(e) => {
+                      // Слот целиком кликабелен под сбор — ускорение не должно
+                      // проваливаться в него и забирать несозревшее.
+                      e.stopPropagation();
+                      speedupFactory(slot.idx);
+                    }}
+                  >
+                    {(() => {
+                      // Контекст цены — тот же, которым платит стор
+                      // (`speedupFactory`): показанное число обязано совпадать
+                      // со списанным, иначе кнопка врет о цене.
+                      const price = productionSpeedupCost(slot.ends_at - now, 'factory');
+                      // AC7 ТЗ производства: ниже порога цена ноль, кнопка не
+                      // исчезает и подписана «Готово».
+                      return price === 0 ? 'Готово' : `Ускорить за ${price} ${ISOTOPE_GLYPH}`;
+                    })()}
+                  </button>
+                )}
               </>
             )}
           </div>

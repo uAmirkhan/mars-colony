@@ -37,8 +37,14 @@ export function cumulativeXpToReach(level: number): number {
 /** Уровни без нового контента: выдают изотопы и бесплатное расширение купола. */
 export const EMPTY_LEVELS = [4, 14, 16, 18, 19, 21];
 
+/**
+ * Изотопы за левелап. Имена — из конфиг-таблицы [[tz-production-mars]] раздел 7
+ * (`LEVEL_UP_ISOTOPES_BASE` / `_EMPTY_LEVEL_BONUS`, псевдокод там же пишет
+ * второе имя целиком). Прежнее `LEVEL_UP_ISOTOPES_EMPTY_BONUS` было короче на
+ * слово `LEVEL` — ровно тот разъезд имен, который в проекте повторялся.
+ */
 export const LEVEL_UP_ISOTOPES_BASE = 20;
-export const LEVEL_UP_ISOTOPES_EMPTY_BONUS = 25;
+export const LEVEL_UP_ISOTOPES_EMPTY_LEVEL_BONUS = 25;
 
 export interface LevelUpReward {
   credits: number;
@@ -65,7 +71,7 @@ export function levelUpReward(
   return {
     credits:
       Math.round(raw_credits / LEVEL_UP_CREDITS_ROUND_STEP) * LEVEL_UP_CREDITS_ROUND_STEP,
-    isotopes: LEVEL_UP_ISOTOPES_BASE + (is_empty ? LEVEL_UP_ISOTOPES_EMPTY_BONUS : 0),
+    isotopes: LEVEL_UP_ISOTOPES_BASE + (is_empty ? LEVEL_UP_ISOTOPES_EMPTY_LEVEL_BONUS : 0),
     free_dome_expansion: is_empty,
   };
 }

@@ -14,17 +14,21 @@
 
 import {
   COVERAGE_MIN,
+  DRONE_PREMIUM_DEFICIT_BONUS,
   DRONE_PREMIUM_RANGE,
   DRONE_REFRESH_FREE_SEC,
   EASY_PRODUCE_MAX_MIN,
+  GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
+  NUM_VISIBLE_ORDERS,
+  type OrderGenerationDegradedReason,
   PINCH_MAX,
   PINCH_MIN,
   REPEAT_CAP,
   TRANSPORT_XP_K,
 } from './config/economy';
-import { ALL_GOOD_IDS, GOODS, slotQuantity } from './config/goods';
-import { roundToShowcase } from './rushcost';
+import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
+import { buyoutPrice, roundToShowcase } from './rushcost';
 import type { GoodId } from './types';
 import {
   availableOf,
@@ -39,8 +43,23 @@ export type OrderSlotState = 'active' | 'in_progress' | 'ready' | 'empty_cooldow
 export interface OrderPosition {
   good_id: GoodId;
   qty: number;
-  /** Погружено тапом «Погрузить» или докуплено. Товар при этом зарезервирован. */
+  /** Позиция закрыта: погружена со склада или докуплена. */
   filled: boolean;
+  /**
+   * ЧЕМ закрыта, а не только закрыта ли. Различие несущее: погрузка резервирует
+   * товар на складе и при отправке обязана его списать, а докупка по И-12 кладет
+   * товар мимо склада и списывать нечего. Без этого поля `sendOrder` списал бы
+   * резерв, которого не было, — ровно тот дефект, который уже случился у шаттла
+   * (Д-1) и запер товар на складе навсегда.
+   */
+  filled_by: 'self' | 'purchase' | null;
+  /**
+   * И-8 на момент генерации: покрыто складом ИЛИ производится не дольше
+   * `EASY_PRODUCE_MAX_MIN`. Поле канона ([[tz-common-systems-mars]] 1.3,
+   * `positions.append({good, qty, easy})`) — снимок, а не текущее состояние
+   * склада: по нему считается `easy_ratio` заказа и премия за дефицит.
+   */
+  easy: boolean;
 }
 
 export interface OrderSlot {
@@ -54,15 +73,14 @@ export interface OrderSlot {
   refresh_at: number;
 }
 
-/** ТЗ 4.1: сколько заказов видно на доске. Верхняя граница, не цель наполнения. */
+/**
+ * ТЗ 4.1: сколько заказов видно на доске. Верхняя граница, не цель наполнения.
+ * Кривая живет в конфиге (`NUM_VISIBLE_ORDERS`), здесь только чтение брекета:
+ * до дрона игрок доходит на втором уровне, ниже него доска не существует.
+ */
 export function slotsAtLevel(level: number): number {
-  if (level >= 15) return 9;
-  if (level >= 12) return 8;
-  if (level >= 10) return 7;
-  if (level >= 8) return 6;
-  if (level >= 6) return 5;
-  if (level >= 4) return 4;
-  return 3;
+  const row = NUM_VISIBLE_ORDERS.find((r) => level >= r.from_level);
+  return (row ?? NUM_VISIBLE_ORDERS.at(-1))?.orders ?? 0;
 }
 
 /**
@@ -125,11 +143,29 @@ function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolea
   return GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.drone * 60;
 }
 
-/** Доля позиций, которые игрок может закрыть прямо сейчас или быстро произвести. */
-function easyRatio(positions: OrderPosition[], warehouse: WarehouseState): number {
+/**
+ * Доля позиций, которые игрок может закрыть прямо сейчас или быстро произвести.
+ * Считается по флагу позиции, как в каноне 1.3 (`easyRatio(positions)`), а не
+ * повторным опросом склада: иначе одно правило И-8 живет в двух местах.
+ */
+function easyRatio(positions: OrderPosition[]): number {
   if (positions.length === 0) return 1;
-  const easy = positions.filter((p) => isEasy(p.good_id, p.qty, warehouse)).length;
-  return easy / positions.length;
+  return positions.filter((p) => p.easy).length / positions.length;
+}
+
+/**
+ * Канон 1.4, `PINCH_MODE=absolute` (дрон и шаттл):
+ * `stock + clamp(targetQty - stock, PINCH_MIN, PINCH_MAX)`.
+ *
+ * Величина дефицита детерминирована составом заказа, а не роллом: пинч — это
+ * «чуть больше, чем на складе», привязанное к тому, сколько заказ и так просил.
+ * Случайное 1-3 поверх остатка рвет эту связь и стирает `bracket_mult` на
+ * дефицитной позиции: на пятнадцатом уровне позиция просила бы столько же,
+ * сколько на втором.
+ */
+export function applyPinch(stock: number, target_qty: number): number {
+  const gap = target_qty - stock;
+  return stock + Math.min(PINCH_MAX, Math.max(PINCH_MIN, gap));
 }
 
 /** Максимальная доля пересечения с любым заказом доски (ТЗ 4.2, REPEAT_SCOPE=board). */
@@ -148,6 +184,50 @@ function maxRepeatRatio(positions: OrderPosition[], board: OrderSlot[]): number 
 }
 
 /**
+ * Крайний случай канона ([[tz-common-systems-mars]] 1.6): пул пуст или ни одна
+ * попытка не собрала ни одной позиции. Канон предписывает `fallbackMinimalOrder`
+ * — «одна позиция самого дешевого/быстрого доступного товара, количество =
+ * `GOOD_BASE_QTY.min`, форма урезается ниже нормального минимума», и требует
+ * (1.9) чтобы генератор «никогда не завершался ошибкой или пустым результатом».
+ * Требование адресовано всем трем механикам, не только шаттлу.
+ *
+ * Пул выбирается тремя ступенями: заказанный вызывающим, затем товары без
+ * здания на уровне игрока (POOL_MODE канона), затем весь субстрат. Заказ из
+ * нуля позиций формально проходил обе проверки И-8 (`easyRatio([])` = 1,
+ * `maxRepeatRatio([])` = 0) и занимал слот доски карточкой, которая ничего не
+ * просит и ничего не платит: ее нельзя ни выполнить, ни довести до `ready`.
+ */
+function fallbackMinimalPositions(
+  ctx: GeneratorContext,
+  reason: OrderGenerationDegradedReason,
+): OrderPosition[] {
+  const pools: GoodId[][] = [
+    ctx.available_goods,
+    availableGoodsFor(ctx.level, new Set<string>()),
+    ALL_GOOD_IDS,
+  ];
+  const candidates = pools.find((p) => p.length > 0) ?? ALL_GOOD_IDS;
+  const good_id = [...candidates].sort((a, b) => {
+    const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
+    return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
+  })[0]!;
+
+  // Канон 1.6 и 1.8: деградация генератора логируется как алерт, а не глотается
+  // молча. Сервера у прототипа нет, поэтому событие уходит в консоль тем же
+  // именем и с тем же перечислением причин, что заведены в таблице событий.
+  console.warn('order_generation_degraded', {
+    mechanic: 'drone',
+    reason,
+    player_level: ctx.level,
+  });
+
+  const qty = GOOD_BASE_QTY[good_id].min;
+  return [
+    { good_id, qty, filled: false, filled_by: null, easy: isEasy(good_id, qty, ctx.warehouse) },
+  ];
+}
+
+/**
  * Генерация одного заказа в слот.
  *
  * И-8 (анти-фрустрация) соблюдается перегенерацией с ограниченным числом
@@ -156,16 +236,25 @@ function maxRepeatRatio(positions: OrderPosition[], board: OrderSlot[]): number 
  * пустая доска читается как поломка игры.
  */
 export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
-  const MAX_ATTEMPTS = 12;
   let best: OrderPosition[] = [];
+  /**
+   * Признак ТЗ 4.3 `order.has_deficit_position`, снятый с той самой попытки,
+   * чей набор позиций поехал наружу. Хранится рядом с `best`, а не одной
+   * переменной цикла: удержанная попытка и последняя — разные наборы, и флаг
+   * последней описывал бы заказ, которого игрок не увидит.
+   */
+  let best_has_deficit = false;
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt < GEN_MAX_ATTEMPTS; attempt++) {
     const count = positionsCountFor(ctx.level, ctx.rng());
     const pool = [...ctx.available_goods];
     const positions: OrderPosition[] = [];
     let deficit_used = 0;
 
-    for (let i = 0; i < count && pool.length > 0; i++) {
+    // Цикл идет по числу набранных позиций, а не по счетчику попыток: товар,
+    // не прошедший отбор, отбраковывается и заменяется следующим кандидатом из
+    // пула (канон 1.3 — `continue` без `append`), а не съедает позицию.
+    while (positions.length < count && pool.length > 0) {
       const pick_at = Math.min(pool.length - 1, Math.floor(ctx.rng() * pool.length));
       const good_id = pool.splice(pick_at, 1)[0]!;
       let qty = slotQuantity(good_id, 'drone', ctx.level, ctx.rng());
@@ -178,37 +267,64 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
 
       if (qty > have && !quick) {
         if (deficit_used >= MAX_DEFICIT_SLOTS) {
-          // Бюджет дефицита исчерпан. Урезать до складского остатка можно,
-          // только если остаток есть. При нуле на складе позиция осталась бы
-          // дефицитной при любом количестве — такую пропускаем целиком.
-          // Заказ короче лучше, чем заказ, нарушающий инвариант.
-          if (have === 0) {
-            i -= 1; // позиция не засчитана, пробуем другой товар из пула
-            continue;
-          }
+          // Бюджет дефицита исчерпан — позицию надо сделать легкой. Канон
+          // (1.3 `downgradeHardestDeficitSlot`, 1.4 `rebalanceForAchievability`)
+          // режет количество только до пола `GOOD_BASE_QTY[good].min`, а если
+          // и минимум не покрыт — МЕНЯЕТ товар, а не опускает количество ниже
+          // пола. Позиция из одной водоросли при минимуме пять — это заказ с
+          // впятеро заниженным XP и ценой, и падает он молча.
+          if (have < GOOD_BASE_QTY[good_id].min) continue;
           qty = have;
         } else {
           deficit_used += 1;
-          const pinch = PINCH_MIN + Math.floor(ctx.rng() * (PINCH_MAX - PINCH_MIN + 1));
-          qty = have + pinch;
+          qty = applyPinch(have, qty);
         }
       }
 
-      positions.push({ good_id, qty, filled: false });
+      positions.push({
+        good_id,
+        qty,
+        filled: false,
+        filled_by: null,
+        easy: isEasy(good_id, qty, ctx.warehouse),
+      });
     }
 
-    best = positions;
-    const coverage_ok = easyRatio(positions, ctx.warehouse) >= COVERAGE_MIN.drone;
+    const coverage_ok = easyRatio(positions) >= COVERAGE_MIN.drone;
     const repeat_ok = maxRepeatRatio(positions, ctx.board) <= REPEAT_CAP;
-    if (coverage_ok && repeat_ok) break;
+    if (coverage_ok && repeat_ok && positions.length > 0) {
+      best = positions;
+      best_has_deficit = deficit_used > 0;
+      break;
+    }
+    // Из невалидных попыток удерживается самая полная по форме, а не последняя:
+    // короткий заказ — это меньше кредитов за тот же слот доски. Форма та же,
+    // что у шаттла: движок один, расходиться конструкциям незачем.
+    if (positions.length > best.length) {
+      best = positions;
+      best_has_deficit = deficit_used > 0;
+    }
   }
 
-  const reward = orderReward(best, ctx.rng());
+  // Финальный предохранитель канона 1.3/1.6. Ни один путь наружу не отдает
+  // заказ из нуля позиций. Причина различается: пустой пул — это недостроенный
+  // контент, исчерпанные попытки — сигнал бага генератора (канон 1.8).
+  const degraded = best.length === 0;
+  const positions = degraded
+    ? fallbackMinimalPositions(
+        ctx,
+        ctx.available_goods.length === 0 ? 'empty_pool' : 'max_attempts',
+      )
+    : best;
+
+  // Фолбэк канона 1.6 пинча не делает: он просит `GOOD_BASE_QTY.min` и ничего
+  // сверх склада, значит и надбавки за дефицит там быть не может.
+  const reward = orderReward(positions, ctx.rng(), degraded ? false : best_has_deficit);
   return {
     idx,
     state: 'active',
     npc_name: NPC_NAMES[idx % NPC_NAMES.length]!,
-    positions: best,
+    positions,
     credits_reward: reward.credits,
     xp_reward: reward.xp,
     refresh_at: 0,
@@ -222,6 +338,13 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
 export function orderReward(
   positions: OrderPosition[],
   jitter_roll = 0.5,
+  /**
+   * ТЗ 4.3, `order.has_deficit_position`: заказ содержит целевую дефицитную
+   * позицию (И-8 разрешает не больше одной). Знает об этом только генератор —
+   * по составу заказа дефицит не восстанавливается: позиция, урезанная пинчем
+   * до складского остатка, от обычной неотличима.
+   */
+  has_deficit_position = false,
 ): { credits: number; xp: number; premium: number } {
   const market_sum = positions.reduce((sum, p) => sum + GOODS[p.good_id].price * p.qty, 0);
 
@@ -238,6 +361,11 @@ export function orderReward(
   // 6 позиций +37%. Закономерность воспроизведена явным слагаемым.
   if (positions.length <= 2) premium += 0.05;
   else if (positions.length >= 5) premium -= 0.05;
+
+  // Целевой дефицит: заказ просит больше, чем лежит на складе, и стоит игроку
+  // производственного цикла. Без надбавки он платит столько же, сколько заказ,
+  // который закрывается одним тапом из склада.
+  if (has_deficit_position) premium += DRONE_PREMIUM_DEFICIT_BONUS;
 
   premium += (jitter_roll - 0.5) * 0.04; // джиттер +-0.02
   premium = Math.min(
@@ -308,6 +436,37 @@ export function loadPosition(
   if (!reserve(warehouse, position.good_id, position.qty)) return false;
 
   position.filled = true;
+  position.filled_by = 'self';
+  slot.state = slot.positions.every((p) => p.filled) ? 'ready' : 'in_progress';
+  return true;
+}
+
+/**
+ * Цена докупки позиции: И-4, rush-cost цепочки с наценкой.
+ *
+ * Складской остаток в цену не входит по той же причине, что и у отсека шаттла:
+ * докупка по И-12 кладет товар мимо склада и остатка не трогает, поэтому скидка
+ * за него открывала бы арбитраж «докупить дешево, продать сэкономленное».
+ */
+export function positionBuyoutPrice(position: OrderPosition): number {
+  if (position.filled) return 0;
+  return buyoutPrice(position.good_id, position.qty);
+}
+
+/**
+ * Докупка позиции за изотопы (ТЗ дрона 4.5, И-12).
+ *
+ * Товар приходит извне и на складе не появляется ни на секунду: ни резерва, ни
+ * прихода. Поэтому отправка обязана отличать такую позицию от погруженной, иначе
+ * спишет резерв, которого не было.
+ */
+export function buyoutPosition(slot: OrderSlot, position_idx: number): boolean {
+  const position = slot.positions[position_idx];
+  if (!position || position.filled) return false;
+  if (slot.state !== 'active' && slot.state !== 'in_progress') return false;
+
+  position.filled = true;
+  position.filled_by = 'purchase';
   slot.state = slot.positions.every((p) => p.filled) ? 'ready' : 'in_progress';
   return true;
 }
@@ -320,6 +479,8 @@ export function sendOrder(
   if (slot.state !== 'ready') return { ok: false, credits: 0, xp: 0 };
 
   for (const position of slot.positions) {
+    // Докупленное на складе не лежало — списывать нечего.
+    if (position.filled_by === 'purchase') continue;
     shipReserved(warehouse, position.good_id, position.qty);
   }
   return { ok: true, credits: slot.credits_reward, xp: slot.xp_reward };

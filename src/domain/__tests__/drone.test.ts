@@ -3,19 +3,24 @@
  * Критерии приемки — [[tz-drone-mars]] раздел 9, генератор — раздел 4.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { makeRng } from '../../sim/rng';
 import {
   COVERAGE_MIN,
+  DRONE_PREMIUM_DEFICIT_BONUS,
   DRONE_PREMIUM_RANGE,
   DRONE_REFRESH_FREE_SEC,
   droneRefreshPrice,
   EASY_PRODUCE_MAX_MIN,
+  GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
+  PINCH_MAX,
+  PINCH_MIN,
   TRANSPORT_XP_K,
 } from '../config/economy';
 import { GOODS } from '../config/goods';
 import {
+  applyPinch,
   availableGoodsFor,
   canFulfillNow,
   discardOrder,
@@ -34,10 +39,13 @@ import { availableOf, createWarehouse, deposit, qtyOf, reserve, totalQty } from 
 const pos = (
   good_id: Parameters<typeof orderReward>[0][number]['good_id'],
   qty: number,
+  easy = true,
 ): OrderPosition => ({
   good_id,
   qty,
   filled: false,
+  filled_by: null,
+  easy,
 });
 
 describe('4.1: число слотов растет с уровнем', () => {
@@ -126,6 +134,35 @@ describe('4.3: награда', () => {
       0.5,
     ).premium;
     expect(short).toBeGreaterThan(long);
+  });
+
+  /**
+   * ТЗ 4.3: `if order.has_deficit_position: premium += 0.05`, строка «Бонус
+   * целевого дефицита» конфиг-таблицы раздела 6. Слагаемое проверяется на
+   * составе, далеком от границ клемпа, — иначе тест мерил бы клемп, а не бонус.
+   */
+  it('целевая дефицитная позиция поднимает премию ровно на бонус ТЗ', () => {
+    const positions = [pos('soy', 4), pos('mushrooms', 3)];
+    const plain = orderReward(positions, 0.5).premium;
+    const deficit = orderReward(positions, 0.5, true).premium;
+    expect(deficit - plain).toBeCloseTo(DRONE_PREMIUM_DEFICIT_BONUS, 10);
+  });
+
+  it('дефицитный заказ платит больше такого же заказа со склада', () => {
+    // Иначе позиция, которой у игрока нет, стоит ему производственного цикла
+    // и не платит за него ничего.
+    const positions = [pos('jumpsuit', 4), pos('fabric', 3)];
+    expect(orderReward(positions, 0.5, true).credits).toBeGreaterThan(
+      orderReward(positions, 0.5).credits,
+    );
+  });
+
+  it('бонус дефицита не выносит премию за клемп каркаса', () => {
+    // Самый дорогой набор слагаемых: фабричный товар + короткая форма +
+    // дефицит + верхний джиттер.
+    const { premium } = orderReward([pos('jumpsuit', 2)], 1, true);
+    expect(premium).toBeLessThanOrEqual(1 + DRONE_PREMIUM_RANGE.max);
+    expect(premium).toBeGreaterThanOrEqual(1 + DRONE_PREMIUM_RANGE.min);
   });
 
   it('И-3: XP считается по коэффициенту дрона, а не по производственному', () => {
@@ -247,6 +284,158 @@ describe('Генератор: инварианты анти-фрустрации
       const ids = order.positions.map((p) => p.good_id);
       expect(new Set(ids).size).toBe(ids.length);
     }
+  });
+});
+
+/**
+ * Канон [[tz-common-systems-mars]] 1.4, `PINCH_MODE[drone] = absolute`:
+ * `stock + clamp(targetQty - stock, PINCH_MIN, PINCH_MAX)`. Величина дефицита
+ * задана составом заказа и складом, а не отдельным роллом: «чуть больше, чем
+ * есть», где «чуть» отсчитывается от того, сколько заказ и так просил.
+ */
+describe('Канон 1.4: размер целевого дефицита', () => {
+  it.each([
+    [0, 5, 3],
+    [4, 6, 6],
+    [7, 7, 8],
+    [10, 3, 11],
+    [2, 4, 4],
+  ])('склад %d, запрошено %d — просят %d', (stock, target, expected) => {
+    expect(applyPinch(stock, target)).toBe(expected);
+  });
+
+  it('дефицит не выходит за PINCH_MIN..PINCH_MAX сверх склада', () => {
+    for (let stock = 0; stock <= 12; stock++) {
+      for (let target = 0; target <= 20; target++) {
+        const asked = applyPinch(stock, target);
+        expect(asked).toBeGreaterThanOrEqual(stock + PINCH_MIN);
+        expect(asked).toBeLessThanOrEqual(stock + PINCH_MAX);
+      }
+    }
+  });
+
+  it('величина детерминирована составом заказа, а не роллом', () => {
+    // Два вызова с теми же аргументами обязаны совпасть, а больший запрос при
+    // том же складе обязан просить не меньше меньшего.
+    expect(applyPinch(0, 5)).toBe(applyPinch(0, 5));
+    expect(applyPinch(0, 5)).toBeGreaterThan(applyPinch(0, 2));
+  });
+
+  it('дефицитная позиция генератора укладывается в дозировку канона', () => {
+    const goods = availableGoodsFor(9, new Set(['food_module']));
+    const rng = makeRng(17);
+    for (let i = 0; i < 40; i++) {
+      const w = createWarehouse();
+      deposit(w, 'algae', 6);
+      const order = generateOrder(0, {
+        level: 9,
+        warehouse: w,
+        available_goods: goods,
+        board: [],
+        rng,
+      });
+      for (const p of order.positions) {
+        const stock = availableOf(w, p.good_id);
+        // Дефицит по И-8 — только то, что нельзя быстро вырастить: позиция
+        // короткого цикла сверх склада дефицитом не считается и пинчу не подлежит.
+        const slow = GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60;
+        if (!slow || p.qty <= stock) continue;
+        expect(p.qty).toBeGreaterThanOrEqual(stock + PINCH_MIN);
+        expect(p.qty).toBeLessThanOrEqual(stock + PINCH_MAX);
+      }
+    }
+  });
+});
+
+/**
+ * ТЗ 4.3 `order.has_deficit_position` (+0.05). Признак рождается в генераторе
+ * и обязан дойти до расчета награды: заказ, который просит больше, чем лежит
+ * на складе, платит за производственный цикл.
+ */
+describe('Генератор: признак дефицита доходит до награды', () => {
+  it('заказ с дефицитной позицией оплачен с бонусом дефицита', () => {
+    const goods = availableGoodsFor(12, new Set(['food_module', 'textile_module']));
+
+    let with_deficit = 0;
+    let bonus_visible = 0;
+
+    for (let seed = 1; seed <= 60; seed++) {
+      const rolls: number[] = [];
+      const source = makeRng(seed);
+      const rng = () => {
+        const value = source();
+        rolls.push(value);
+        return value;
+      };
+
+      // Все, кроме томатов, лежит на складе: томаты растут час, поэтому
+      // единственный кандидат в целевой дефицит — они.
+      const w = createWarehouse(300);
+      for (const id of goods) if (id !== 'tomatoes') deposit(w, id, 12);
+
+      const order = generateOrder(0, {
+        level: 12,
+        warehouse: w,
+        available_goods: goods,
+        board: [],
+        rng,
+      });
+
+      const deficit = order.positions.some(
+        (p) =>
+          p.qty > availableOf(w, p.good_id) &&
+          GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60,
+      );
+      if (!deficit) continue;
+      with_deficit += 1;
+
+      // Последний ролл генератора — джиттер премии (4.3), он же дает
+      // воспроизвести расчет награды до кредита.
+      const jitter = rolls.at(-1) ?? 0.5;
+      expect(order.credits_reward).toBe(orderReward(order.positions, jitter, true).credits);
+      if (order.credits_reward !== orderReward(order.positions, jitter).credits) {
+        bonus_visible += 1;
+      }
+    }
+
+    // Сцена обязана порождать дефицитные заказы, иначе тест зеленый впустую.
+    expect(with_deficit).toBeGreaterThan(0);
+    // И хотя бы на части из них надбавка обязана быть видна в кредитах: иначе
+    // равенство выше проходило бы и без слагаемого, съеденное округлением.
+    expect(bonus_visible).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * Канон 1.5/1.6 и конфиг-таблица [[tz-common-systems-mars]]: предохранитель
+ * цикла подбора — параметр `GEN_MAX_ATTEMPTS` с диапазоном тюнинга 20-100,
+ * а не константа внутри функции генератора.
+ */
+describe('Предохранитель цикла подбора', () => {
+  it('число попыток берется из конфига', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let calls = 0;
+    const order = generateOrder(0, {
+      level: 9,
+      warehouse: createWarehouse(),
+      available_goods: [],
+      board: [],
+      rng: () => {
+        calls += 1;
+        return 0.5;
+      },
+    });
+    warn.mockRestore();
+
+    // Пул пуст: каждая попытка ролит форму заказа и не набирает ни одной
+    // позиции, поэтому число роллов не может быть меньше числа попыток.
+    expect(order.positions.length).toBeGreaterThan(0);
+    expect(calls).toBeGreaterThanOrEqual(GEN_MAX_ATTEMPTS);
+  });
+
+  it('значение остается в диапазоне тюнинга спеки', () => {
+    expect(GEN_MAX_ATTEMPTS).toBeGreaterThanOrEqual(20);
+    expect(GEN_MAX_ATTEMPTS).toBeLessThanOrEqual(100);
   });
 });
 
