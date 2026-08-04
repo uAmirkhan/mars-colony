@@ -10,15 +10,24 @@
  * Цвет счетчика позиции берется той же доменной функцией, что и решение
  * о подсветке карточки. Это не педантизм: счетчик, покрашенный по своей
  * формуле, рано или поздно разойдется с кнопкой «Погрузить» рядом с ним.
+ *
+ * По той же причине и ЧИСЛО в счетчике читается доменным `availableOf`, а не
+ * `cells[good].qty`: сырое количество включает зарезервированное под другие
+ * заказы, и счетчик обещал товар, которого домен не отдаст.
  */
 
 import { useState } from 'react';
 import { droneRefreshPrice } from '../domain/config/economy';
 import { GOODS } from '../domain/config/goods';
-import { canFulfillNow, type OrderSlot, positionCovered } from '../domain/drone';
-import { buyoutPrice } from '../domain/rushcost';
+import {
+  canFulfillNow,
+  type OrderSlot,
+  positionBuyoutPrice,
+  positionCovered,
+} from '../domain/drone';
+import { availableOf } from '../domain/warehouse';
 import { useGame } from '../state/gameStore';
-import { Button, GoodIcon, Panel, Timer } from './kit';
+import { Button, GoodIcon, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
 /** Карточка заказа на доске. Открывается тапом, если в ней есть что делать. */
 function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
@@ -32,7 +41,7 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Слот пуст</span>
         <Timer remaining_sec={remaining} />
         <Button kind="secondary" onClick={() => refreshSlotNow(slot.idx)}>
-          Обновить · {price} ⬡
+          Обновить · {price} {ISOTOPE_GLYPH}
         </Button>
       </div>
     );
@@ -69,7 +78,7 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
           const covered = positionCovered(position, warehouse);
           const have = position.filled
             ? position.qty
-            : (warehouse.cells[position.good_id]?.qty ?? 0);
+            : availableOf(warehouse, position.good_id);
           return (
             <div key={`${position.good_id}-${i}`} style={{ textAlign: 'center' }}>
               <GoodIcon name={good.name} size={30} />
@@ -107,7 +116,14 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
 
 /** Окно заказа: позиции с кнопками «Погрузить», внизу «Отправить» и «Выбросить». */
 function OrderWindow({ slot, onClose }: { slot: OrderSlot; onClose: () => void }) {
-  const { warehouse, loadOrderPosition, sendOrderAt, discardOrderAt, isotopes } = useGame();
+  const {
+    warehouse,
+    loadOrderPosition,
+    buyoutOrderPosition,
+    sendOrderAt,
+    discardOrderAt,
+    isotopes,
+  } = useGame();
   const ready = slot.state === 'ready';
 
   return (
@@ -117,10 +133,14 @@ function OrderWindow({ slot, onClose }: { slot: OrderSlot; onClose: () => void }
           <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
             {slot.positions.map((position, i) => {
               const good = GOODS[position.good_id];
-              const have = warehouse.cells[position.good_id]?.qty ?? 0;
+              const have = availableOf(warehouse, position.good_id);
               const covered = positionCovered(position, warehouse);
-              const missing = Math.max(0, position.qty - have);
-              const price = missing > 0 ? buyoutPrice(position.good_id, missing, warehouse) : 0;
+              // Докупка закрывает позицию ЦЕЛИКОМ и по И-12 кладет товар мимо
+              // склада, не трогая остаток. Поэтому и платить надо за всю
+              // позицию, а не за недостачу: скидка за остаток, который никуда
+              // не делся, открывает арбитраж «докупить дешево, продать
+              // сэкономленное». Тот же разбор — у отсека шаттла.
+              const price = positionBuyoutPrice(position);
 
               return (
                 <div
@@ -145,9 +165,9 @@ function OrderWindow({ slot, onClose }: { slot: OrderSlot; onClose: () => void }
                     <Button
                       kind="secondary"
                       disabled={price > isotopes}
-                      onClick={() => loadOrderPosition(slot.idx, i)}
+                      onClick={() => buyoutOrderPosition(slot.idx, i)}
                     >
-                      Докупить {missing} за {price} ⬡
+                      Докупить {position.qty} за {price} {ISOTOPE_GLYPH}
                     </Button>
                   )}
                 </div>

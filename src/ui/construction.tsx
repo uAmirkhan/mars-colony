@@ -11,7 +11,7 @@ import { constructionSpeedupCost, MODULE_STOCK_CAP } from '../domain/config/econ
 import { ALL_MODULE_IDS, CONSTRUCTION_RECIPE, MODULES } from '../domain/config/modules';
 import { type BuildSlot, missingFor, moduleTotal } from '../domain/construction';
 import { useGame } from '../state/gameStore';
-import { Button, Panel, Timer } from './kit';
+import { Button, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
 const TIER_COLOR = {
   basic: 'var(--panel-border)',
@@ -92,7 +92,7 @@ function BuildCard({ build }: { build: BuildSlot }) {
             disabled={constructionSpeedupCost(build.ends_at - now) > isotopes}
             onClick={() => speedupConstruction(build.kind)}
           >
-            Ускорить за {constructionSpeedupCost(build.ends_at - now)} ⬡
+            Ускорить за {constructionSpeedupCost(build.ends_at - now)} {ISOTOPE_GLYPH}
           </Button>
         </>
       )}

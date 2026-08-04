@@ -19,11 +19,13 @@ import {
   type ShuttleTrip,
   skipPrice,
   slotBuyoutPrice,
+  slotCovered,
   slotXp,
   tripXp,
 } from '../domain/shuttle';
+import { availableOf } from '../domain/warehouse';
 import { useGame } from '../state/gameStore';
-import { Button, GoodIcon, Panel, Timer } from './kit';
+import { Button, GoodIcon, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
 const TIER_COLOR: Record<string, string> = {
   basic: 'var(--panel-border)',
@@ -74,8 +76,9 @@ function SlotStrip({ trip, onOpen }: { trip: ShuttleTrip; onOpen: (idx: number) 
       {trip.slots.map((slot) => {
         const good = GOODS[slot.good_id];
         const done = slot.qty_filled >= slot.qty_required;
-        const have = warehouse.cells[slot.good_id]?.qty ?? 0;
-        const covered = have + slot.qty_filled >= slot.qty_required;
+        // Покрытие считает домен, а не верстка: сравнение с сырым `qty` красило
+        // зеленым отсек, который нечем закрыть, — товар уже лежал в чужом слоте.
+        const covered = slotCovered(slot, warehouse);
 
         return (
           <button
@@ -116,7 +119,10 @@ function SlotStrip({ trip, onOpen }: { trip: ShuttleTrip; onOpen: (idx: number) 
 function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }) {
   const { warehouse, isotopes, loadShuttleSlot, buyoutShuttleSlot } = useGame();
   const good = GOODS[slot.good_id];
-  const have = warehouse.cells[slot.good_id]?.qty ?? 0;
+  // «Есть N» — это доступное, а не сырое qty: зарезервированное под другой заказ
+  // погрузить нельзя (каркас раздел 9, `reserved` отделен от `qty`). Счетчик по
+  // `qty` обещал погрузку, которой домен не давал, и тап отвечал «Нет на складе».
+  const have = availableOf(warehouse, slot.good_id);
   const short = slot.qty_required - slot.qty_filled;
   const price = slotBuyoutPrice(slot, warehouse);
 
@@ -135,15 +141,21 @@ function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }
           </div>
 
           <div style={{ display: 'grid', gap: 8 }}>
+            {/* Три состояния кнопки по ТЗ 6.2: `covered_by_stock` — «Погрузить»;
+                `partial` — «Погрузить {stock}», частичная погрузка допустима;
+                `empty` — «Погрузить» задизейблена с подписью «Нет на складе».
+                Подписи «Погрузить 0» ТЗ не знает, и она обещала бы действие,
+                которого домен не выполнит. */}
             <Button
               full
               disabled={have < 1}
+              title={have < 1 ? 'Нет на складе' : undefined}
               onClick={() => {
                 loadShuttleSlot(slot.idx);
                 onClose();
               }}
             >
-              {have >= short ? 'Погрузить' : `Погрузить ${have}`}
+              {have >= short || have < 1 ? 'Погрузить' : `Погрузить ${have}`}
             </Button>
 
             {/* Цена стоит на самой кнопке: правило каркаса — кнопка без цены
@@ -157,7 +169,7 @@ function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }
                 onClose();
               }}
             >
-              Докупить {short} за {price} ⬡
+              Докупить {short} за {price} {ISOTOPE_GLYPH}
             </Button>
           </div>
         </Panel>
@@ -187,7 +199,7 @@ function FlightView({ trip }: { trip: ShuttleTrip }) {
       {/* Ниже порога ускорять уже нечего: пол цены съел бы остаток смысла. */}
       {remaining > SKIP_HIDE_BELOW_SEC && (
         <Button full disabled={price > isotopes} onClick={skipShuttle}>
-          Ускорить за {price} ⬡
+          Ускорить за {price} {ISOTOPE_GLYPH}
         </Button>
       )}
     </>

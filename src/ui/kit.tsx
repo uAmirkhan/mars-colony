@@ -43,12 +43,15 @@ export function Button({
   onClick,
   children,
   full,
+  title,
 }: {
   kind?: 'primary' | 'secondary';
   disabled?: boolean;
   onClick?: () => void;
   children: ReactNode;
   full?: boolean;
+  /** Подпись причины, по которой кнопка недоступна: ТЗ требует ее у ряда состояний. */
+  title?: string;
 }) {
   return (
     <button
@@ -56,12 +59,23 @@ export function Button({
       className={`btn btn-${kind}`}
       disabled={disabled}
       onClick={onClick}
+      title={title}
       style={full ? { width: '100%' } : undefined}
     >
       {children}
     </button>
   );
 }
+
+/**
+ * Единственное допустимое обозначение изотопов на кнопках и в подписях —
+ * UX-стандарт каркаса раздел 13: «Обозначение изотопов — только иконка ⚛».
+ *
+ * Константа, а не литерал в каждой кнопке: одна валюта уже разъехалась по
+ * экранам на два разных глифа (⚛ у грядки, ⬡ у стройки, дрона и шаттла), и
+ * заметить это можно было только сравнив четыре файла глазами.
+ */
+export const ISOTOPE_GLYPH = '⚛';
 
 export type CurrencyKind = 'credits' | 'isotopes' | 'xp';
 
