@@ -28,7 +28,7 @@ import {
   TRANSPORT_XP_K,
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
-import { buyoutPrice, roundToShowcase } from './rushcost';
+import { buyoutPrice, productionTimeMinutes, roundToShowcase } from './rushcost';
 import type { GoodId } from './types';
 import {
   availableOf,
@@ -140,7 +140,11 @@ export interface GeneratorContext {
  */
 function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolean {
   if (availableOf(warehouse, good_id) >= qty) return true;
-  return GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.drone * 60;
+  // Время НУЖНОГО количества по всей цепочке рецепта, а не время одного цикла
+  // самого товара. Прежняя редакция читала `prod_time_sec` и считала грибной
+  // суп легким: сам он варится за порог, а грибы под него растут пятьдесят
+  // минут. Тот же дефект был у шаттла и починен там же (`shuttle.ts`).
+  return productionTimeMinutes(good_id, qty, warehouse) <= EASY_PRODUCE_MAX_MIN.drone;
 }
 
 /**
