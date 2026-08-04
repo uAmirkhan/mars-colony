@@ -32,7 +32,9 @@ import { buyoutPrice, productionTimeMinutes, roundToShowcase } from './rushcost'
 import type { GoodId } from './types';
 import {
   availableOf,
+  qtyOf,
   reserve,
+  reservedOf,
   shipReserved,
   unreserve,
   type WarehouseState,
@@ -145,6 +147,27 @@ function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolea
   // суп легким: сам он варится за порог, а грибы под него растут пятьдесят
   // минут. Тот же дефект был у шаттла и починен там же (`shuttle.ts`).
   return productionTimeMinutes(good_id, qty, warehouse) <= EASY_PRODUCE_MAX_MIN.drone;
+}
+
+/**
+ * `maxQtyWithin` канона (1.4, `downgradeHardestDeficitSlot`): наибольшее
+ * количество, которое покрыто складом ИЛИ производится в пределах порога easy.
+ *
+ * Тот же предикат И-8, только читаемый в обратную сторону — не «легка ли эта
+ * позиция», а «до какого количества ее надо урезать, чтобы стала легкой».
+ * Прежняя редакция резала строго до складского остатка, то есть знала лишь
+ * первую половину условия: при пустом складе легального количества не
+ * находилось вовсе и позиция выбрасывалась целиком.
+ *
+ * Перебор сверху вниз, а не формула: время цепочки не обратимо аналитически
+ * (рецепт ветвится, склад вычитается на каждом звене), а количества позиции
+ * измеряются десятками.
+ */
+function maxEasyQty(good_id: GoodId, target_qty: number, warehouse: WarehouseState): number {
+  for (let qty = target_qty; qty >= 1; qty--) {
+    if (isEasy(good_id, qty, warehouse)) return qty;
+  }
+  return 0;
 }
 
 /**
@@ -266,22 +289,40 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
       // И-8: не больше одной дефицитной позиции на заказ. Дефицит — это
       // «чуть больше, чем на складе», а не «недостижимо много». Товар с
       // коротким циклом дефицитом не считается: игрок его просто вырастит.
+      //
+      // Предикат ровно тот же, что у флага позиции, — канон 1.3 задает его один
+      // раз (`isEasy = stock >= qty or produceMin <= EASY_PRODUCE_MAX_MIN`) и
+      // тут же вешает на него бюджет дефицита (`if not isEasy: deficitCount++`).
+      // Прежняя редакция читала здесь `prod_time_sec` одного цикла: грибной суп
+      // проходил ворота «быстрым», бюджета не тратил и не пинчевался, хотя по
+      // цепочке с грибами не укладывался в порог. Так в заказ попадало больше
+      // одной позиции, которую игрок не может ни взять со склада, ни успеть
+      // произвести. Тот же разъезд уже чинили во флаге `easy` и у шаттла.
       const have = availableOf(ctx.warehouse, good_id);
-      const quick = GOODS[good_id].prod_time_sec <= EASY_PRODUCE_MAX_MIN.drone * 60;
 
-      if (qty > have && !quick) {
+      if (!isEasy(good_id, qty, ctx.warehouse)) {
         if (deficit_used >= MAX_DEFICIT_SLOTS) {
           // Бюджет дефицита исчерпан — позицию надо сделать легкой. Канон
-          // (1.3 `downgradeHardestDeficitSlot`, 1.4 `rebalanceForAchievability`)
-          // режет количество только до пола `GOOD_BASE_QTY[good].min`, а если
-          // и минимум не покрыт — МЕНЯЕТ товар, а не опускает количество ниже
-          // пола. Позиция из одной водоросли при минимуме пять — это заказ с
-          // впятеро заниженным XP и ценой, и падает он молча.
-          if (have < GOOD_BASE_QTY[good_id].min) continue;
-          qty = have;
+          // (1.4 `downgradeHardestDeficitSlot`): режем количество до
+          // `maxQtyWithin` — наибольшего, покрытого складом ИЛИ производимого в
+          // пределах порога, — но не ниже пола `GOOD_BASE_QTY[good].min`; если и
+          // минимум не легок, МЕНЯЕМ товар (здесь — берем следующего кандидата
+          // из пула), а не опускаем количество ниже пола. Позиция из одной
+          // водоросли при минимуме пять — это заказ с впятеро заниженным XP и
+          // ценой, и падает он молча.
+          const easy_qty = maxEasyQty(good_id, qty, ctx.warehouse);
+          if (easy_qty < GOOD_BASE_QTY[good_id].min) continue;
+          qty = easy_qty;
         } else {
-          deficit_used += 1;
           qty = applyPinch(have, qty);
+          // Бюджет тратится за позицию, которая осталась тяжелой ПОСЛЕ пинча, а
+          // не за намерение. Пинч режет количество до «склад + 1..3», и этого
+          // бывает достаточно, чтобы позиция уложилась в порог производства: в
+          // заказ она приезжает легкой, и списывать за нее единственный слот
+          // дефицита значит выбросить остаток пула ни за что. И-8 считает
+          // позиции, которые игрок не может ни взять, ни быстро произвести, —
+          // тем же счетом, что флаг `easy` и проверка покрытия.
+          if (!isEasy(good_id, qty, ctx.warehouse)) deficit_used += 1;
         }
       }
 
@@ -475,17 +516,41 @@ export function buyoutPosition(slot: OrderSlot, position_idx: number): boolean {
   return true;
 }
 
-/** Отправка: зарезервированное физически уходит со склада, слот пустеет. */
+/**
+ * Отправка: зарезервированное физически уходит со склада, слот пустеет.
+ *
+ * Все-или-ничего, как `deposit` у склада. Сначала проверяется, что резерв
+ * подтверждает каждую погруженную позицию, и только потом идет списание: заказ,
+ * у которого уехала одна позиция из двух, — состояние без корректного выхода.
+ *
+ * Награда выдается только за фактически ушедший груз (ТЗ дрона AC 8 и раздел
+ * 10: `deliver` уводит со склада то, что «Погрузить» положило в `reserved`).
+ * Прежняя редакция звала `shipReserved` ради побочного эффекта и не читала
+ * ответ: склад отказывал молча, товар оставался на полке, а кредиты и XP
+ * начислялись — доход из ниоткуда, и ни одна проверка не падала.
+ */
 export function sendOrder(
   slot: OrderSlot,
   warehouse: WarehouseState,
 ): { ok: boolean; credits: number; xp: number } {
   if (slot.state !== 'ready') return { ok: false, credits: 0, xp: 0 };
 
+  // Потребность считается по товару, а не по позиции: две позиции одного товара
+  // делят одну ячейку склада, и резерв под ними тоже общий.
+  const shipping = new Map<GoodId, number>();
   for (const position of slot.positions) {
-    // Докупленное на складе не лежало — списывать нечего.
+    // Докупленное на складе не лежало — списывать нечего (И-12).
     if (position.filled_by === 'purchase') continue;
-    shipReserved(warehouse, position.good_id, position.qty);
+    shipping.set(position.good_id, (shipping.get(position.good_id) ?? 0) + position.qty);
+  }
+
+  for (const [good_id, qty] of shipping) {
+    if (reservedOf(warehouse, good_id) < qty || qtyOf(warehouse, good_id) < qty) {
+      return { ok: false, credits: 0, xp: 0 };
+    }
+  }
+  for (const [good_id, qty] of shipping) {
+    shipReserved(warehouse, good_id, qty);
   }
   return { ok: true, credits: slot.credits_reward, xp: slot.xp_reward };
 }
@@ -500,13 +565,29 @@ export function discardOrder(slot: OrderSlot, now: number): void {
   slot.refresh_at = now + DRONE_REFRESH_FREE_SEC;
 }
 
-/** Возврат резерва при выбросе. Вызывается до смены состояния слота. */
+/**
+ * Возврат резерва при выбросе (действие `clear` каркаса). Вызывается до смены
+ * состояния слота.
+ *
+ * Докупленная позиция сюда не попадает: по И-12 товар за изотопы приходит мимо
+ * склада, `clear` для нее недоступен (ТЗ дрона раздел 10), и при выбросе она
+ * аннулируется безвозвратно — «не возвращается ни на склад, ни рефандом
+ * изотопов» (AC 11).
+ *
+ * Различие несущее, а не формальное: резерв в складе — один скаляр на товар и к
+ * заказу не привязан. `unreserve` за докупку не «ничего не делает», он снимает
+ * резерв СОСЕДНЕГО заказа, который легально делит тот же товар при REPEAT_CAP.
+ * Дальше отправка соседа не находит своего резерва, товар остается на складе и
+ * продается второй раз.
+ */
 export function releaseReserved(slot: OrderSlot, warehouse: WarehouseState): void {
   for (const position of slot.positions) {
-    if (position.filled) {
-      unreserve(warehouse, position.good_id, position.qty);
-      position.filled = false;
-    }
+    if (!position.filled || position.filled_by === 'purchase') continue;
+    unreserve(warehouse, position.good_id, position.qty);
+    position.filled = false;
+    // Позиция снова открыта — «чем закрыта» обязано обнулиться вместе с
+    // признаком закрытия, иначе состояние противоречит само себе.
+    position.filled_by = null;
   }
 }
 
