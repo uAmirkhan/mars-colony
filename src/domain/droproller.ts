@@ -173,7 +173,13 @@ export function rollArrival(slot_count: number, ctx: DropContext): ArrivalRoll {
   let floor_forced_slot: number | null = null;
   let last_floor_arrival = ctx.last_floor_arrival;
 
-  if (floorGuaranteeAllowed(ctx, modules)) {
+  // Пустому рейсу гарантия переписать нечего: канон ([[tz-common-systems-mars]]
+  // 2.3, `enforceFloorGuarantee`) берет слот через `pickLeastImpactfulSlot(rewards)`,
+  // а в пустом наборе слота нет. Проверки на это не было, индекс считался как
+  // `modules.length - 1`, и рейс из нуля отсеков отдавал наружу -1: по контракту
+  // `floor_forced_slot` это «гарантия сработала», причем на отсеке, которого не
+  // существует, плюс присваивание вешало на массив свойство «-1».
+  if (modules.length > 0 && floorGuaranteeAllowed(ctx, modules)) {
     const candidates = ALL_MODULE_IDS.filter(
       (id) =>
         (ctx.need[id] ?? 0) > 0 && FLOOR_GUARANTEE_ALLOWED_TIERS.includes(MODULES[id].tier),
@@ -188,10 +194,27 @@ export function rollArrival(slot_count: number, ctx: DropContext): ArrivalRoll {
     last_floor_arrival = ctx.arrival_no;
   }
 
+  // Канон 2.3 (`applyPityAndStockUpdates`) задает ровно три исхода на модуль:
+  //
+  //     if item == rolledItem:                  pity[item] = 0
+  //     elif isNeededForActiveContext(item):    pity[item] += 1
+  //     (иначе — не трогаем)
+  //
+  // Третья ветка отсутствовала: счетчик рос безусловно. Модуль, не нужный ни
+  // одной активной стройке, копил pity полгода и в момент старта стройки
+  // приходил с уже взведенным множителем, отбирая вес у того, чего игрок ждет.
+  //
+  // «Не трогаем» — это пауза, а не сброс: ТЗ шаттла 8.1 разбирает этот случай
+  // на герметике дословно — счетчик «НЕ обнуляется, а лишь перестает расти,
+  // пока модуль не нужен активной стройке, и продолжает расти дальше с того же
+  // значения, как только снова становится нужен». Сброс обесценил бы ожидание
+  // при каждом переключении между стройками.
   const dropped = new Set(modules);
   const next_pity: ModuleCounts = {};
   for (const id of ALL_MODULE_IDS) {
-    next_pity[id] = dropped.has(id) ? 0 : (ctx.pity[id] ?? 0) + 1;
+    const before = ctx.pity[id] ?? 0;
+    if (dropped.has(id)) next_pity[id] = 0;
+    else next_pity[id] = (ctx.need[id] ?? 0) > 0 ? before + 1 : before;
   }
 
   const gave_needed = modules.some((id) => (ctx.need[id] ?? 0) > 0);

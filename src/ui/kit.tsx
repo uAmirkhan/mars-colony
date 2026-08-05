@@ -4,6 +4,7 @@
  */
 
 import type { CSSProperties, ReactNode } from 'react';
+import { useCountUp } from './feel/count-up';
 
 export function Panel({
   title,
@@ -85,12 +86,20 @@ const SHAPE: Record<CurrencyKind, string> = {
   xp: 'star',
 };
 
-/** Валюты различаются формой носителя, а не только цветом — раздел 1 арт-языка. */
+/**
+ * Валюты различаются формой носителя, а не только цветом — раздел 1 арт-языка.
+ *
+ * Число докручивается, а не подменяется: прыжок счетчика глаз не ловит.
+ * `data-fx-anchor` — точка, в которую летит вылетающая цифра начисления; без
+ * нее эффект не знает, где находится кошелек.
+ */
 export function Currency({ kind, value }: { kind: CurrencyKind; value: number | string }) {
+  const shown = useCountUp(typeof value === 'number' ? value : null);
+
   return (
-    <div className="currency">
+    <div className="currency" data-fx-anchor={kind}>
       <div className={SHAPE[kind]} />
-      <span>{value}</span>
+      <span>{shown ?? value}</span>
     </div>
   );
 }

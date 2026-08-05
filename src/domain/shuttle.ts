@@ -42,9 +42,36 @@ export interface ShuttleSlot {
   idx: number;
   good_id: GoodId;
   qty_required: number;
+  /** Сколько единиц в отсеке всего: погруженное со склада плюс докупленное. */
   qty_filled: number;
-  /** Чем закрыт отсек. Докупка (И-12) помечена отдельно: она не возвратима. */
+  /**
+   * Источник ПОСЛЕДНЕГО, закрывающего взноса — ровно то, что задает ТЗ шаттла
+   * 2.3 (`slot.filled_by = fillSource`) и модель данных каркаса п.9. Показывает
+   * отсек игроку, но на вопрос «сколько в отсеке складского» не отвечает.
+   */
   filled_by: 'self' | 'purchase' | null;
+  /**
+   * Сколько единиц отсека пришло докупкой за изотопы (И-12), минуя склад.
+   * Остальное (`qty_filled - qty_purchased`) склад держит в `reserved`, и при
+   * отправке оно обязано физически уехать.
+   *
+   * Отдельное число, а не флаг, потому что взносов в отсек два, и частичная
+   * погрузка разрешена явно (ТЗ шаттла 6.2: «Погрузить {stock}» списывает
+   * наличное, отсек остается открытым до догрузки). Одного `filled_by` на два
+   * взноса не хватало: докупка перетирала им метку `self`, отправка читала флаг
+   * как признак ВСЕГО отсека и пропускала списание целиком — уже
+   * зарезервированный товар не уезжал и не возвращался, вместимость склада
+   * терялась навсегда (Д-1, Д-18). Тот же разъезд у дрона закрыт тем же
+   * приемом: позиция помнит, чем закрыта, и отправка списывает только свое.
+   *
+   * Признак `has_purchased_units` (ТЗ дрона 6.2) — это `qty_purchased > 0`;
+   * отдельным полем не хранится, чтобы два описания одного факта не разошлись.
+   *
+   * Поле необязательное сознательно: рейс переживает перезагрузку страницы, и
+   * сейв, записанный до этой правки, его не несет. Отсутствие читается как ноль
+   * — «докупки не было», то есть прежнее поведение обычной погрузки.
+   */
+  qty_purchased?: number;
   /** Награда, зафиксированная при отправке. До отправки — null. */
   reward: ModuleId | null;
   collected: boolean;
@@ -79,6 +106,20 @@ export interface ShuttleGenContext {
 
 function slotShort(slot: ShuttleSlot): number {
   return Math.max(0, slot.qty_required - slot.qty_filled);
+}
+
+/** Докупленная часть отсека (И-12). Сейв без поля читается как «докупки не было». */
+function purchasedIn(slot: ShuttleSlot): number {
+  return slot.qty_purchased ?? 0;
+}
+
+/**
+ * Складская часть отсека: то, что лежит в `reserved` и обязано уехать при
+ * отправке. Считается вычитанием докупленного, а не по метке `filled_by`:
+ * метка описывает один взнос, а отсек собирается из двух.
+ */
+function stockedIn(slot: ShuttleSlot): number {
+  return Math.max(0, slot.qty_filled - purchasedIn(slot));
 }
 
 /** Хватает ли склада закрыть отсек целиком прямо сейчас. */
@@ -176,6 +217,7 @@ function fallbackMinimalSlots(
       good_id,
       qty_required: GOOD_BASE_QTY[good_id].min,
       qty_filled: 0,
+      qty_purchased: 0,
       filled_by: null,
       reward: null,
       collected: false,
@@ -261,6 +303,7 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
         good_id,
         qty_required: qty,
         qty_filled: 0,
+        qty_purchased: 0,
         filled_by: null,
         reward: null,
         collected: false,
@@ -287,10 +330,24 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
   // считает такой заказ невалидным («if not isValidOrder → fallbackMinimalOrder»),
   // а 1.6 разрешает урезать форму ради И-8. Анти-повтор в проверку не входит —
   // приоритет фолбэков канона ставит покрытие выше повтора.
-  const covered = best.length > 0 && easyRatio(best, ctx.warehouse) >= COVERAGE_MIN.shuttle;
-  const slots = covered
-    ? best
-    : fallbackMinimalSlots(ctx, best.length === 0 ? 'empty_pool' : 'unresolvable_invariant');
+  //
+  // Причина деградации различается, и различие несущее: канон 1.8 держит для
+  // события `order_generation_degraded` перечисление
+  // `empty_pool | max_attempts | unresolvable_invariant`, и метрика по нему
+  // отвечает на два разных вопроса — «контент недостроен» или «сломался
+  // генератор». Раньше здесь стоял литерал `empty_pool` на любой пустой набор:
+  // непустой пул, из которого никто не прошел отбор за все `GEN_MAX_ATTEMPTS`
+  // попыток (канон 1.6, «все попытки цикла исчерпаны»), приезжал в метрику
+  // пустым пулом, и сигнал бага генератора был неотличим от нехватки контента.
+  // Форма та же, что у дрона: движок один, расходиться конструкциям незачем.
+  const empty = best.length === 0;
+  const covered = !empty && easyRatio(best, ctx.warehouse) >= COVERAGE_MIN.shuttle;
+  const reason: OrderGenerationDegradedReason = empty
+    ? ctx.available_goods.length === 0
+      ? 'empty_pool'
+      : 'max_attempts'
+    : 'unresolvable_invariant';
+  const slots = covered ? best : fallbackMinimalSlots(ctx, reason);
 
   return {
     state: 'ORDER',
@@ -344,9 +401,16 @@ export function allSlotsLoaded(trip: ShuttleTrip): boolean {
  */
 function depart(trip: ShuttleTrip, warehouse: WarehouseState, now: number, drop: DropContext) {
   for (const slot of trip.slots) {
-    // Докупленное (И-12) в склад не заходило — списывать оттуда нечего.
-    if (slot.filled_by === 'purchase') continue;
-    shipReserved(warehouse, slot.good_id, slot.qty_required);
+    // Уезжает ровно складская часть отсека: докупленное (И-12) в склад не
+    // заходило, списывать оттуда нечего. Отсек мог быть закрыт в два приема —
+    // сколько нашлось на полке плюс докупка остатка, — поэтому считается
+    // количество, а не читается метка последнего взноса. Пока здесь стояло
+    // `if (filled_by === 'purchase') continue`, докупка поверх частичной
+    // погрузки уводила отсек мимо списания ЦЕЛИКОМ: рейс улетал, отсека больше
+    // не было, а резерв оставался висеть на складе без владельца — снять его
+    // нечем, вместимость терялась до конца игры (Д-1, Д-18).
+    const from_stock = stockedIn(slot);
+    if (from_stock > 0) shipReserved(warehouse, slot.good_id, from_stock);
   }
 
   const roll = rollArrival(trip.slots.length, drop);
@@ -435,6 +499,10 @@ export function buyoutSlot(
 
   const price = slotBuyoutPrice(slot);
   slot.qty_filled += short;
+  // Взнос запоминается количеством и НЕ затирает уже погруженное со склада:
+  // метка `filled_by` меняется (закрывающий взнос действительно докупка, ТЗ
+  // 2.3), а списание при отправке идет по `qty_purchased`.
+  slot.qty_purchased = purchasedIn(slot) + short;
   slot.filled_by = 'purchase';
 
   const departed = allSlotsLoaded(trip);
