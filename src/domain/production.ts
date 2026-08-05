@@ -18,7 +18,7 @@ import {
   canAccept,
   consume,
   deposit,
-  occupiedGoods,
+  sellableGoods,
   type WarehouseState,
 } from './warehouse';
 
@@ -125,7 +125,9 @@ export function plant(
         credits: ctx.credits,
         cheapest_planting_cost: cheapest,
         has_growing_crops: all_fields.some((f) => f.state !== 'EMPTY'),
-        has_sellable_stock: occupiedGoods(ctx.warehouse).length > 0,
+        // Именно продаваемое, а не лежащее: товар, целиком зарезервированный
+        // под заказ дрона, вместимость занимает, а продать его нельзя.
+        has_sellable_stock: sellableGoods(ctx.warehouse).length > 0,
       });
     if (!softlocked) return { ok: false, reason: 'insufficient_balance' };
     charged = 0;
