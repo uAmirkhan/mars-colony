@@ -434,3 +434,46 @@ body {
     animation-duration: 120ms !important;
   }
 }
+
+/* --- Подпись показа --- */
+/*
+ * Подпись стоит в потоке, а не поверх экрана. Причина простая: и хаб внизу, и
+ * счетчики вверху уже заняли края, и любая плавающая плашка перекрыла бы одно
+ * из двух. В потоке она сдвигает игру вниз ровно на свою высоту и не спорит
+ * ни с чем.
+ */
+.demo-badge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px auto 0;
+  padding: 10px 14px;
+  max-width: 760px;
+  width: calc(100% - 24px);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.demo-badge-text {
+  flex: 1 1 240px;
+  min-width: 0;
+  color: var(--text);
+}
+
+.demo-badge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.demo-badge-actions .btn,
+.demo-badge-mini {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.demo-badge-mini {
+  display: block;
+  margin: 10px auto 0;
+}

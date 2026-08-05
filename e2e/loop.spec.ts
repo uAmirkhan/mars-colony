@@ -15,7 +15,7 @@ import { expect, type Page, test } from '@playwright/test';
  */
 
 async function openGame(page: Page) {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
 }
 

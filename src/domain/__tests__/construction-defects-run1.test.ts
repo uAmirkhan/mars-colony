@@ -4,11 +4,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { MODULE_STOCK_CAP } from '../config/economy';
+import { MODULE_STOCK_CAP, WAREHOUSE_UPGRADE_STEP } from '../config/economy';
 import { CONSTRUCTION_RECIPE } from '../config/modules';
 import {
   addModule,
   createConstruction,
+  moduleCapacity,
   moduleSpaceLeft,
   refreshBuilds,
   startBuild,
@@ -18,21 +19,27 @@ import { createWarehouse, type WarehouseState } from '../warehouse';
 const NOW = 1_000_000;
 
 /* ------------------------------------------------------------------------ *
- * Д-6. Расширение склада не двигает лимит строй-модулей.
+ * Д-6. ЗАКРЫТ. Блок оставлен сторожем.
+ *
+ * Было: расширение склада не двигало лимит строй-модулей. `applyBuildEffect`
+ * поднимал только товарную емкость, а `moduleSpaceLeft` читал константу
+ * `MODULE_STOCK_CAP` напрямую — механики апгрейда модульного лимита в коде не
+ * было вовсе, как не было и теста на нее.
  *
  * Каркас, раздел 6: «Склад: старт 50 единиц суммарно; апгрейд +10 [...].
  * Строй-модули хранятся отдельным лимитом 100 и АПГРЕЙДЯТСЯ ТЕМ ЖЕ ЗДАНИЕМ.»
  *
- * `applyBuildEffect` (construction.ts:129-131) поднимает только товарную
- * емкость. `moduleSpaceLeft` (construction.ts:56-58) читает константу
- * `MODULE_STOCK_CAP` напрямую, и поднять ее нечем — механики апгрейда лимита
- * модулей в коде нет вовсе, как нет и теста на нее.
+ * Стало: `moduleCapacity(state)` считает потолок от тира того же здания —
+ * `MODULE_STOCK_CAP + tier x WAREHOUSE_UPGRADE_STEP`. Разбор расхождения с
+ * [[tz-production-mars]] (три места пишут «фиксировано») — в докстринге
+ * `construction.ts` и в реестре [[spec-prototype-build]] 8.14.
  *
- * Цена дефекта не косметическая: при забитом складе модулей `collectContainer`
- * отказывает, контейнеры прибывшего рейса зависают несобранными, кулдаун не
- * стартует, новый заказ не выдается — шаттл встает целиком.
+ * Цена дефекта была не косметическая: при забитом складе модулей
+ * `collectContainer` отказывает, контейнеры прибывшего рейса зависают
+ * несобранными, кулдаун не стартует, новый заказ не выдается — шаттл встает
+ * целиком.
  * ------------------------------------------------------------------------ */
-describe('Д-6: лимит склада модулей не апгрейдится', () => {
+describe('Д-6 (закрыт): лимит склада модулей апгрейдится тем же зданием', () => {
   function buildWarehouseUpgrade(warehouse: WarehouseState) {
     const state = createConstruction();
     const build = state.builds.find((b) => b.kind === 'warehouse_upgrade');
@@ -57,9 +64,14 @@ describe('Д-6: лимит склада модулей не апгрейдитс
     const state = buildWarehouseUpgrade(warehouse);
     expect(warehouse.capacity).toBeGreaterThan(capacity_before); // товарная выросла
 
+    // Тем же зданием и тем же шагом: каркас не дает модульному лимиту ни
+    // отдельного шага, ни отдельного потолка, а «то же здание» читается как
+    // «тот же тир».
+    expect(moduleCapacity(state)).toBe(MODULE_STOCK_CAP + WAREHOUSE_UPGRADE_STEP);
+
     // Забиваем склад модулей под старый потолок и проверяем, что он подвинулся.
     state.stock = { panel: MODULE_STOCK_CAP };
-    expect(moduleSpaceLeft(state.stock)).toBeGreaterThan(0);
-    expect(addModule(state.stock, 'frame')).toBe(true);
+    expect(moduleSpaceLeft(state)).toBeGreaterThan(0);
+    expect(addModule(state, 'frame')).toBe(true);
   });
 });

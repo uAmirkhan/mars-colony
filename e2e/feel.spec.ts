@@ -34,7 +34,7 @@ interface SfxSeam {
 }
 
 async function openGame(page: Page) {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
 }
 

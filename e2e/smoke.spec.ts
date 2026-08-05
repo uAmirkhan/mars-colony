@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 /** Игра теперь второй экран: первым открывается симулятор. */
 async function openGame(page: Page) {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
 }
 

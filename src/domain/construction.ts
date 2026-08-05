@@ -12,7 +12,11 @@
  * дроп-роллер шаттла читает отсюда, чего игроку не хватает.
  */
 
-import { MODULE_STOCK_CAP, WAREHOUSE_MAX_CAPACITY } from './config/economy';
+import {
+  MODULE_STOCK_CAP,
+  WAREHOUSE_MAX_CAPACITY,
+  WAREHOUSE_UPGRADE_STEP,
+} from './config/economy';
 import { ALL_MODULE_IDS, type BuildKind, CONSTRUCTION_RECIPE } from './config/modules';
 import type { ModuleCounts } from './droproller';
 import type { ModuleId } from './types';
@@ -53,8 +57,39 @@ export function moduleTotal(stock: ModuleCounts): number {
   return ALL_MODULE_IDS.reduce((sum, id) => sum + (stock[id] ?? 0), 0);
 }
 
-export function moduleSpaceLeft(stock: ModuleCounts): number {
-  return Math.max(0, MODULE_STOCK_CAP - moduleTotal(stock));
+/**
+ * Текущий потолок склада модулей.
+ *
+ * [[mars-colony-frame]] раздел 6: «Строй-модули хранятся отдельным лимитом 100
+ * и АПГРЕЙДЯТСЯ ТЕМ ЖЕ ЗДАНИЕМ». То есть 100 — стартовое значение, а не
+ * константа на всю игру: каждый построенный тир расширения склада поднимает
+ * оба лимита сразу.
+ *
+ * **Расхождение документов, решает каркас.** [[tz-production-mars]] пишет
+ * обратное в трех местах (3.1 «модули — фиксировано 100», конфиг-таблица
+ * раздела 7 «фиксировано каркасом», AC 16 «апгрейд товарного склада не
+ * увеличивает и не затрагивает лимит модулей») и при этом ссылается на тот же
+ * раздел 6 каркаса как на источник — цитирует неточно. `mars-colony/CLAUDE.md`
+ * объявляет каркас источником чисел, поэтому взят каркас. Тот же случай, что
+ * уже разбирали с клемпом премии дрона ([[spec-prototype-build]] 8.8).
+ *
+ * Шаг и потолок каркас отдельно для модулей не задает, и выдумывать их нельзя:
+ * «то же здание» читается как «тот же тир и тот же шаг» — `WAREHOUSE_UPGRADE_STEP`
+ * на каждый построенный тир. Собственного потолка у модульного лимита нет,
+ * он ограничен числом тиров: здание закрывается по потолку товарной емкости
+ * (`canBuildMoreTiers`), то есть на 25 тирах.
+ *
+ * Емкость считается от тира, а не хранится полем: сохраненное поле пришлось бы
+ * поднимать в `applyBuildEffect`, а тот вызывается из `refreshBuilds`, результат
+ * которого стор разворачивает в новый объект — мутация потерялась бы молча.
+ */
+export function moduleCapacity(state: ConstructionState): number {
+  const tier = state.builds.find((b) => b.kind === 'warehouse_upgrade')?.tier ?? 0;
+  return MODULE_STOCK_CAP + tier * WAREHOUSE_UPGRADE_STEP;
+}
+
+export function moduleSpaceLeft(state: ConstructionState): number {
+  return Math.max(0, moduleCapacity(state) - moduleTotal(state.stock));
 }
 
 /**
@@ -62,10 +97,10 @@ export function moduleSpaceLeft(stock: ModuleCounts): number {
  * склада: частичный прием превратил бы «контейнер приехал» в «половина
  * контейнера растворилась», а такое игрок читает как потерю, не как правило.
  */
-export function addModule(stock: ModuleCounts, module_id: ModuleId, qty = 1): boolean {
+export function addModule(state: ConstructionState, module_id: ModuleId, qty = 1): boolean {
   if (qty <= 0) return false;
-  if (moduleSpaceLeft(stock) < qty) return false;
-  stock[module_id] = (stock[module_id] ?? 0) + qty;
+  if (moduleSpaceLeft(state) < qty) return false;
+  state.stock[module_id] = (state.stock[module_id] ?? 0) + qty;
   return true;
 }
 

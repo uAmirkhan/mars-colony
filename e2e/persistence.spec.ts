@@ -11,7 +11,7 @@ import { expect, type Page, test } from '@playwright/test';
  */
 
 async function openGame(page: Page) {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
 }
 
@@ -103,9 +103,15 @@ test('битое хранилище не мешает игре открытьс�
   await page.reload();
   await page.getByRole('button', { name: 'Играть' }).click();
 
-  // Игра стартует с нуля, а не падает и не показывает пустоту.
-  await expect(page.getByText('ур. 1')).toBeVisible();
-  await expect(emptyFields(page)).toHaveCount(4);
+  // Игра открывается и играется, а не падает и не показывает пустоту.
+  //
+  // Открывается она показом, а не первым уровнем, и это осознанно: хранилище,
+  // из которого нечего прочитать, неотличимо от хранилища человека, зашедшего
+  // впервые. Обоим показывается одно и то же. Проверяется здесь не уровень, а
+  // то, ради чего проверка написана: страница жива, мусор из ключа никуда не
+  // просочился, играть можно.
+  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Склад' })).toBeVisible();
   expect(errors, 'битый сейв не должен ронять страницу').toEqual([]);
 });
 
@@ -120,8 +126,18 @@ test('чужое содержимое ключа игнорируется', asyn
   await page.reload();
   await page.getByRole('button', { name: 'Играть' }).click();
 
-  await expect(page.getByText('ур. 1')).toBeVisible();
-  await expect(emptyFields(page)).toHaveCount(4);
+  // Чужая запись в нашем ключе — это не прогресс, поэтому заход считается
+  // первым и открывается показом. Главное здесь другое: ни одно поле чужого
+  // объекта не должно доехать до состояния игры.
+  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  const state = await page.evaluate(
+    () =>
+      (
+        window as unknown as { __game: { getState: () => { user?: unknown; cart?: unknown } } }
+      ).__game.getState(),
+  );
+  expect(state.user, 'чужие поля не имеют права попасть в состояние').toBeUndefined();
+  expect(state.cart).toBeUndefined();
 });
 
 test('сейв другой версии выбрасывается, игра начинается заново', async ({ page }) => {
@@ -144,6 +160,11 @@ test('сейв другой версии выбрасывается, игра н
   await page.reload();
   await page.getByRole('button', { name: 'Играть' }).click();
 
-  await expect(page.getByText('ур. 1')).toBeVisible();
+  // Сейв неизвестной версии — это не прогресс: играть с него нельзя, значит
+  // заход считается первым и открывается показом. Проверяется здесь ровно то,
+  // ради чего проверка написана: ни одно число из чужой версии не доехало до
+  // экрана. Уровень 12 и 999999 кредитов оттуда, показ дает свои.
+  await expect(page.getByTestId('demo-badge')).toBeVisible();
   await expect(page.getByText('999999')).toHaveCount(0);
+  await expect(page.getByText('ур. 12')).toHaveCount(0);
 });

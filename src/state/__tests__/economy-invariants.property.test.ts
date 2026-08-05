@@ -11,7 +11,8 @@
  *   кредиты и изотопы не уходят в минус (И-15 держит пол посева);
  *   склад не превышает вместимость ни через резерв, ни через сбор;
  *   reserved никогда не больше qty, и ни то, ни другое не отрицательно;
- *   склад строй-модулей не превышает MODULE_STOCK_CAP (каркас 6);
+ *   склад строй-модулей не превышает текущий потолок (каркас 6: лимит
+ *     модулей апгрейдится тем же зданием, что и товарный);
  *   вместимость склада не перепрыгивает потолок MVP.
  *
  * Генератор дрона и роллер дропа берут `Math.random` из стора напрямую, поэтому
@@ -25,13 +26,9 @@
 
 import fc from 'fast-check';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  CREDITS_START,
-  MODULE_STOCK_CAP,
-  WAREHOUSE_MAX_CAPACITY,
-} from '../../domain/config/economy';
+import { CREDITS_START, WAREHOUSE_MAX_CAPACITY } from '../../domain/config/economy';
 import { ALL_BUILD_KINDS, type BuildKind } from '../../domain/config/modules';
-import { createConstruction, moduleTotal } from '../../domain/construction';
+import { createConstruction, moduleCapacity, moduleTotal } from '../../domain/construction';
 import { createField } from '../../domain/production';
 import type { GoodId } from '../../domain/types';
 import { createWarehouse, deposit, totalQty } from '../../domain/warehouse';
@@ -259,10 +256,12 @@ function checkInvariants(step: string) {
   expect(s.warehouse.capacity, `${step}: вместимость выше потолка MVP`).toBeLessThanOrEqual(
     WAREHOUSE_MAX_CAPACITY,
   );
+  // Лимит модулей не константа: он растет тем же зданием, что и товарный
+  // (каркас 6), поэтому сравниваем с текущим потолком, а не со стартовым.
   expect(
     moduleTotal(s.construction.stock),
     `${step}: склад модулей выше лимита`,
-  ).toBeLessThanOrEqual(MODULE_STOCK_CAP);
+  ).toBeLessThanOrEqual(moduleCapacity(s.construction));
 }
 
 describe('Экономика стора: инварианты на произвольной последовательности действий', () => {
