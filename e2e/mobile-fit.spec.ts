@@ -49,7 +49,7 @@ async function offscreenButtons(page: Page): Promise<Offender[]> {
 }
 
 async function openGame(page: Page) {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
 }
 

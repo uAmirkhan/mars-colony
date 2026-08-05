@@ -7,9 +7,14 @@
  * читает ровно этот дефицит, и игрок должен видеть то же, что видит роллер.
  */
 
-import { constructionSpeedupCost, MODULE_STOCK_CAP } from '../domain/config/economy';
+import { constructionSpeedupCost } from '../domain/config/economy';
 import { ALL_MODULE_IDS, CONSTRUCTION_RECIPE, MODULES } from '../domain/config/modules';
-import { type BuildSlot, missingFor, moduleTotal } from '../domain/construction';
+import {
+  type BuildSlot,
+  missingFor,
+  moduleCapacity,
+  moduleTotal,
+} from '../domain/construction';
 import { useGame } from '../state/gameStore';
 import { Button, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
@@ -21,12 +26,16 @@ const TIER_COLOR = {
 
 /** Склад модулей: что есть в наличии. Пустые типы не прячем — их отсутствие информативно. */
 function ModuleStock() {
-  const stock = useGame((s) => s.construction.stock);
+  const construction = useGame((s) => s.construction);
+  const stock = construction.stock;
 
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
-        Склад модулей: {moduleTotal(stock)} из {MODULE_STOCK_CAP}
+        {/* Потолок растет вместе с товарным: расширение склада поднимает оба
+            лимита (каркас 6). Показывать здесь стартовую константу значило бы
+            врать игроку после первой же постройки. */}
+        Склад модулей: {moduleTotal(stock)} из {moduleCapacity(construction)}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {ALL_MODULE_IDS.map((id) => {

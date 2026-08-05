@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import './ui/theme.css';
 import { useGame } from './state/gameStore';
 import { ConstructionPanel } from './ui/construction';
+import { DemoBadge } from './ui/demo-badge';
 import { DroneBoard } from './ui/drone-board';
 import { Feel } from './ui/feel';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
@@ -68,6 +69,7 @@ export default function App() {
         </button>
       </div>
 
+      {mode === 'game' && <DemoBadge />}
       {mode === 'sim' ? <SimScreen /> : <GameScreen />}
     </div>
   );

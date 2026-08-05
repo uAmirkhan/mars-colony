@@ -10,7 +10,7 @@ const summary = /уровень \d+ за \d+ дней/;
 const banner = /Экономика держится|Сломано пунктов/;
 
 test('симулятор открывается первым экраном', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await expect(page.getByText('Модель игрока')).toBeVisible();
   await expect(page.getByText('Параметры игры')).toBeVisible();
   await expect(page.getByText(banner).first()).toBeVisible();
@@ -18,7 +18,7 @@ test('симулятор открывается первым экраном', as
 });
 
 test('крутизна XP-кривой меняет исход прогона', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   const before = await page.getByText(summary).first().innerText();
 
   const curve = page.locator('input[type=range]').nth(4);
@@ -43,7 +43,7 @@ test('крутизна XP-кривой меняет исход прогона', 
  * прямая, читаемая связь «параметр -> последствие», и она проверяется числом.
  */
 test('края XP-кривой ломают разные инварианты', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   const curve = page.locator('input[type=range]').nth(4);
   await curve.focus();
 
@@ -62,7 +62,7 @@ test('края XP-кривой ломают разные инварианты', 
 });
 
 test('прогон воспроизводится по seed', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   const first = await page.getByText(summary).first().innerText();
   await page.reload();
   const second = await page.getByText(summary).first().innerText();
@@ -70,7 +70,7 @@ test('прогон воспроизводится по seed', async ({ page }) =
 });
 
 test('можно переключиться в игру и обратно', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
   await expect(page.getByText('ур. 1')).toBeVisible();
 

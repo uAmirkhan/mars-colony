@@ -411,12 +411,32 @@ function defaultBackend(): SaveBackend {
   return memoryBackend;
 }
 
+let save_accepted = false;
+
+/**
+ * Поднялся ли из хранилища НАШ сейв на этом запуске.
+ *
+ * Спрашивать об этом `localStorage` бесполезно: загрузка страницы делает шаг
+ * времени (реконсиляция офлайна), шаг пишет состояние, и к моменту любой
+ * внешней проверки запись существует всегда — даже у того, кто зашел впервые
+ * в жизни. Именно поэтому состояние показа не подставлялось никогда.
+ *
+ * Ответ дает единственное место, где чтение настоящее, — слияние. И отвечает
+ * оно на правильный вопрос: не «лежало ли что-то в ключе», а «был ли у
+ * человека прогресс». Мусор, чужой объект и сейв неизвестной версии дают
+ * одинаковое «нет» — все три случая означают, что играть не с чего.
+ */
+export function saveAccepted(): boolean {
+  return save_accepted;
+}
+
 /**
  * Слияние сейва с текущим состоянием. Сейв неузнаваемой формы игнорируется
  * целиком: лучше начать заново, чем поехать тихо.
  */
 export function mergeSave(persisted: unknown, current: GameState): GameState {
   if (!isSave(persisted)) return { ...current, ...volatileState() };
+  save_accepted = true;
   return { ...current, ...persisted, ...volatileState() };
 }
 
@@ -649,15 +669,15 @@ export const useGame = create<GameState>()(
           if (s.shuttle?.state !== 'ARRIVED') return;
           const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
           const stock: ModuleCounts = { ...s.construction.stock };
+          const construction = { ...s.construction, stock };
 
           const module_id = collectContainer(trip, idx);
           if (module_id === null) return;
-          if (!addModule(stock, module_id)) {
+          if (!addModule(construction, module_id)) {
             pushToast('Склад модулей полон', 'warn');
             return;
           }
 
-          const construction = { ...s.construction, stock };
           if (allCollected(trip)) startCooldown(trip, s.now);
           set({ shuttle: trip, construction });
           pushToast(`+1 ${MODULES[module_id].name}`, 'reward');

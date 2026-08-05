@@ -22,6 +22,7 @@ import {
   createConstruction,
   createConstruction as fresh,
   missingFor,
+  moduleCapacity,
   moduleSpaceLeft,
   moduleTotal,
   refreshBuilds,
@@ -54,28 +55,66 @@ describe('Склад модулей', () => {
   it('стартует пустым и с полным свободным местом', () => {
     const state = fresh();
     expect(moduleTotal(state.stock)).toBe(0);
-    expect(moduleSpaceLeft(state.stock)).toBe(MODULE_STOCK_CAP);
+    expect(moduleSpaceLeft(state)).toBe(MODULE_STOCK_CAP);
+    expect(moduleCapacity(state)).toBe(MODULE_STOCK_CAP);
   });
 
   it('лимит общий на все типы, а не по типу', () => {
-    const stock = {};
-    expect(addModule(stock, 'panel', MODULE_STOCK_CAP - 1)).toBe(true);
-    expect(addModule(stock, 'cable', 1)).toBe(true);
-    expect(addModule(stock, 'filter', 1)).toBe(false);
+    const state = fresh();
+    expect(addModule(state, 'panel', MODULE_STOCK_CAP - 1)).toBe(true);
+    expect(addModule(state, 'cable', 1)).toBe(true);
+    expect(addModule(state, 'filter', 1)).toBe(false);
   });
 
   it('переполнение отказывает целиком, а не принимает часть', () => {
-    const stock = {};
-    addModule(stock, 'panel', MODULE_STOCK_CAP - 2);
-    expect(addModule(stock, 'cable', 5)).toBe(false);
-    expect(moduleTotal(stock)).toBe(MODULE_STOCK_CAP - 2);
+    const state = fresh();
+    addModule(state, 'panel', MODULE_STOCK_CAP - 2);
+    expect(addModule(state, 'cable', 5)).toBe(false);
+    expect(moduleTotal(state.stock)).toBe(MODULE_STOCK_CAP - 2);
   });
 
   it('неположительное количество не принимается', () => {
-    const stock = {};
-    expect(addModule(stock, 'panel', 0)).toBe(false);
-    expect(addModule(stock, 'panel', -3)).toBe(false);
-    expect(moduleTotal(stock)).toBe(0);
+    const state = fresh();
+    expect(addModule(state, 'panel', 0)).toBe(false);
+    expect(addModule(state, 'panel', -3)).toBe(false);
+    expect(moduleTotal(state.stock)).toBe(0);
+  });
+
+  /**
+   * Каркас 6: «Строй-модули хранятся отдельным лимитом 100 и апгрейдятся тем же
+   * зданием». Сторож против возврата Д-6: до починки потолок модулей был
+   * константой, и расширение склада двигало только товарную емкость.
+   *
+   * Цена дефекта не косметическая: на забитом складе модулей `collectContainer`
+   * отказывает, контейнеры прибывшего рейса висят несобранными, кулдаун не
+   * стартует и новый заказ шаттла не выдается — механика встает целиком.
+   */
+  it('расширение склада поднимает потолок модулей тем же шагом, что и товарный', () => {
+    const state = readyToBuild();
+    const warehouse = createWarehouse();
+    startBuild(state, 'warehouse_upgrade', NOW);
+    const ends_at = state.builds.find((b) => b.kind === 'warehouse_upgrade')!.ends_at;
+    state.builds = refreshBuilds(state, 21, ends_at, warehouse);
+
+    expect(warehouse.capacity).toBe(WAREHOUSE_START_CAPACITY + WAREHOUSE_UPGRADE_STEP);
+    expect(moduleCapacity(state)).toBe(MODULE_STOCK_CAP + WAREHOUSE_UPGRADE_STEP);
+
+    // Место, которого до апгрейда не было: старый потолок больше не отказ.
+    state.stock = { panel: MODULE_STOCK_CAP };
+    expect(moduleSpaceLeft(state)).toBe(WAREHOUSE_UPGRADE_STEP);
+    expect(addModule(state, 'frame')).toBe(true);
+  });
+
+  it('жилой блок потолок модулей не двигает: апгрейдит только склад', () => {
+    const state = fresh();
+    const habitat = state.builds.find((b) => b.kind === 'habitat_block')!;
+    habitat.state = 'AVAILABLE';
+    fill(state.stock, CONSTRUCTION_RECIPE.habitat_block.recipe);
+    startBuild(state, 'habitat_block', NOW);
+
+    const ends_at = state.builds.find((b) => b.kind === 'habitat_block')!.ends_at;
+    state.builds = refreshBuilds(state, 21, ends_at, createWarehouse());
+    expect(moduleCapacity(state)).toBe(MODULE_STOCK_CAP);
   });
 });
 

@@ -11,7 +11,6 @@ import {
   DRONE_PREMIUM_RANGE,
   DRONE_REFRESH_FREE_SEC,
   droneRefreshPrice,
-  EASY_PRODUCE_MAX_MIN,
   GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
   PINCH_MAX,
@@ -34,36 +33,8 @@ import {
   sendOrder,
   slotsAtLevel,
 } from '../drone';
-import { productionTimeMinutes } from '../rushcost';
-import type { GoodId } from '../types';
-import {
-  availableOf,
-  createWarehouse,
-  deposit,
-  qtyOf,
-  reserve,
-  totalQty,
-  type WarehouseState,
-} from '../warehouse';
-
-/**
- * Определение «легкой» позиции ПО КАНОНУ, а не по коду генератора.
- *
- * `tz-common-systems-mars` 1.3: `isEasy = (stock >= qty) or
- * (productionTimeMinutes(good, qty, player) <= EASY_PRODUCE_MAX_MIN[mechanic])`.
- *
- * Прежняя редакция теста писала здесь `GOODS[id].prod_time_sec > порог`, то
- * есть копировала выражение из `drone.ts`. Такой тест зеленеет при любой
- * реализации: он сравнивает код с самим собой. Именно он пропустил случай,
- * когда ворота дефицита считали время одного цикла вместо цепочки рецепта, и
- * грибной суп проходил «быстрым» при пятидесяти минутах по цепочке.
- *
- * Доказательство обязано быть выведено из документа, а не из проверяемого кода.
- */
-function easyByCanon(good_id: GoodId, qty: number, w: WarehouseState): boolean {
-  if (availableOf(w, good_id) >= qty) return true;
-  return productionTimeMinutes(good_id, qty, w) <= EASY_PRODUCE_MAX_MIN.drone;
-}
+import { availableOf, createWarehouse, deposit, qtyOf, reserve, totalQty } from '../warehouse';
+import { deficitByCanon, easyByCanon } from './canon';
 
 const pos = (
   good_id: Parameters<typeof orderReward>[0][number]['good_id'],
@@ -356,10 +327,13 @@ describe('Канон 1.4: размер целевого дефицита', () =>
       });
       for (const p of order.positions) {
         const stock = availableOf(w, p.good_id);
-        // Дефицит по И-8 — только то, что нельзя быстро вырастить: позиция
-        // короткого цикла сверх склада дефицитом не считается и пинчу не подлежит.
-        const slow = GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60;
-        if (!slow || p.qty <= stock) continue;
+        // Дефицит по И-8 — только то, что игрок не возьмет со склада и не
+        // успеет произвести за порог. Предикат берется из `canon.ts`, а не
+        // пишется здесь заново: прежняя редакция читала `prod_time_sec` одного
+        // цикла, то есть копировала строку, которая стояла в генераторе до
+        // починки ворот дефицита, и на субстрате MVP отбирала один товар из
+        // четырнадцати — фильтр был почти всегда пуст (Д-21).
+        if (!deficitByCanon(p.good_id, p.qty, w)) continue;
         expect(p.qty).toBeGreaterThanOrEqual(stock + PINCH_MIN);
         expect(p.qty).toBeLessThanOrEqual(stock + PINCH_MAX);
       }
@@ -401,11 +375,9 @@ describe('Генератор: признак дефицита доходит д�
         rng,
       });
 
-      const deficit = order.positions.some(
-        (p) =>
-          p.qty > availableOf(w, p.good_id) &&
-          GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60,
-      );
+      // Тот же предикат И-8, что и везде: копия старой реализации здесь
+      // отбирала только томаты и делала признак дефицита почти недостижимым.
+      const deficit = order.positions.some((p) => deficitByCanon(p.good_id, p.qty, w));
       if (!deficit) continue;
       with_deficit += 1;
 
