@@ -28,7 +28,13 @@ import {
   TRANSPORT_XP_K,
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
-import { buyoutPrice, productionTimeMinutes, roundToShowcase } from './rushcost';
+import {
+  buyoutPrice,
+  productionTimeMinutes,
+  roundToShowcase,
+  showcaseCeil,
+  showcaseFloor,
+} from './rushcost';
 import type { GoodId } from './types';
 import {
   availableOf,
@@ -88,12 +94,28 @@ export function slotsAtLevel(level: number): number {
 /**
  * ТЗ 4.2.1: веса числа позиций по уровню. Явные веса, а не формула, —
  * распределение тюнится отдельно от среднего значения.
+ *
+ * **Потолок понижен с шести позиций до пяти — решение владельца 2026-08-05.**
+ *
+ * Причина арифметическая, а не вкусовая. Анти-повтор (ТЗ 4.2) запрещает двум
+ * видимым заказам пересекаться больше чем наполовину. На верхних уровнях доска
+ * показывает девять заказов, а пул открытых товаров — четырнадцать. Девять
+ * заказов по шесть позиций это пятьдесят четыре места на четырнадцать имен:
+ * среднее пересечение пары выходит 2.57 при потолке 3.0, и разброс регулярно
+ * выносит его за порог. Перебор сорока досок давал двенадцать нарушений; выбор
+ * наименее занятого товара сбил их до двух, но оставшиеся не лечатся кодом —
+ * это голубиный принцип.
+ *
+ * При пяти позициях среднее пересечение падает до 1.79 при потолке 2.5, и
+ * порог держится честно.
+ *
+ * Цена решения названа владельцу: заказ платит меньше за слот доски.
  */
 const POSITIONS_COUNT_WEIGHTS: Array<{ from_level: number; weights: Record<number, number> }> =
   [
-    { from_level: 15, weights: { 4: 0.15, 5: 0.35, 6: 0.5 } },
-    { from_level: 12, weights: { 3: 0.15, 4: 0.3, 5: 0.3, 6: 0.25 } },
-    { from_level: 10, weights: { 3: 0.25, 4: 0.35, 5: 0.25, 6: 0.15 } },
+    { from_level: 15, weights: { 4: 0.4, 5: 0.6 } },
+    { from_level: 12, weights: { 3: 0.2, 4: 0.4, 5: 0.4 } },
+    { from_level: 10, weights: { 3: 0.3, 4: 0.4, 5: 0.3 } },
     { from_level: 8, weights: { 2: 0.2, 3: 0.35, 4: 0.3, 5: 0.15 } },
     { from_level: 6, weights: { 2: 0.35, 3: 0.4, 4: 0.25 } },
     { from_level: 4, weights: { 1: 0.25, 2: 0.45, 3: 0.3 } },
@@ -272,6 +294,21 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
    */
   let best_has_deficit = false;
 
+  /**
+   * Составы видимых заказов доски. Вход анти-повтора (ТЗ 4.2,
+   * REPEAT_SCOPE=board).
+   *
+   * Множества, а не счетчик занятости: порог считается попарно с каждым
+   * заказом, и суммарная нагрузка его не описывает. Товар, редкий на доске в
+   * целом, может оказаться общим именно с тем соседом, с которым пересечение
+   * уже на пределе.
+   */
+  const board_sets: Array<Set<GoodId>> = [];
+  for (const slot of ctx.board) {
+    if (slot.state === 'empty_cooldown') continue;
+    board_sets.push(new Set(slot.positions.map((x) => x.good_id)));
+  }
+
   for (let attempt = 0; attempt < GEN_MAX_ATTEMPTS; attempt++) {
     const count = positionsCountFor(ctx.level, ctx.rng());
     const pool = [...ctx.available_goods];
@@ -282,7 +319,41 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
     // не прошедший отбор, отбраковывается и заменяется следующим кандидатом из
     // пула (канон 1.3 — `continue` без `append`), а не съедает позицию.
     while (positions.length < count && pool.length > 0) {
-      const pick_at = Math.min(pool.length - 1, Math.floor(ctx.rng() * pool.length));
+      // Анти-повтор (ТЗ 4.2, REPEAT_SCOPE=board) действует при ВЫБОРЕ, а не
+      // только проверкой собранного набора. Слепой выбор с последующей
+      // отбраковкой на доске из девяти заказов по шесть позиций при пуле в
+      // четырнадцать товаров не сходится: пересечение вынуждено арифметикой, и
+      // все сорок попыток проваливают порог. Тогда наружу уезжала самая полная
+      // попытка — с повтором и без единого сигнала.
+      //
+      // Выбор с оглядкой на ПАРУ, а не на суммарную занятость доски.
+      //
+      // Порог анти-повтора считается попарно с каждым видимым заказом, поэтому
+      // минимизация общей нагрузки его не держит: товар, редкий на доске в
+      // целом, может оказаться пятым общим именно с одним соседом. Для каждого
+      // кандидата считаем, каким станет худшее пересечение по всем заказам
+      // доски, если его добавить, и берем кандидатов с наименьшим худшим.
+      //
+      // Один вызов `rng` на выбор, как и раньше: форма расхода случайности не
+      // меняется, прогоны остаются воспроизводимыми.
+      const chosen = new Set(positions.map((p) => p.good_id));
+      let best_worst = Number.POSITIVE_INFINITY;
+      const from: number[] = [];
+      for (let i = 0; i < pool.length; i++) {
+        const candidate = pool[i]!;
+        let worst = 0;
+        for (const slot_ids of board_sets) {
+          let shared = slot_ids.has(candidate) ? 1 : 0;
+          for (const id of chosen) if (slot_ids.has(id)) shared += 1;
+          worst = Math.max(worst, shared);
+        }
+        if (worst < best_worst) {
+          best_worst = worst;
+          from.length = 0;
+        }
+        if (worst === best_worst) from.push(i);
+      }
+      const pick_at = from[Math.min(from.length - 1, Math.floor(ctx.rng() * from.length))]!;
       const good_id = pool.splice(pick_at, 1)[0]!;
       let qty = slotQuantity(good_id, 'drone', ctx.level, ctx.rng());
 
@@ -352,13 +423,31 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
   }
 
   // Финальный предохранитель канона 1.3/1.6. Ни один путь наружу не отдает
-  // заказ из нуля позиций. Причина различается: пустой пул — это недостроенный
-  // контент, исчерпанные попытки — сигнал бага генератора (канон 1.8).
-  const degraded = best.length === 0;
+  // заказ из нуля позиций И не отдает заказ, не прошедший инварианты.
+  //
+  // Вторая половина этого условия долго отсутствовала, и дефект был латентным:
+  // фолбэк срабатывал только на ПУСТОМ наборе, а набор, собранный за сорок
+  // попыток и не взявший `COVERAGE_MIN`, уезжал игроку как есть — И-8 нарушена
+  // в выданном заказе, и ни одного сигнала об этом. Канон 1.6 требует ровно
+  // обратного: «если и меньшая форма не проходит инварианты, срабатывает
+  // `fallbackMinimalOrder`». У шаттла эта проверка есть, у дрона не было —
+  // движок один, расходиться конструкциям незачем.
+  //
+  // Причина деградации различается, и различие несущее: пустой пул — это
+  // недостроенный контент, исчерпанные попытки — сигнал бага генератора,
+  // непройденный инвариант — третья причина канона 1.8, которую дрон до сих
+  // пор не эмитил вообще, потому что путь к ней не был написан.
+  const empty = best.length === 0;
+  const unresolvable = !empty && easyRatio(best) < COVERAGE_MIN.drone;
+  const degraded = empty || unresolvable;
   const positions = degraded
     ? fallbackMinimalPositions(
         ctx,
-        ctx.available_goods.length === 0 ? 'empty_pool' : 'max_attempts',
+        empty
+          ? ctx.available_goods.length === 0
+            ? 'empty_pool'
+            : 'max_attempts'
+          : 'unresolvable_invariant',
       )
     : best;
 
@@ -423,7 +512,19 @@ export function orderReward(
     0,
   );
 
-  return { credits: roundToShowcase(market_sum * premium), xp, premium };
+  // Витринное округление идет к ближайшей ступени и умеет вынести ФАКТИЧЕСКУЮ
+  // премию за коридор каркаса: рынок 34 при потолке 1.70 дает 57.8, лестница
+  // округляет до 60, и премия становится 76.5%. Коридор — инвариант, лестница —
+  // оформление, поэтому при столкновении уступает лестница.
+  let credits = roundToShowcase(market_sum * premium);
+  if (market_sum > 0) {
+    const ceiling = market_sum * (1 + DRONE_PREMIUM_RANGE.max);
+    const floor = market_sum * (1 + DRONE_PREMIUM_RANGE.min);
+    if (credits > ceiling) credits = showcaseFloor(ceiling);
+    if (credits < floor) credits = showcaseCeil(floor);
+  }
+
+  return { credits, xp, premium };
 }
 
 /**

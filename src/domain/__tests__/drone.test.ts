@@ -34,7 +34,36 @@ import {
   sendOrder,
   slotsAtLevel,
 } from '../drone';
-import { availableOf, createWarehouse, deposit, qtyOf, reserve, totalQty } from '../warehouse';
+import { productionTimeMinutes } from '../rushcost';
+import type { GoodId } from '../types';
+import {
+  availableOf,
+  createWarehouse,
+  deposit,
+  qtyOf,
+  reserve,
+  totalQty,
+  type WarehouseState,
+} from '../warehouse';
+
+/**
+ * Определение «легкой» позиции ПО КАНОНУ, а не по коду генератора.
+ *
+ * `tz-common-systems-mars` 1.3: `isEasy = (stock >= qty) or
+ * (productionTimeMinutes(good, qty, player) <= EASY_PRODUCE_MAX_MIN[mechanic])`.
+ *
+ * Прежняя редакция теста писала здесь `GOODS[id].prod_time_sec > порог`, то
+ * есть копировала выражение из `drone.ts`. Такой тест зеленеет при любой
+ * реализации: он сравнивает код с самим собой. Именно он пропустил случай,
+ * когда ворота дефицита считали время одного цикла вместо цепочки рецепта, и
+ * грибной суп проходил «быстрым» при пятидесяти минутах по цепочке.
+ *
+ * Доказательство обязано быть выведено из документа, а не из проверяемого кода.
+ */
+function easyByCanon(good_id: GoodId, qty: number, w: WarehouseState): boolean {
+  if (availableOf(w, good_id) >= qty) return true;
+  return productionTimeMinutes(good_id, qty, w) <= EASY_PRODUCE_MAX_MIN.drone;
+}
 
 const pos = (
   good_id: Parameters<typeof orderReward>[0][number]['good_id'],
@@ -232,16 +261,7 @@ describe('Генератор: инварианты анти-фрустрации
         board: [],
         rng,
       });
-      // Дефицит по каркасу — это преднамеренный пинч «+1..+3 сверх склада»,
-      // а не все, чего нет на полке. Позиция, которую игрок вырастит за
-      // полчаса, дефицитом не считается: И-8 прямо пишет «покрыто складом
-      // ИЛИ производимо <=30 мин». Прежняя редакция теста меряла первое
-      // условие и молчала о втором, поэтому пропустила вырождение заказа.
-      const deficit = order.positions.filter(
-        (p) =>
-          p.qty > availableOf(w, p.good_id) &&
-          GOODS[p.good_id].prod_time_sec > EASY_PRODUCE_MAX_MIN.drone * 60,
-      ).length;
+      const deficit = order.positions.filter((p) => !easyByCanon(p.good_id, p.qty, w)).length;
       expect(deficit).toBeLessThanOrEqual(MAX_DEFICIT_SLOTS);
     }
   });
