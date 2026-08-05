@@ -76,8 +76,17 @@ describe('И-7: pity', () => {
     expect(pitied).toBeCloseTo(base);
   });
 
-  it('счетчик растет у невыпавших и обнуляется у выпавших', () => {
-    const roll = rollArrival(2, ctx({ pity: { panel: 3, cable: 3 } }));
+  it('счетчик растет у невыпавших НУЖНЫХ и обнуляется у выпавших', () => {
+    // Потребность в контексте обязательна: канон 2.4 растит счетчик «на каждое
+    // событие, где предмет НУЖЕН и не выпал» (2.3: `elif
+    // isNeededForActiveContext`). Прежняя редакция теста роллила с пустым
+    // `need` и ждала роста — то есть меряла прежнюю реализацию, где инкремент
+    // был безусловным, а не правило движка. Дефект Д-3 держит вторую половину
+    // правила: у НЕнужного модуля счетчик не растет.
+    const roll = rollArrival(
+      2,
+      ctx({ need: { panel: 1, cable: 1 }, pity: { panel: 3, cable: 3 } }),
+    );
     for (const id of roll.modules) expect(roll.next_pity[id]).toBe(0);
     const not_dropped = (['panel', 'cable'] as const).filter(
       (id) => !roll.modules.includes(id),

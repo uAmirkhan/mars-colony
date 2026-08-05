@@ -3,6 +3,7 @@ import './ui/theme.css';
 import { useGame } from './state/gameStore';
 import { ConstructionPanel } from './ui/construction';
 import { DroneBoard } from './ui/drone-board';
+import { Feel } from './ui/feel';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
 import { ShuttleStation } from './ui/shuttle-station';
 import { SimScreen } from './ui/sim-screen';
@@ -33,6 +34,8 @@ export default function App() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'auto' }}>
+      {/* Отклик на нажатие, вылетающие цифры и звук — одна точка монтирования. */}
+      <Feel />
       <div
         style={{
           position: 'sticky',
@@ -101,7 +104,27 @@ function GameScreen() {
         <DomeScreen />
       </div>
 
-      <div style={{ position: 'absolute', bottom: 14, display: 'flex', gap: 10 }}>
+      {/*
+        Хаб растянут по ширине экрана и переносится по строкам.
+        Дефект Д-23: без `left/right` и переноса блок вставал по статической
+        позиции — по центру и одной строкой, — а шесть кнопок в строке шире
+        телефона. На экране 412 точек левый край хаба уезжал на x = -149, и
+        кнопки «Купол» и «Склад» оказывались за краем экрана: склад с телефона
+        было не открыть вовсе. Проверка `mobile-fit.spec.ts` держит это числами.
+      */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 14,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: 10,
+          padding: '0 12px',
+        }}
+      >
         {HUB.map((item) => (
           <button
             type="button"

@@ -4,7 +4,7 @@
  * центр отдан миру; модалка затемняет мир и не закрывает его целиком.
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   FACTORY_HINTS,
@@ -20,8 +20,10 @@ import {
   type PurchasableBuilding,
   selectWarehouseLoad,
   selectXpProgress,
+  type Toast,
   useGame,
 } from '../state/gameStore';
+import { actWithFx } from './feel/act';
 
 /** Порядок карточек — порядок открытия по уровню, он же порядок покупки. */
 const PURCHASABLE_BUILDINGS: PurchasableBuilding[] = [
@@ -57,13 +59,14 @@ export function Hud() {
         <div className="star" />
         <span>ур. {level}</span>
       </div>
-      <div style={{ width: 130 }}>
+      <div style={{ width: 130 }} data-fx-anchor="xp">
         <ProgressBar value={xp.into} max={xp.need} />
       </div>
       <Currency kind="credits" value={credits} />
       <Currency kind="isotopes" value={isotopes} />
       <div
         className="currency"
+        data-fx-anchor="warehouse"
         style={{
           marginLeft: 'auto',
           borderColor: full ? 'var(--close)' : 'var(--panel-border)',
@@ -105,8 +108,14 @@ export function DomeScreen() {
               key={field.idx}
               className={`slot ${ready ? 'slot-ready' : ''}`}
               style={{ height: 104 }}
-              onClick={() =>
-                ready ? collectField(field.idx) : good ? null : setPicker(field.idx)
+              onClick={(e) =>
+                ready
+                  ? // Цифра «+N» вылетает из той грядки, по которой нажали, —
+                    // поэтому сбор идет через обертку, знающую элемент.
+                    actWithFx(e.currentTarget, () => collectField(field.idx))
+                  : good
+                    ? null
+                    : setPicker(field.idx)
               }
             >
               {!good && <span style={{ fontSize: 30, color: 'var(--text-muted)' }}>+</span>}
@@ -302,9 +311,9 @@ function BuildingCard({
             key={slot.idx}
             className={`slot ${ready ? 'slot-ready' : ''}`}
             style={{ flexDirection: 'row', gap: 10, padding: 10, minHeight: 62 }}
-            onClick={() =>
+            onClick={(e) =>
               ready
-                ? collectFactory(slot.idx)
+                ? actWithFx(e.currentTarget, () => collectFactory(slot.idx))
                 : slot.state === 'EMPTY'
                   ? onPick(slot.idx)
                   : null
@@ -446,9 +455,40 @@ export function FactoryPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * Тосты — единственное место, где игра объясняет отказ словами.
+ *
+ * Плашка держится на экране 180 мс после того, как стор ее убрал: без этого
+ * сообщение исчезало мгновенным пропаданием, а мгновенное пропадание глаз
+ * читает как «мигнуло», а не как «ушло». Уход — из [[ux-motion-spec]] раздел 2,
+ * ease-in, без перелета.
+ */
+const TOAST_LEAVE_MS = 180;
+
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   const color = { info: 'var(--panel)', warn: '#ffd9c8', reward: '#dff5cf' } as const;
+
+  // Зеркало списка стора: тост, уже удаленный из состояния, доигрывает уход.
+  const [leaving, setLeaving] = useState<Toast[]>([]);
+  const previous = useRef<Toast[]>(toasts);
+
+  useEffect(() => {
+    const gone = previous.current.filter((p) => !toasts.some((t) => t.id === p.id));
+    previous.current = toasts;
+    if (gone.length === 0) return;
+
+    setLeaving((list) => [...list, ...gone]);
+    const timer = setTimeout(() => {
+      setLeaving((list) => list.filter((t) => !gone.some((g) => g.id === t.id)));
+    }, TOAST_LEAVE_MS);
+    return () => clearTimeout(timer);
+  }, [toasts]);
+
+  const shown: Array<Toast & { leaving: boolean }> = [
+    ...toasts.map((t) => ({ ...t, leaving: false })),
+    ...leaving.map((t) => ({ ...t, leaving: true })),
+  ];
 
   return (
     <div
@@ -462,17 +502,12 @@ export function Toasts() {
         zIndex: 30,
       }}
     >
-      {toasts.map((t) => (
+      {shown.map((t) => (
         <div
           key={t.id}
-          className="panel"
-          style={{
-            padding: '9px 18px',
-            fontWeight: 800,
-            color: 'var(--title)',
-            background: color[t.kind],
-            textAlign: 'center',
-          }}
+          data-testid={`toast-${t.kind}`}
+          className={`panel toast toast-${t.kind}${t.leaving ? ' toast-leaving' : ''}`}
+          style={{ background: color[t.kind] }}
         >
           {t.text}
         </div>
