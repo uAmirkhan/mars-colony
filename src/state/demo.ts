@@ -24,6 +24,13 @@
  * закроет вкладку, не дойдя до того, ради чего пришел.
  */
 
+import {
+  PLANT_COST_FLOOR,
+  PLANT_COST_PRICE_SHARE,
+  plantingCost,
+} from '../domain/config/economy';
+import { GOODS } from '../domain/config/goods';
+import type { GoodId } from '../domain/types';
 import { totalQty } from '../domain/warehouse';
 import { createDemoState, DEMO_LEVEL, useGame } from './gameStore';
 
@@ -47,6 +54,25 @@ const DEMO_MODULES = { filter: 6, cable: 6, sealant: 7, panel: 4, frame: 3 } as 
 
 /** Запас на полках: чтобы доска дрона и очередь фабрики были не пустыми. */
 const DEMO_STOCK = { algae: 12, soy: 10, mushrooms: 8 } as const;
+
+/**
+ * Чем засеяны грядки и сколько осталось расти.
+ *
+ * Пустое поле — главное, что портило первый кадр: колония «игрока, который уже
+ * поиграл», встречала семью пустыми клетками с плюсом. Поэтому грядки засеяны,
+ * одна созрела (немедленное действие, отклик в первую секунду), остальные
+ * растут вразнобой — ровно то, как выглядит поле в середине сессии, а не
+ * ровный ряд из одного действия.
+ *
+ * Отрицательный остаток означает «созрело столько секунд назад».
+ */
+const DEMO_FIELDS: Array<{ good: GoodId; left_sec: number }> = [
+  { good: 'algae', left_sec: -30 },
+  { good: 'mushrooms', left_sec: 45 },
+  { good: 'soy', left_sec: 90 },
+  { good: 'algae', left_sec: 150 },
+  { good: 'mushrooms', left_sec: 240 },
+];
 
 /**
  * Собрать состояние показа и подставить его в стор.
@@ -117,6 +143,29 @@ export function applyDemoState(): boolean {
       arrives_at: now + left,
     },
   });
+
+  // Грядки засеваются последними: посев стоит кредитов, и списывать их надо с
+  // остатка после зданий, а не до. Состояния ставятся напрямую, а не вызовом
+  // `plant`: посев назначает время созревания от текущего момента, а показу
+  // нужны разные стадии роста — то есть ровно то, чего действие сделать не
+  // может. Цена при этом честно списывается по конфигу.
+  const fields = store.getState().fields.map((f) => ({ ...f }));
+  let credits = store.getState().credits;
+  DEMO_FIELDS.forEach((seed, i) => {
+    const field = fields[i];
+    if (!field) return;
+    field.good_id = seed.good;
+    field.ends_at = now + seed.left_sec;
+    field.state = seed.left_sec <= 0 ? 'READY' : 'GROWING';
+    credits -= plantingCost(GOODS[seed.good].price, PLANT_COST_PRICE_SHARE, PLANT_COST_FLOOR);
+  });
+  store.setState({ fields, credits: Math.max(0, credits) });
+
+  // Плашки, накопленные сборкой, стираются. Человек ничего не строил и никуда
+  // не отправлял шаттл — это делал код показа, а плашка «Шаттл ушел на орбиту»
+  // рассказывает человеку про его собственное действие. Три таких сообщения
+  // закрывали половину первого экрана и врали о происходящем.
+  store.setState({ toasts: [] });
 
   return store.getState().level === DEMO_LEVEL && totalQty(store.getState().warehouse) >= 0;
 }

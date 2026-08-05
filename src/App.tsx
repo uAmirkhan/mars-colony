@@ -34,7 +34,20 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('sim');
 
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'auto' }}>
+    // Колонка на всю высоту окна. Игровой экран забирает ровно тот остаток,
+    // который не заняли шапка и подпись показа, — вместо жестко вычтенных 58
+    // точек. Из-за вычитания константы экран уезжал вниз ровно на высоту
+    // подписи, и хаб из шести кнопок оказывался ниже края телефона: чтобы
+    // открыть склад, надо было догадаться прокрутить.
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Отклик на нажатие, вылетающие цифры и звук — одна точка монтирования. */}
       <Feel />
       <div
@@ -43,9 +56,13 @@ export default function App() {
           top: 0,
           zIndex: 40,
           display: 'flex',
+          flexWrap: 'wrap',
           gap: 10,
           alignItems: 'center',
-          padding: '10px 16px',
+          // Справа держим место под выключатель звука: он висит поверх экрана
+          // в правом верхнем углу, и на узком экране накрывал собой кнопку
+          // «Играть» — то есть главный вход в игру был физически не нажимаем.
+          padding: '10px 96px 10px 16px',
           background: 'var(--panel)',
           borderBottom: '3px solid var(--panel-border)',
         }}
@@ -89,7 +106,8 @@ function GameScreen() {
     <div
       style={{
         position: 'relative',
-        minHeight: 'calc(100vh - 58px)',
+        flex: '1 1 auto',
+        minHeight: 0,
         background:
           'linear-gradient(180deg, var(--world-sky-top) 0%, var(--world-sky) 26%, var(--world-ground-far) 42%, var(--world-ground) 100%)',
         display: 'flex',

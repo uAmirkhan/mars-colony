@@ -34,3 +34,5 @@ playwright-report
 design/cut/
 design/check/
 cut-gallery.html
+shots/
+test-results/
