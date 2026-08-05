@@ -48,6 +48,36 @@ async function offscreenButtons(page: Page): Promise<Offender[]> {
   }, EDGE_TOLERANCE);
 }
 
+/**
+ * Кнопки, накрытые чем-то другим.
+ *
+ * Проверка «помещается в экран» этого не ловит: элемент может лежать целиком
+ * внутри экрана и при этом быть недоступен пальцу, потому что поверх него
+ * стоит другой. Ровно так выключатель звука накрыл кнопку «Играть» на узком
+ * экране — главный вход в игру был не нажимаем, а все проверки зеленые.
+ *
+ * Спрашиваем у браузера, кто на самом деле получит касание в центре кнопки.
+ * Свой же потомок считается своим: у кнопки внутри есть текст и иконки.
+ */
+async function coveredButtons(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    for (const el of document.querySelectorAll('button')) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      const x = r.left + r.width / 2;
+      const y = r.top + r.height / 2;
+      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+      const hit = document.elementFromPoint(x, y);
+      if (hit === null || el.contains(hit) || hit.contains(el)) continue;
+      const label = (el.textContent ?? '').trim().slice(0, 24);
+      const over = (hit.textContent ?? '').trim().slice(0, 24);
+      out.push(`«${label}» накрыта «${over}» (${hit.className || hit.tagName})`);
+    }
+    return out;
+  });
+}
+
 async function openGame(page: Page) {
   await page.goto('/?fresh=1');
   await page.getByRole('button', { name: 'Играть' }).click();
@@ -59,6 +89,18 @@ test('кнопки игры помещаются в экран', async ({ page }
 
   const bad = await offscreenButtons(page);
   expect(bad, `кнопки за краем экрана: ${JSON.stringify(bad)}`).toEqual([]);
+});
+
+test('ни одна кнопка не накрыта другой', async ({ page }) => {
+  // Первый экран проверяется до входа в игру: именно там висит «Играть», и
+  // именно ее накрывал выключатель звука.
+  await page.goto('/?fresh=1');
+  await expect(page.getByRole('button', { name: 'Играть' })).toBeVisible();
+  expect(await coveredButtons(page), 'на первом экране').toEqual([]);
+
+  await page.getByRole('button', { name: 'Играть' }).click();
+  await expect(page.getByRole('button', { name: 'Склад' })).toBeVisible();
+  expect(await coveredButtons(page), 'в игре').toEqual([]);
 });
 
 test('кнопки каждой панели помещаются в экран', async ({ page }) => {

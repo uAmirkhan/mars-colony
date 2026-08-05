@@ -447,12 +447,13 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: 10px auto 0;
-  padding: 10px 14px;
+  flex: 0 0 auto;
+  margin: 8px auto 0;
+  padding: 8px 12px;
   max-width: 760px;
   width: calc(100% - 24px);
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12.5px;
+  line-height: 1.35;
 }
 
 .demo-badge-text {

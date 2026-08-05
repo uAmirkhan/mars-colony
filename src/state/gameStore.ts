@@ -958,7 +958,10 @@ export const useGame = create<GameState>()(
             buildings: [...s.buildings, type],
             factory_slots: slots,
           });
-          pushToast(`${FACTORY_NAMES[type]} построен`, 'reward');
+          // Название впереди сказуемого не ставим: «Буровая площадка построен»
+          // — здания в игре разного рода, а одна строка на все не согласуется
+          // ни с одним. Двоеточие снимает вопрос целиком.
+          pushToast(`Построено: ${FACTORY_NAMES[type]}`, 'reward');
         },
 
         dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
