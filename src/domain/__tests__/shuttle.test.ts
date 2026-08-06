@@ -15,13 +15,15 @@ import {
   FTUE_FIRST_TRIP_TIMER_MIN,
   flightTimerMin,
   MAX_DEFICIT_SLOTS,
+  PINCH_MAX,
+  PINCH_MIN,
   SLOT_COUNT_MAX,
   SLOT_COUNT_MIN,
   SPEEDUP_FLOOR_ISOTOPES,
   XP_MULTIPLIER_K,
 } from '../config/economy';
-import { GOOD_BASE_QTY, GOODS } from '../config/goods';
-import { availableGoodsFor } from '../drone';
+import { GOOD_BASE_QTY, GOODS, slotQuantity } from '../config/goods';
+import { applyPinch, availableGoodsFor } from '../drone';
 import type { DropContext } from '../droproller';
 import {
   allCollected,
@@ -399,5 +401,59 @@ describe('Прибытие и сбор', () => {
     startCooldown(trip, NOW);
     expect(trip.state).toBe('COOLDOWN');
     expect(trip.cooldown_until).toBe(NOW + COLLECT_COOLDOWN_MIN * 60);
+  });
+});
+
+/**
+ * Канон [[tz-common-systems-mars]] 1.4:
+ * `"absolute" -> return stock + clamp(targetQty - stock, PINCH_MIN, PINCH_MAX)`,
+ * и строка помечена «дрон, шаттл» — правило одно на обе механики.
+ *
+ * Проверяется именно связь с `targetQty`: пока у шаттла стоял случайный пинч
+ * `have + rand(PINCH_MIN..PINCH_MAX)`, количество, посчитанное `slotQuantity`
+ * (каркас 3.1 с `bracket_mult`), отбрасывалось целиком.
+ */
+describe('И-8: дефицитный отсек по канону 1.4 (PINCH_MODE = absolute)', () => {
+  /** Постоянный ролл: и выбор товара, и `slotQuantity` становятся счетными. */
+  const ROLL = 0.01;
+  const DEFICIT_POOL = ['jumpsuit', 'algae', 'soy'] as const;
+
+  /** Склад покрывает легкие позиции и пуст по тяжелой — дефицит ровно один. */
+  function deficitCtx(level: number): ShuttleGenContext {
+    return genCtx({
+      level,
+      warehouse: stockedWarehouse(['algae', 'soy'], 40),
+      available_goods: [...DEFICIT_POOL],
+      rng: () => ROLL,
+    });
+  }
+
+  it('количество дефицитного отсека равно stock + clamp(target - stock)', () => {
+    const level = 20;
+    const trip = generateTrip(deficitCtx(level));
+    const slot = trip.slots.find((s) => s.good_id === 'jumpsuit');
+
+    expect(slot).toBeDefined();
+    const target = slotQuantity('jumpsuit', 'shuttle', level, ROLL);
+    expect(slot?.qty_required).toBe(applyPinch(0, target));
+  });
+
+  it('дефицитный отсек растет вместе с bracket_mult, а не роллом', () => {
+    // Тот же ролл, тот же пул, разные брекеты (каркас 3.1). Случайный пинч дал
+    // бы одно и то же число на обоих уровнях — связь с уровнем колонии рвется.
+    const low = generateTrip(deficitCtx(6)).slots.find((s) => s.good_id === 'jumpsuit');
+    const high = generateTrip(deficitCtx(20)).slots.find((s) => s.good_id === 'jumpsuit');
+
+    expect(slotQuantity('jumpsuit', 'shuttle', 20, ROLL)).toBeGreaterThan(
+      slotQuantity('jumpsuit', 'shuttle', 6, ROLL),
+    );
+    expect(high?.qty_required).toBeGreaterThan(low?.qty_required ?? 0);
+  });
+
+  it('дефицит не выходит за PINCH_MIN..PINCH_MAX сверх склада', () => {
+    const trip = generateTrip(deficitCtx(20));
+    const slot = trip.slots.find((s) => s.good_id === 'jumpsuit');
+    expect(slot?.qty_required).toBeGreaterThanOrEqual(PINCH_MIN);
+    expect(slot?.qty_required).toBeLessThanOrEqual(PINCH_MAX);
   });
 });

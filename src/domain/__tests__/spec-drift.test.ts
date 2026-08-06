@@ -16,8 +16,17 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { siblingExists } from './sibling';
 
 const WIKI = resolve(process.cwd(), '..', 'wiki', 'saas', 'projects', 'mars-colony');
+
+/**
+ * Спеки лежат СОСЕДНИМ деревом, а не внутри репозитория. У того, кто взял
+ * один репозиторий, читать нечего, и сверка честно пропускается — громко, со
+ * строкой в выводе (см. `sibling.ts`). Первой это поймала публикация: ворота,
+ * зеленые на машине разработки, на чистой машине падали с `ENOENT`.
+ */
+const specs_here = siblingExists(WIKI, 'дерево спецификаций');
 
 /**
  * Читаем ВСЕ технические задания, а не одно.
@@ -144,7 +153,7 @@ function specParameterNames(spec: string): string[] {
   return [...new Set(names)].sort();
 }
 
-describe('Спецификация против кода: разъезд имен', () => {
+describe.skipIf(!specs_here)('Спецификация против кода: разъезд имен', () => {
   // Карта «имя параметра → в каких документах встречается». Нужна, чтобы отличить
   // параметр нереализованной механики от параметра активного ТЗ.
   const sources = new Map<string, Set<string>>();

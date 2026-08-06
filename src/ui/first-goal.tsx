@@ -292,10 +292,16 @@ export function GoalBar({
     >
       <span className="goal-bar-text">{goal.text}</span>
       {goal.wait_sec !== null && <Timer remaining_sec={goal.wait_sec} />}
+      {/*
+        Кольца на кнопке ниже нет намеренно. Указатель на экране один, и он
+        стоит на кнопке хаба: она объясняет, ГДЕ в игре живет шаттл. Кольцо
+        еще и здесь превратило бы указатель в два, а стрелка над кнопкой
+        перекрыла бы собственный текст плашки.
+      */}
       {hub !== 'dome' && (
         <button
           type="button"
-          className="btn btn-primary goal-point"
+          className="btn btn-primary"
           data-testid="goal-open"
           onClick={() => onOpen(hub)}
         >

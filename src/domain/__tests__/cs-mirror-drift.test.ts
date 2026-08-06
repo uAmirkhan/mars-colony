@@ -15,8 +15,7 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   CREDITS_START,
@@ -31,13 +30,21 @@ import {
 } from '../config/economy';
 import { ALL_GOOD_IDS, FACTORY_OUTPUT_QTY, GOODS, HARVEST_QTY } from '../config/goods';
 import type { GoodId } from '../types';
+import { CS_MIRROR_ROOT, siblingExists } from './sibling';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const CS_ROOT = join(HERE, '../../../../mars-unity/Assets/Scripts/Domain');
+const CS_ROOT = CS_MIRROR_ROOT;
 
-const goods_cs = readFileSync(join(CS_ROOT, 'Config/Goods.cs'), 'utf8');
-const economy_cs = readFileSync(join(CS_ROOT, 'Config/Economy.cs'), 'utf8');
-const numeric_cs = readFileSync(join(CS_ROOT, 'Numeric.cs'), 'utf8');
+/**
+ * Зеркало лежит СОСЕДНИМ деревом, а не внутри репозитория. Без него читать
+ * нечего, и проверка честно пропускается — см. `sibling.ts`. Чтение вынесено
+ * под условие: раньше файлы читались на уровне модуля, и отсутствие соседа
+ * роняло весь файл до единого теста.
+ */
+const mirror_here = siblingExists(CS_ROOT, 'C#-зеркало Unity-трека');
+
+const goods_cs = mirror_here ? readFileSync(join(CS_ROOT, 'Config/Goods.cs'), 'utf8') : '';
+const economy_cs = mirror_here ? readFileSync(join(CS_ROOT, 'Config/Economy.cs'), 'utf8') : '';
+const numeric_cs = mirror_here ? readFileSync(join(CS_ROOT, 'Numeric.cs'), 'utf8') : '';
 
 /** `public const string ALGAE = "algae";` — идентификаторы товаров. */
 const ID_OF: Record<string, string> = {};
@@ -70,7 +77,7 @@ for (const src of [economy_cs, goods_cs]) {
   }
 }
 
-describe('C#-зеркало: товарный субстрат', () => {
+describe.skipIf(!mirror_here)('C#-зеркало: товарный субстрат', () => {
   it('набор товаров совпадает', () => {
     expect(Object.keys(cs_goods).sort()).toEqual([...ALL_GOOD_IDS].sort());
   });
@@ -112,7 +119,7 @@ describe('C#-зеркало: товарный субстрат', () => {
   });
 });
 
-describe('C#-зеркало: экономические константы', () => {
+describe.skipIf(!mirror_here)('C#-зеркало: экономические константы', () => {
   const scalars: Array<[string, number]> = [
     ['PRODUCTION_XP_K', PRODUCTION_XP_K],
     ['FIELD_SLOTS_START', FIELD_SLOTS_START],
@@ -131,7 +138,7 @@ describe('C#-зеркало: экономические константы', () 
   });
 });
 
-describe('C#-зеркало: округление', () => {
+describe.skipIf(!mirror_here)('C#-зеркало: округление', () => {
   /**
    * `Math.Round` в C# по умолчанию округляет половину к четному, `Math.round`
    * в JavaScript — вверх. Формула, посчитанная мимо `Numeric.RoundHalfUp`,

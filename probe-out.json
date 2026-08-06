@@ -1,0 +1,19 @@
+{
+  "failures": 0,
+  "over_capacity": 0,
+  "negative_credits": 0,
+  "reserved_gt_qty": 0,
+  "modules_over_cap": 0,
+  "max_total": 30,
+  "max_reserved": 0,
+  "min_credits": 2053,
+  "slot_counts": [3, 4, 5],
+  "states": ["IN_TRANSIT"],
+  "trip_mins": [60],
+  "is_first": [false],
+  "leftover_reserved": 0,
+  "floor_forced": 0,
+  "needed_delivered": 497,
+  "empty_order_board": 0,
+  "worst_seeds": []
+}
