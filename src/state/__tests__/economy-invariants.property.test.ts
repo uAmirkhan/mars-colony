@@ -27,11 +27,16 @@
 import fc from 'fast-check';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CREDITS_START, WAREHOUSE_MAX_CAPACITY } from '../../domain/config/economy';
-import { ALL_BUILD_KINDS, type BuildKind } from '../../domain/config/modules';
-import { createConstruction, moduleCapacity, moduleTotal } from '../../domain/construction';
+import { ALL_BUILD_KINDS, ALL_MODULE_IDS, type BuildKind } from '../../domain/config/modules';
+import {
+  createConstruction,
+  moduleCapacity,
+  moduleTotal,
+  recipeFor,
+} from '../../domain/construction';
 import { createWarehouseAvg } from '../../domain/droproller';
 import { createField } from '../../domain/production';
-import type { GoodId } from '../../domain/types';
+import type { GoodId, ModuleId } from '../../domain/types';
 import { createWarehouse, deposit, totalQty } from '../../domain/warehouse';
 import { useGame } from '../gameStore';
 
@@ -77,7 +82,8 @@ type Action =
   | { kind: 'start_build'; kind_idx: number }
   | { kind: 'speedup_build'; kind_idx: number }
   | { kind: 'speedup_field'; idx: number }
-  | { kind: 'buy_building'; idx: number };
+  | { kind: 'buy_building'; idx: number }
+  | { kind: 'buy_module'; kind_idx: number; module_idx: number };
 
 const idx = fc.integer({ min: 0, max: 6 });
 const good_idx = fc.integer({ min: 0, max: GOODS_POOL.length - 1 });
@@ -118,6 +124,15 @@ const action: fc.Arbitrary<Action> = fc.oneof(
   fc.record({
     kind: fc.constant('buy_building' as const),
     idx: fc.integer({ min: 0, max: 3 }),
+  }),
+  // Докупка модуля за изотопы (И-1, второй канал) — судья прогона 5 отметил
+  // отсутствие property-теста отдельно (buyModules/modulePurchasePrice/
+  // startBuild): деньги + резерв (`purchased`) без перебора действий уже
+  // пропускали дефект в этом проекте трижды.
+  fc.record({
+    kind: fc.constant('buy_module' as const),
+    kind_idx: fc.integer({ min: 0, max: ALL_BUILD_KINDS.length - 1 }),
+    module_idx: fc.integer({ min: 0, max: ALL_MODULE_IDS.length - 1 }),
   }),
 );
 
@@ -223,6 +238,12 @@ function apply(a: Action, now: { value: number }) {
     case 'buy_building':
       s.buyBuilding(BUILDINGS[a.idx]!);
       break;
+    case 'buy_module':
+      s.buyModulesFor(
+        ALL_BUILD_KINDS[a.kind_idx] as BuildKind,
+        ALL_MODULE_IDS[a.module_idx] as ModuleId,
+      );
+      break;
   }
 }
 
@@ -230,7 +251,12 @@ function noteMilestones() {
   const s = useGame.getState();
   if (s.shuttle) milestones.add(`shuttle:${s.shuttle.state}`);
   if (moduleTotal(s.construction.stock) > 0) milestones.add('modules_collected');
-  for (const build of s.construction.builds) milestones.add(`build:${build.state}`);
+  for (const build of s.construction.builds) {
+    milestones.add(`build:${build.state}`);
+    if (Object.values(build.purchased).some((qty) => (qty ?? 0) > 0)) {
+      milestones.add('module_purchased');
+    }
+  }
   for (const order of s.orders) milestones.add(`order:${order.state}`);
   for (const field of s.fields) milestones.add(`field:${field.state}`);
   if (s.credits !== CREDITS_START) milestones.add('credits_moved');
@@ -263,6 +289,29 @@ function checkInvariants(step: string) {
     moduleTotal(s.construction.stock),
     `${step}: склад модулей выше лимита`,
   ).toBeLessThanOrEqual(moduleCapacity(s.construction));
+
+  // Докупка модуля (И-1, второй канал, buyModules/modulePurchasePrice) не
+  // должна ни уходить в минус, ни переплачивать сверх рецепта стройки.
+  //
+  // Сравнение идет с рецептом, а не с `stock[id] + purchased[id]`: склад
+  // модулей общий на все стройки (шаттл может докинуть модуль в промежутке
+  // между действиями свойства), и стройка B способна законно поднять общий
+  // остаток выше СВОЕЙ потребности — это не переплата стройки A. `purchased`
+  // же растет только внутри `buyModules` ровно на `missingFor` на момент
+  // вызова, поэтому сам по себе он не может превысить рецепт: как только
+  // недостачи не остается, `missingFor` отдает 0 и `buyModules` отказывает.
+  for (const build of s.construction.builds) {
+    const recipe = recipeFor(build.kind);
+    for (const [id, qty] of Object.entries(build.purchased) as Array<[ModuleId, number]>) {
+      expect(qty, `${step}: ${build.kind}.purchased.${id} отрицателен`).toBeGreaterThanOrEqual(
+        0,
+      );
+      expect(
+        qty,
+        `${step}: ${build.kind}.${id} докуплено больше, чем просит рецепт`,
+      ).toBeLessThanOrEqual(recipe[id] ?? 0);
+    }
+  }
 }
 
 describe('Экономика стора: инварианты на произвольной последовательности действий', () => {
@@ -346,6 +395,7 @@ describe('Экономика стора: инварианты на произв�
       'reserved_held',
       'credits_moved',
       'field:GROWING',
+      'module_purchased',
     ]) {
       expect(milestones, `свойство ни разу не дошло до «${required}»`).toContain(required);
     }
