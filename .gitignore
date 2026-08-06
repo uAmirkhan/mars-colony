@@ -36,3 +36,5 @@ design/check/
 cut-gallery.html
 shots/
 test-results/
+probe-out.json
+e2e/tmp-*.spec.ts

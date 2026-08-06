@@ -193,8 +193,15 @@ function GameScreen() {
               <button
                 type="button"
                 key={item.id}
+                // Кольцо цели стоит на кнопке хаба, но НИКОГДА на «Куполе»:
+                // купол и так на экране, цель в нем показывает стрелка на самой
+                // грядке, а кольцо на кнопке уводило бы от нее. Плюс кнопка
+                // «Купол» лежит в 44 точках от «Склада», и лишняя пульсация
+                // ломала опорный замер покоя в проверке ощущения.
                 className={`btn btn-secondary${
-                  goal !== null && modal === null && goal.hub === item.id ? ' goal-point' : ''
+                  goal !== null && modal === null && goal.hub !== 'dome' && goal.hub === item.id
+                    ? ' goal-point'
+                    : ''
                 }`}
                 onClick={() => setModal(item.id === 'dome' ? null : item.id)}
               >

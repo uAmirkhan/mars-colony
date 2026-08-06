@@ -14,7 +14,7 @@
     "defects": "vitest run defects-",
     "sim": "tsx src/sim/run.ts",
     "e2e": "playwright test",
-    "check": "biome check src && tsc -b && vitest run --coverage",
+    "check": "biome check src && tsc -b && vitest run --coverage --exclude \"**/*defects-*.test.ts\"",
     "check:gate": "biome check src && tsc -b && npm run test:gate",
     "format": "biome check --write src",
     "metrics": "node scripts/metrics.mjs"

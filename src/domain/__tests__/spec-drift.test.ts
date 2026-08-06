@@ -156,8 +156,13 @@ function specParameterNames(spec: string): string[] {
 describe.skipIf(!specs_here)('Спецификация против кода: разъезд имен', () => {
   // Карта «имя параметра → в каких документах встречается». Нужна, чтобы отличить
   // параметр нереализованной механики от параметра активного ТЗ.
+  //
+  // Список файлов пуст, когда спек рядом нет. Пропуска набора мало: тело
+  // `describe` выполняется на СБОРЕ тестов, до всякого пропуска, и чтение
+  // отсутствующего файла роняло весь прогон с `ENOENT` при честно пропущенном
+  // наборе. Публикация показала это дважды подряд.
   const sources = new Map<string, Set<string>>();
-  for (const file of SPECS) {
+  for (const file of specs_here ? SPECS : []) {
     for (const name of specParameterNames(readFileSync(join(WIKI, file), 'utf8'))) {
       const set = sources.get(name) ?? new Set<string>();
       set.add(file);
