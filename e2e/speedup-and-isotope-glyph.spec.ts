@@ -84,6 +84,9 @@ test('Д-12: слот фабрики в PRODUCING несет кнопку уск
   );
 
   await speedup.click();
+  // Между кнопкой и списанием стоит подтверждение: каркас (раздел 13) требует
+  // его для любой необратимой траты изотопов, а не только у шаттла.
+  await page.getByRole('button', { name: /^Потратить \d+/ }).click();
 
   const after = await page.evaluate(() => {
     const state = (window as unknown as { __game: Store }).__game.getState();
@@ -105,6 +108,7 @@ test('Д-12: тап по кнопке ускорения не провалива
 
   await page.getByRole('button', { name: 'Фабрика' }).click();
   await page.getByRole('button', { name: new RegExp(`Ускорить за \\d+ ${ISOTOPE}`) }).click();
+  await page.getByRole('button', { name: /^Потратить \d+/ }).click();
 
   // Слот целиком кликабелен под сбор. Если ускорение провалится в него, товар
   // уедет на склад тем же тапом и игрок не увидит кнопку «Забрать».

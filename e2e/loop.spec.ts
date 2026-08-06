@@ -121,6 +121,9 @@ test('стройка расширяет склад и это видно в HUD',
 
   await page.getByRole('button', { name: 'Строить' }).click();
   await page.getByRole('button', { name: /Ускорить за \d+/ }).click();
+  // Подтверждение необратимой траты изотопов теперь стоит на всех экранах,
+  // а не только у шаттла (каркас, раздел 13).
+  await page.getByRole('button', { name: /^Потратить \d+/ }).click();
 
   // Емкость склада выросла — конверсионный узел петли отработал.
   await expect(page.locator('.currency').last()).not.toHaveText(cap_before);

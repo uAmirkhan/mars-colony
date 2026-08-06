@@ -27,6 +27,12 @@
 import { useState } from 'react';
 import { Button, ISOTOPE_GLYPH, Panel } from './kit';
 
+/**
+ * Тип запроса подтверждения. Экспортируется отдельно, потому что диалог живет
+ * на панели, а спрашивают его вложенные карточки — им нужен только `ask`.
+ */
+export type ConfirmSpend = (request: ConfirmSpendRequest) => void;
+
 export interface ConfirmSpendRequest {
   /** Заголовок попапа — что именно подтверждает игрок. */
   title: string;

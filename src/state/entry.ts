@@ -18,7 +18,7 @@
  * состояния — колония первого уровня на четверть секунды.
  */
 
-import { applyDemoState } from './demo';
+import { applyDemoState, demoFailure } from './demo';
 import { createInitialState, SAVE_KEY, saveAccepted, useGame } from './gameStore';
 
 export type EntryMode = 'demo' | 'saved' | 'fresh';
@@ -183,6 +183,13 @@ export function chooseEntryState(): EntryMode {
     // обязана пережить перезагрузку.
     mode = applyDemoState() ? 'demo' : 'fresh';
     if (mode === 'demo') markDemo();
+    else {
+      // Откат на канонический старт — не штатная ветка, а провал витрины.
+      // Он обязан быть слышен: без этой строки ссылка открывается пустым
+      // первым уровнем, и отличить «показ не собрался» от «так и задумано»
+      // нельзя ничем, кроме глаз. В этом проекте такое уже стоило дня.
+      console.error(`[показ] состояние не собрано, откат на первый заход: ${demoFailure()}`);
+    }
     // Метка снимается с адреса ровно по той же причине, что и у `fresh`
     // (дефект Д-27). Оставшийся в адресе `?demo=1` пересобирает показ на
     // КАЖДОМ обновлении страницы: человек поиграл, нажал F5 и потерял все,
