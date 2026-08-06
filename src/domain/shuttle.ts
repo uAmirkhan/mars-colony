@@ -282,12 +282,30 @@ function fallbackMinimalSlots(
  * тихий баг: тот же класс компромисса, что уже принят для
  * `productionTimeMinutes` (пункт 9 реестра) — направление безопасное
  * (осторожнее, не агрессивнее), полная гарантия недостижима при узком пуле.
+ *
+ * **И-13 на стыке с И-10 (прогон 6, реестр [[spec-prototype-build]] раздел 8,
+ * пункт 25).** Канон 1.4 не оговаривает это пересечение: псевдокод
+ * `rebalanceForAchievability` берет замену через `fastestProducibleGood`, не
+ * зная о `DeficitLock` вообще, — дыра сидит уже в каноне, не только в коде,
+ * это независимо нашли оба проверяющих прогона 6. Без этого параметра ветка
+ * замены товара могла выбрать то, что в этот самый момент уже дефицитно
+ * держит ДРУГАЯ механика: финальная регистрация лока для этого рейса потом
+ * молча не сработает (upsert-if-absent), но отсек с чужим дефицитом все
+ * равно останется в рейсе — игрок увидит один товар как дефицит сразу у
+ * двух механик, ровно то, что запрещает И-13. `deficit_locks`/`now`
+ * опциональны ради обратной совместимости старых вызовов (тот же прием, что
+ * у `ShuttleGenContext`); кандидат исключается, только если он И заблокирован
+ * другой механикой, И останется настоящим дефицитом на полу количества —
+ * кандидат, который на полу легкий (И-8), никакого лока не создаст и
+ * конфликта не несет, исключать его незачем.
  */
 export function rebalanceForAchievability(
   slots: ShuttleSlot[],
   warehouse: WarehouseState,
   budget: number,
   available_goods: GoodId[],
+  deficit_locks: DeficitLockState = {},
+  now = 0,
 ): ShuttleSlot[] {
   const used = new Set(slots.map((s) => s.good_id));
   const guard_limit = GEN_MAX_ATTEMPTS * SLOT_COUNT_MAX;
@@ -320,9 +338,16 @@ export function rebalanceForAchievability(
     }
 
     // Дальше некуда резать количество — меняем сам товар на самую быструю
-    // доступную альтернативу пула, которой еще нет в рейсе.
-    const candidates = available_goods.filter((id) => id !== target.good_id && !used.has(id));
-    if (candidates.length === 0) break; // пул не дает альтернативы — решает реестр 8.24
+    // доступную альтернативу пула, которой еще нет в рейсе. И-13: кандидат,
+    // залоченный ДРУГОЙ механикой и остающийся дефицитом на полу количества,
+    // не годится — см. докстринг выше.
+    const candidates = available_goods.filter((id) => {
+      if (id === target.good_id || used.has(id)) return false;
+      const floor = GOOD_BASE_QTY[id].min;
+      if (isEasy(id, floor, warehouse)) return true; // не создаст дефицита — конфликта нет
+      return !isDeficitLockedByOtherMechanic(deficit_locks, id, 'shuttle', now);
+    });
+    if (candidates.length === 0) break; // пул не дает альтернативы — решает реестр 8.24/8.25
 
     const replacement = [...candidates].sort((a, b) => {
       const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
@@ -498,7 +523,14 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
   if (ACHIEVABILITY_CHECK.shuttle && !ctx.is_first_trip) {
     const budget = flightTimerMin(ctx.level) * ORDER_FEASIBILITY_DEADLINE_SHARE;
     if (tripProductionMinutes(slots, ctx.warehouse) > budget) {
-      slots = rebalanceForAchievability(slots, ctx.warehouse, budget, ctx.available_goods);
+      slots = rebalanceForAchievability(
+        slots,
+        ctx.warehouse,
+        budget,
+        ctx.available_goods,
+        ctx.deficit_locks ?? {},
+        ctx.now ?? 0,
+      );
     }
   }
 
@@ -582,7 +614,11 @@ function depart(
   deficit_locks: DeficitLockState = {},
 ) {
   for (const slot of trip.slots) {
-    releaseDeficitLock(deficit_locks, slot.good_id, 'shuttle');
+    // Владелец — тот же `order_ref`, которым рейс регистрировал лок ниже
+    // (`'shuttle:trip'`): у шаттла в любой момент только один активный рейс,
+    // сиблингов-владельцев быть не может, но `order_ref` все равно обязан
+    // совпадать — иначе снятие превращается в no-op (владелец не найден).
+    releaseDeficitLock(deficit_locks, slot.good_id, 'shuttle', 'shuttle:trip');
   }
   for (const slot of trip.slots) {
     // Уезжает ровно складская часть отсека: докупленное (И-12) в склад не

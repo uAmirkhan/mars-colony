@@ -61,7 +61,7 @@ describe('И-13 на сторе: чтение лока (makeTrip читает s.
       tomatoes: {
         good_id: 'tomatoes',
         locked_by_mechanic: 'drone',
-        order_ref: 'drone:0',
+        owners: ['drone:0'],
         created_at: NOW,
         expires_at: NOW + 3600,
       },
@@ -90,9 +90,14 @@ describe('И-13 на сторе: чтение лока (makeTrip читает s.
     expect(s().shuttle).not.toBeNull();
     expect(s().shuttle?.slots.length).toBeGreaterThan(0);
     expect(s().shuttle?.slots.some((sl) => sl.good_id === 'tomatoes')).toBe(false);
-    // Стор не тронул чужой лок — все еще за дроном, с тем же order_ref.
+    // Стор не тронул чужой лок — все еще за дроном, исходный владелец жив.
+    // Другие слоты дрона той же генерации могли законно присоединиться как
+    // дополнительные владельцы (канон 1.5: одна механика не блокирует сама
+    // себя) — `registerDeficitLock` теперь копит владельцев, а не только
+    // проверяет наличие лока (прогон 6, реестр spec-prototype-build раздел 8
+    // пункт 26), поэтому проверяем принадлежность, а не точное равенство.
     expect(s().deficit_locks.tomatoes?.locked_by_mechanic).toBe('drone');
-    expect(s().deficit_locks.tomatoes?.order_ref).toBe('drone:0');
+    expect(s().deficit_locks.tomatoes?.owners).toContain('drone:0');
   });
 
   it('контрольный прогон: без чужого лока томаты остаются доступным кандидатом (иначе предыдущая проверка ничего не доказывает)', () => {
@@ -150,7 +155,7 @@ describe('И-13 на сторе: снятие лока на терминальн
       tomatoes: {
         good_id: 'tomatoes',
         locked_by_mechanic: 'drone',
-        order_ref: 'drone:0',
+        owners: ['drone:0'],
         created_at: NOW,
         expires_at: NOW + 3600,
       },
