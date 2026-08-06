@@ -62,17 +62,41 @@ async function offscreenButtons(page: Page): Promise<Offender[]> {
 async function coveredButtons(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const out: string[] = [];
-    for (const el of document.querySelectorAll('button')) {
+    /** Сколько проб из 25 накрыто чужим, чтобы считать это дефектом. */
+    const COVERED_MIN = 2;
+    /** Что накрывает по замыслу: модалка, затемнение, плашка сообщения. */
+    const ALLOWED = '.scrim, .toast, .fx-layer';
+
+    for (const el of document.querySelectorAll('button, .slot')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
-      const x = r.left + r.width / 2;
-      const y = r.top + r.height / 2;
-      if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
-      const hit = document.elementFromPoint(x, y);
-      if (hit === null || el.contains(hit) || hit.contains(el)) continue;
-      const label = (el.textContent ?? '').trim().slice(0, 24);
-      const over = (hit.textContent ?? '').trim().slice(0, 24);
-      out.push(`«${label}» накрыта «${over}» (${hit.className || hit.tagName})`);
+      if (getComputedStyle(el).visibility === 'hidden') continue;
+
+      let covered = 0;
+      let by = '';
+      // Сетка проб, а не одна точка в центре. Дефект Д-31 накрывал ВЕРХ
+      // карточки грядки счетчиком склада, центр оставался свободным, и
+      // проверка по центру честно докладывала «чисто». Накрытая наполовину
+      // кнопка — такой же дефект, как накрытая целиком.
+      for (let i = 1; i <= 5; i++) {
+        for (let j = 1; j <= 5; j++) {
+          const x = r.left + (r.width * i) / 6;
+          const y = r.top + (r.height * j) / 6;
+          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+          const hit = document.elementFromPoint(x, y);
+          if (hit === null) continue;
+          // Свои и родители — не помеха: у кнопки внутри текст, снаружи фон.
+          if (el.contains(hit) || hit.contains(el)) continue;
+          if (hit.closest(ALLOWED) !== null) continue;
+          covered += 1;
+          by = `${(hit.textContent ?? '').trim().slice(0, 20)} (${hit.className || hit.tagName})`;
+        }
+      }
+
+      if (covered >= COVERED_MIN) {
+        const label = (el.textContent ?? '').trim().slice(0, 24);
+        out.push(`«${label}» накрыта на ${covered} проб из 25: ${by}`);
+      }
     }
     return out;
   });
@@ -100,7 +124,20 @@ test('ни одна кнопка не накрыта другой', async ({ pag
 
   await page.getByRole('button', { name: 'Играть' }).click();
   await expect(page.getByRole('button', { name: 'Склад' })).toBeVisible();
-  expect(await coveredButtons(page), 'в игре').toEqual([]);
+  expect(await coveredButtons(page), 'канонический старт').toEqual([]);
+});
+
+test('в показе ни одна кнопка не накрыта другой', async ({ page }) => {
+  // Показ проверяется ОТДЕЛЬНО, и это не дубль.
+  //
+  // Дефект Д-31 жил только здесь: канонический старт дает четыре пустые
+  // грядки, показ — шесть засеянных, поле выше, и именно оно наезжало на
+  // счетчики. Проверка, ходившая по `?fresh=1`, честно докладывала «чисто» —
+  // на своем экране она была права. А смотреть будут ровно этот.
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Играть' }).click();
+  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  expect(await coveredButtons(page), 'состояние показа').toEqual([]);
 });
 
 test('кнопки каждой панели помещаются в экран', async ({ page }) => {
@@ -114,4 +151,41 @@ test('кнопки каждой панели помещаются в экран'
     expect(bad, `панель «${name}»: кнопки за краем ${JSON.stringify(bad)}`).toEqual([]);
     await page.getByRole('button', { name: 'Закрыть' }).first().click();
   }
+});
+
+test('указатель цели стоит на своей кнопке', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Играть' }).click();
+  await expect(page.getByTestId('goal-bar')).toBeVisible();
+
+  // Стрелка — псевдоэлемент, отдельного узла у нее нет. Считаем ее острие по
+  // тем же числам, которыми она нарисована: смещение вверх и высота треугольника.
+  //
+  // Дефект Д-32: хаб на телефоне переносится на две строки, стрелка стояла в
+  // промежутке между рядами и читалась указателем на кнопку ВЕРХНЕГО ряда, а
+  // кольцо было на нижней. Проверка требует, чтобы острие принадлежало той же
+  // кнопке, что и кольцо.
+  const verdict = await page.evaluate(() => {
+    const ring = document.querySelector('.goal-point');
+    if (ring === null) return 'кольца цели нет на экране';
+
+    const style = getComputedStyle(ring, '::after');
+    const offset = Math.abs(Number.parseFloat(style.top || '0'));
+    const half = Number.parseFloat(style.borderTopWidth || '0');
+    const r = ring.getBoundingClientRect();
+
+    const tip_x = r.left + r.width / 2;
+    const tip_y = r.top - offset + half * 2;
+
+    const hit = document.elementFromPoint(tip_x, tip_y);
+    if (hit === null) return `острие в пустоте: ${Math.round(tip_x)}, ${Math.round(tip_y)}`;
+    // Годится только попадание В САМО кольцо или в его содержимое. Попадание в
+    // родителя — это промах: острие висит в промежутке между кнопками, и
+    // читается оно тем, что стоит рядом. Первая редакция проверки считала
+    // родителя своим и не краснела на исходном дефекте.
+    if (ring === hit || ring.contains(hit)) return 'ok';
+    return `острие попадает в «${(hit.textContent ?? '').trim().slice(0, 20)}», а кольцо на «${(ring.textContent ?? '').trim().slice(0, 20)}»`;
+  });
+
+  expect(verdict).toBe('ok');
 });
