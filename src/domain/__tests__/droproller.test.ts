@@ -10,12 +10,13 @@ import { describe, expect, it } from 'vitest';
 import {
   ANTISTOCKPILE_FACTOR,
   FLOOR_GUARANTEE_MIN_GAP,
+  FLOOR_GUARANTEE_WINDOW,
   FRONT_LOADED_LUCK_ARRIVALS,
   PITY_K,
   PITY_MULTIPLIER,
   TIER_WEIGHTS,
 } from '../config/economy';
-import { MODULE_TIER_POOL, MODULES } from '../config/modules';
+import { CONSTRUCTION_RECIPE, MODULE_TIER_POOL, MODULES } from '../config/modules';
 import {
   type DropContext,
   floorGuaranteeAllowed,
@@ -108,6 +109,21 @@ describe('И-7: анти-стокпайл', () => {
     expect(piled).toBeCloseTo(base * ANTISTOCKPILE_FACTOR);
   });
 
+  /**
+   * Каркас И-7: «запас > потребность x2 → вес /2», где потребность — рецепт
+   * доступной стройки, а не остаток нехватки. Пока модуля не хватает на рецепт,
+   * запас заведомо меньше порога, и резать нечего: игроку не из чего строить.
+   */
+  it('не режет вес модуля, которого не хватает на рецепт', () => {
+    const recipe = CONSTRUCTION_RECIPE.habitat_block.recipe.panel ?? 0;
+    const base = moduleWeight('panel', ctx({ need: { panel: recipe } }));
+    const almost = moduleWeight(
+      'panel',
+      ctx({ need: { panel: recipe }, stock: { panel: recipe - 1 } }),
+    );
+    expect(almost).toBeCloseTo(base);
+  });
+
   it('ровно двойной запас еще не излишек — порог строгий', () => {
     const base = moduleWeight('cable', ctx({ need: { cable: 2 } }));
     const at_threshold = moduleWeight(
@@ -161,6 +177,62 @@ describe('И-11: floor guarantee', () => {
       ['panel'],
     );
     expect(allowed).toBe(false);
+  });
+
+  /**
+   * Каркас И-11: гарантия «не срабатывает, если склад модулей уже покрывает
+   * активную стройку». Покрывает — значит стройку можно начать; на комплекте
+   * без одного модуля начать нельзя, и гарантия обязана работать.
+   */
+  it('срабатывает, когда до старта стройки не хватает одного модуля', () => {
+    const recipe = CONSTRUCTION_RECIPE.habitat_block.recipe.panel ?? 0;
+    const allowed = floorGuaranteeAllowed(
+      ctx({
+        need: { panel: recipe },
+        stock: { panel: recipe - 1 },
+        arrival_no: 20,
+        arrivals_without_needed: FLOOR_GUARANTEE_WINDOW - 1,
+      }),
+      ['cable'],
+    );
+    expect(allowed).toBe(true);
+  });
+
+  /**
+   * Канон 2.4: счетчик окна растет «на прибытие без нужного предмета». Модуль,
+   * которого на складе уже хватает на рецепт, стройку не двигает — такое
+   * прибытие окно не закрывает.
+   */
+  it('контейнер с модулем, которого и так хватает, окно И-11 не закрывает', () => {
+    const cable = CONSTRUCTION_RECIPE.warehouse_upgrade.recipe.cable ?? 0;
+    const allowed = floorGuaranteeAllowed(
+      ctx({
+        need: { panel: CONSTRUCTION_RECIPE.habitat_block.recipe.panel ?? 0, cable },
+        stock: { cable },
+        arrival_no: 20,
+        arrivals_without_needed: FLOOR_GUARANTEE_WINDOW - 1,
+      }),
+      ['cable'],
+    );
+    expect(allowed).toBe(true);
+  });
+
+  /**
+   * Канон 2.6 п.3: форс-выдача не создает избыточный сток. Из нужных рецепту
+   * модулей выдается самый дефицитный, а не самый крупный по рецепту: крупный
+   * может уже лежать на складе целиком.
+   */
+  it('форс-выдача не выдает модуль, которого на складе уже хватает', () => {
+    const sealant =
+      (CONSTRUCTION_RECIPE.warehouse_upgrade.recipe.sealant ?? 0) +
+      (CONSTRUCTION_RECIPE.habitat_block.recipe.sealant ?? 0);
+    const panel = CONSTRUCTION_RECIPE.habitat_block.recipe.panel ?? 0;
+    const roll = rollArrival(
+      3,
+      ctx({ need: { sealant, panel }, stock: { sealant }, arrival_no: 1 }),
+    );
+    expect(roll.floor_forced_slot).not.toBeNull();
+    expect(roll.modules.at(-1)).toBe('panel');
   });
 
   it('не чаще раза на пять прибытий — эксплойт «держи стройку голодной»', () => {
