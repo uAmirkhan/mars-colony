@@ -29,6 +29,12 @@ import {
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
 import {
+  type DeficitLockState,
+  isDeficitLockedByOtherMechanic,
+  registerDeficitLock,
+  releaseDeficitLock,
+} from './deficitlock';
+import {
   buyoutPrice,
   productionTimeMinutes,
   roundToShowcase,
@@ -193,6 +199,14 @@ export interface GeneratorContext {
   /** Другие активные заказы доски — для анти-повтора (REPEAT_SCOPE=board). */
   board: OrderSlot[];
   rng: () => number;
+  /**
+   * И-13: локи дефицита от ДРУГИХ механик (шаттл/лайнер). Опционально —
+   * пустой лок-стейт по умолчанию, чтобы старые вызовы (тесты, симулятор)
+   * не ломались добавлением поля.
+   */
+  deficit_locks?: DeficitLockState;
+  /** Момент генерации — вход TTL И-13. Секунды, как весь остальной таймер игры. */
+  now?: number;
 }
 
 /**
@@ -418,8 +432,24 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
       // произвести. Тот же разъезд уже чинили во флаге `easy` и у шаттла.
       const have = availableOf(ctx.warehouse, good_id);
 
+      // И-13: товар, уже держащий дефицитную позицию у ДРУГОЙ механики,
+      // не может стать дефицитной позицией и здесь — иначе игрок закрывает
+      // два заказа одним и тем же будущим уловом. Канон 1.3: «если
+      // дефицитный товар залочен другой механикой, генератор просто пробует
+      // другой товар в цикле» — здесь это тот же путь, что и исчерпанный
+      // бюджет дефицита: позицию делаем легкой (урезаем/меняем), а не
+      // выбрасываем весь заказ. Приоритет фолбэков канона (1.3) ставит И-13
+      // последней из четырех: ее фолбэк тривиален и ничего не даунгрейдит
+      // дальше того, что уже делает исчерпанный бюджет дефицита.
+      const locked_elsewhere = isDeficitLockedByOtherMechanic(
+        ctx.deficit_locks ?? {},
+        good_id,
+        'drone',
+        ctx.now ?? 0,
+      );
+
       if (!isEasy(good_id, qty, ctx.warehouse)) {
-        if (deficit_used >= MAX_DEFICIT_SLOTS) {
+        if (deficit_used >= MAX_DEFICIT_SLOTS || locked_elsewhere) {
           // Бюджет дефицита исчерпан — позицию надо сделать легкой. Канон
           // (1.4 `downgradeHardestDeficitSlot`): режем количество до
           // `maxQtyWithin` — наибольшего, покрытого складом ИЛИ производимого в
@@ -502,6 +532,26 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
   // Фолбэк канона 1.6 пинча не делает: он просит `GOOD_BASE_QTY.min` и ничего
   // сверх склада, значит и надбавки за дефицит там быть не может.
   const reward = orderReward(positions, ctx.rng(), degraded ? false : best_has_deficit);
+
+  // И-13: регистрация лока — ПОСЛЕ того, как состав заказа окончательно
+  // выбран, а не внутри цикла попыток. Внутри `for (attempt...)` строится
+  // МНОЖЕСТВО кандидатных наборов позиций, и почти все они отбрасываются
+  // (см. `best`/`if (positions.length > best.length)` выше) — регистрация на
+  // каждой попытке залочила бы товары, которые в итоговый заказ не попали, и
+  // держала бы их залоченными до TTL без всякой причины. Регистрируем ровно
+  // те позиции, что уехали игроку (`positions`, финальные, после фолбэка).
+  for (const position of positions) {
+    if (!position.easy) {
+      registerDeficitLock(
+        ctx.deficit_locks ?? {},
+        position.good_id,
+        'drone',
+        `drone:${idx}`,
+        ctx.now ?? 0,
+      );
+    }
+  }
+
   return {
     idx,
     state: 'active',
@@ -751,6 +801,22 @@ export function discardOrder(slot: OrderSlot, now: number): void {
   if (slot.state === 'empty_cooldown') return;
   slot.state = 'empty_cooldown';
   slot.refresh_at = now + DRONE_REFRESH_FREE_SEC;
+}
+
+/**
+ * И-13: снятие лока дефицита при терминальном событии заказа-владельца
+ * (канон 1.5 — «deliver/discard»). Вызывается ДО генерации нового заказа в
+ * тот же слот: иначе только что освобожденный слот немедленно перерегистрировал
+ * бы лок под тем же `order_ref`, и терминальное событие не сработало бы
+ * физически (снятие и повторная установка слились бы в no-op).
+ *
+ * Освобождает ровно то, что сама позиция держала как дефицит (`!easy`) — та
+ * же граница, что решает регистрацию в `generateOrder`.
+ */
+export function releaseOrderDeficitLocks(slot: OrderSlot, locks: DeficitLockState): void {
+  for (const position of slot.positions) {
+    if (!position.easy) releaseDeficitLock(locks, position.good_id, 'drone');
+  }
 }
 
 /**

@@ -165,6 +165,10 @@ function reset(seed: number, isotopes: number, stock: number) {
     drop_floor_guarantee: {},
     warehouse_avg: createWarehouseAvg({}, NOW),
     construction: createConstruction(),
+    // И-13: без явного сброса локи бы протекали между итерациями
+    // fast-check — `useGame.setState` мержит частично, необъявленное поле
+    // остается от предыдущего прогона свойства.
+    deficit_locks: {},
   });
   Math.random = seededRandom(seed);
   useGame.getState().tick(NOW);

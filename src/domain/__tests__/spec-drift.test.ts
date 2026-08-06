@@ -105,12 +105,22 @@ const DEFERRED_GROUPS: Array<{ match: RegExp; why: string }> = [
     why: 'серверный контракт и кошелек вне среза',
   },
   {
-    match: /^(DEFICIT|SKIP|TIMER|ROLL)_|^SLOT_ALREADY_/,
+    // Сужено с `^(DEFICIT|SKIP|TIMER|ROLL)_` — `DEFICIT_LOCK_TTL` и
+    // `DEFICIT_LOCK_TTL_MAX` реализованы (И-13, `config/economy.ts`,
+    // `domain/deficitlock.ts`) — прогон 6, отчет судьи прогона 5, вычет
+    // минус 30. Остальные три префикса (SKIP/TIMER/ROLL) и `SLOT_ALREADY_`
+    // остаются отложенными — серверный countdown и коды гонки вне среза.
+    match: /^SKIP_|^TIMER_|^ROLL_|^SLOT_ALREADY_/,
     why: 'слоты заказов и рейс — этапы 2 и 3',
   },
   {
-    match: /^ACHIEVABILITY_/,
-    why: 'проверка достижимости заказа — вместе с генератором, этап 2',
+    // Сужено с `^ACHIEVABILITY_` до `^ACHIEVABILITY_BUDGET`: `ACHIEVABILITY_CHECK`
+    // реализован (И-10, `config/economy.ts`, `domain/shuttle.ts`) — прогон 6,
+    // отчет судьи прогона 5, вычет минус 20. `ACHIEVABILITY_BUDGET_MIN`
+    // остается отложенным: это параметр лайнера (tz-liner-mars 5.2), а лайнер
+    // вырезан из среза целиком.
+    match: /^ACHIEVABILITY_BUDGET/,
+    why: 'бюджет достижимости лайнера — лайнер вырезан из среза решением приемки',
   },
   {
     match: /^(PITY|FLOOR_GUARANTEE)_ENABLED$/,

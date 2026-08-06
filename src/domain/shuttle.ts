@@ -13,6 +13,7 @@
  */
 
 import {
+  ACHIEVABILITY_CHECK,
   COLLECT_COOLDOWN_MIN,
   COVERAGE_MIN,
   EASY_PRODUCE_MAX_MIN,
@@ -20,17 +21,25 @@ import {
   flightTimerMin,
   GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
+  ORDER_FEASIBILITY_DEADLINE_SHARE,
   type OrderGenerationDegradedReason,
   REPEAT_CAP,
+  SLOT_COUNT_MAX,
   SLOT_COUNT_MIN,
   shuttleSkipPrice,
   slotCountFor,
   XP_MULTIPLIER_K,
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
+import {
+  type DeficitLockState,
+  isDeficitLockedByOtherMechanic,
+  registerDeficitLock,
+  releaseDeficitLock,
+} from './deficitlock';
 import { applyPinch, availableGoodsFor } from './drone';
 import { type DropContext, rollArrival } from './droproller';
-import { buyoutPrice, productionTimeMinutes } from './rushcost';
+import { buyoutPrice, productionTimeMinutes, totalProductionMinutes } from './rushcost';
 import type { GoodId, ModuleId } from './types';
 import { availableOf, reserve, shipReserved, type WarehouseState } from './warehouse';
 
@@ -100,6 +109,10 @@ export interface ShuttleGenContext {
   is_first_trip: boolean;
   arrival_no: number;
   rng: () => number;
+  /** И-13: локи дефицита от других механик. Опционально — старые вызовы не ломаются. */
+  deficit_locks?: DeficitLockState;
+  /** Момент генерации — вход TTL И-13. */
+  now?: number;
 }
 
 function slotShort(slot: ShuttleSlot): number {
@@ -143,6 +156,23 @@ export function slotCovered(slot: ShuttleSlot, warehouse: WarehouseState): boole
 function isEasy(good_id: GoodId, qty: number, warehouse: WarehouseState): boolean {
   if (availableOf(warehouse, good_id) >= qty) return true;
   return productionTimeMinutes(good_id, qty, warehouse) <= EASY_PRODUCE_MAX_MIN.shuttle;
+}
+
+/**
+ * И-10: суммарное время рейса через общую `totalProductionMinutes`
+ * (`rushcost.ts`). Отдельная обертка, а не прямой вызов по месту: канон
+ * задает `totalProductionMinutes(positions)` над парами `{good_id, qty}`
+ * (общая форма для позиции дрона и отсека шаттла), а `ShuttleSlot` несет
+ * количество под именем `qty_required`, не `qty` (модель данных каркаса п.9
+ * не знает поля `qty_required` — это имя самого отсека). Маппинг в одном
+ * месте, а не на каждом вызове: два вызова с разным написанием — тот самый
+ * разъезд имен, который проект уже ловил трижды.
+ */
+export function tripProductionMinutes(slots: ShuttleSlot[], warehouse: WarehouseState): number {
+  return totalProductionMinutes(
+    slots.map((s) => ({ good_id: s.good_id, qty: s.qty_required })),
+    warehouse,
+  );
 }
 
 /** Доля легких отсеков в рейсе. Вход инварианта И-8. */
@@ -225,6 +255,90 @@ function fallbackMinimalSlots(
 }
 
 /**
+ * И-10 (реализуемость заказа): канон 1.4, `rebalanceForAchievability`.
+ * Срабатывает, когда `totalProductionMinutes(slots)` превышает бюджет — сумма
+ * времени производства по самому долгому зданию (`rushcost.ts`) больше
+ * `budget = window_minutes(level) x ORDER_FEASIBILITY_DEADLINE_SHARE`.
+ *
+ * Приоритет фолбэков канона (1.3) ставит достижимость выше покрытия/анти-
+ * повтора — эта функция вправе снова ухудшить `easyRatio`/`repeatRatio`, если
+ * иначе в бюджет не уложиться.
+ *
+ * Экспортирована, а не спрятана: тот же случай, что `applyPinch` — сложный
+ * численный алгоритм читается и тестируется как отдельная функция, а не только
+ * сквозь стохастику полного генератора.
+ *
+ * Шаг урезания количества — 1 единица за итерацию. Канон называет
+ * `qtyReductionStep`, но не задает ему числа ни в одной конфиг-таблице
+ * (раздел 1.7 общих подсистем его не перечисляет) — величина шага оставлена
+ * реализации. Единичный шаг ищет минимально достаточное количество перебором,
+ * тем же приемом, что `maxEasyQty` дрона, а не додумывает магическое число.
+ *
+ * Предохранитель `guard` — тот же смысл, что `GEN_MAX_ATTEMPTS` у генератора:
+ * при узком пуле (нет ни одной ненайденной альтернативы) урезание доходит до
+ * пола и дальше двигаться некуда — цикл обязан завершиться, а не крутиться
+ * вечно. Бюджет в этом случае может остаться превышен — это ЗАДОКУМЕНТИРОВАННОЕ
+ * ограничение (реестр [[spec-prototype-build]] раздел 8, пункт 24), а не
+ * тихий баг: тот же класс компромисса, что уже принят для
+ * `productionTimeMinutes` (пункт 9 реестра) — направление безопасное
+ * (осторожнее, не агрессивнее), полная гарантия недостижима при узком пуле.
+ */
+export function rebalanceForAchievability(
+  slots: ShuttleSlot[],
+  warehouse: WarehouseState,
+  budget: number,
+  available_goods: GoodId[],
+): ShuttleSlot[] {
+  const used = new Set(slots.map((s) => s.good_id));
+  const guard_limit = GEN_MAX_ATTEMPTS * SLOT_COUNT_MAX;
+
+  for (let guard = 0; guard < guard_limit; guard++) {
+    if (slots.length === 0) break;
+    if (tripProductionMinutes(slots, warehouse) <= budget) break;
+
+    // Самая долгая по времени позиция — канон: `argmax(positions,
+    // p -> productionTimeMinutes(...))`.
+    let target_idx = 0;
+    let target_minutes = -1;
+    for (let i = 0; i < slots.length; i++) {
+      const minutes = productionTimeMinutes(
+        slots[i]!.good_id,
+        slots[i]!.qty_required,
+        warehouse,
+      );
+      if (minutes > target_minutes) {
+        target_minutes = minutes;
+        target_idx = i;
+      }
+    }
+    const target = slots[target_idx]!;
+    const floor_qty = GOOD_BASE_QTY[target.good_id].min;
+
+    if (target.qty_required > floor_qty) {
+      target.qty_required -= 1;
+      continue;
+    }
+
+    // Дальше некуда резать количество — меняем сам товар на самую быструю
+    // доступную альтернативу пула, которой еще нет в рейсе.
+    const candidates = available_goods.filter((id) => id !== target.good_id && !used.has(id));
+    if (candidates.length === 0) break; // пул не дает альтернативы — решает реестр 8.24
+
+    const replacement = [...candidates].sort((a, b) => {
+      const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
+      return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
+    })[0]!;
+
+    used.delete(target.good_id);
+    used.add(replacement);
+    target.good_id = replacement;
+    target.qty_required = GOOD_BASE_QTY[replacement].min;
+  }
+
+  return slots;
+}
+
+/**
  * Генерация заказа. Тот же движок, что у дрона, с шаттл-специфичным конфигом:
  * переменное число отсеков 3-5 и собственный анти-повтор (сравнение с прошлым
  * рейсом, а не с доской — рейс у шаттла ровно один).
@@ -286,7 +400,19 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
         // Дефицит по И-8 — это то, что игрок не может ни взять со склада, ни
         // быстро произвести. Товар с коротким циклом дефицитом не считается,
         // иначе пустой склад делал бы дефицитным вообще все.
-        if (deficit_used >= MAX_DEFICIT_SLOTS) {
+        //
+        // И-13: товар, уже держащий дефицитную позицию у ДРУГОЙ механики (в
+        // этом коде — у дрона), не может стать дефицитным отсеком и здесь.
+        // Тот же путь, что исчерпанный бюджет дефицита: канон 1.3 ставит
+        // изоляцию дефицита последней из фолбэков — она просто не создает
+        // дефицитную позицию, ничего дальше не даунгрейдит.
+        const locked_elsewhere = isDeficitLockedByOtherMechanic(
+          ctx.deficit_locks ?? {},
+          good_id,
+          'shuttle',
+          ctx.now ?? 0,
+        );
+        if (deficit_used >= MAX_DEFICIT_SLOTS || locked_elsewhere) {
           if (have === 0) continue;
           qty = have;
         } else {
@@ -352,7 +478,45 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
       ? 'empty_pool'
       : 'max_attempts'
     : 'unresolvable_invariant';
-  const slots = covered ? best : fallbackMinimalSlots(ctx, reason);
+  let slots = covered ? best : fallbackMinimalSlots(ctx, reason);
+
+  // И-10 (реализуемость): канон 1.3, шаг после покрытия/анти-повтора.
+  //
+  // **Решение исполнителя, требует утверждения владельцем** (реестр
+  // [[spec-prototype-build]] раздел 8, пункт 24): проверка НЕ применяется к
+  // `is_first_trip`. FTUE — явный «override обычного генератора» (ТЗ шаттла
+  // 2.1: свои `COVERAGE_MIN`/`MAX_DEFICIT_SLOTS`), достижимость — часть того
+  // же штатного движка (канон 1.3, тот же шаг). На пятом уровне пул из трех
+  // доступных кропов (водоросли/соя/грибы) структурно не укладывается в
+  // укороченный FTUE-таймер (12 мин x 0.6 = 7.2) даже на полу количества —
+  // урезать/заменить нечем, все три уже в рейсе.
+  //
+  // Бюджет считается от `flightTimerMin(level)` — обычного таймера брекета
+  // ПО УРОВНЮ, а не от фактического `trip_min` рейса. Для не-FTUE рейсов это
+  // одно и то же число (`trip_min` там и есть `flightTimerMin(level)`),
+  // расхождение проявляется только у FTUE, откуда и берется чистота развязки.
+  if (ACHIEVABILITY_CHECK.shuttle && !ctx.is_first_trip) {
+    const budget = flightTimerMin(ctx.level) * ORDER_FEASIBILITY_DEADLINE_SHARE;
+    if (tripProductionMinutes(slots, ctx.warehouse) > budget) {
+      slots = rebalanceForAchievability(slots, ctx.warehouse, budget, ctx.available_goods);
+    }
+  }
+
+  // И-13: регистрация — ПОСЛЕ того, как состав рейса окончательно выбран
+  // (после ребаланса И-10: он мог поменять, какой именно товар остался
+  // дефицитным). Тот же порядок, что у дрона: лочим то, что реально уехало
+  // игроку, а не кандидатов промежуточных попыток.
+  for (const s of slots) {
+    if (!isEasy(s.good_id, s.qty_required, ctx.warehouse)) {
+      registerDeficitLock(
+        ctx.deficit_locks ?? {},
+        s.good_id,
+        'shuttle',
+        'shuttle:trip',
+        ctx.now ?? 0,
+      );
+    }
+  }
 
   return {
     state: 'ORDER',
@@ -403,8 +567,23 @@ export function allSlotsLoaded(trip: ShuttleTrip): boolean {
 /**
  * Отправка. Не действие игрока: вызывается из погрузки, когда закрылся
  * последний отсек (п.2.3). Здесь же роллятся и фиксируются награды.
+ *
+ * И-13: отправка — терминальное событие заказа-владельца для шаттла (канон
+ * 1.5, перечисление «deliver/discard/depart/deliverContainer»). Состав рейса
+ * зафиксирован окончательно в момент отправки, и дальше локи, поставленные
+ * при генерации ЭТОГО рейса, снимаются здесь же — новый рейс появится не
+ * раньше кулдауна и заново решит, что ему нужно.
  */
-function depart(trip: ShuttleTrip, warehouse: WarehouseState, now: number, drop: DropContext) {
+function depart(
+  trip: ShuttleTrip,
+  warehouse: WarehouseState,
+  now: number,
+  drop: DropContext,
+  deficit_locks: DeficitLockState = {},
+) {
+  for (const slot of trip.slots) {
+    releaseDeficitLock(deficit_locks, slot.good_id, 'shuttle');
+  }
   for (const slot of trip.slots) {
     // Уезжает ровно складская часть отсека: докупленное (И-12) в склад не
     // заходило, списывать оттуда нечего. Отсек мог быть закрыт в два приема —
@@ -450,6 +629,8 @@ export function loadSlot(
   warehouse: WarehouseState,
   now: number,
   drop: DropContext,
+  /** И-13: снимается при отправке (см. `depart`). Опционально — старые вызовы не ломаются. */
+  deficit_locks: DeficitLockState = {},
 ): LoadResult {
   const empty: LoadResult = { ok: false, loaded: 0, departed: false, drop_state: null };
   if (trip.state !== 'ORDER') return empty;
@@ -468,7 +649,7 @@ export function loadSlot(
   if (slot.filled_by === null) slot.filled_by = 'self';
 
   const departed = allSlotsLoaded(trip);
-  const drop_state = departed ? depart(trip, warehouse, now, drop) : null;
+  const drop_state = departed ? depart(trip, warehouse, now, drop, deficit_locks) : null;
   return { ok: true, loaded: take, departed, drop_state };
 }
 
@@ -492,6 +673,8 @@ export function buyoutSlot(
   warehouse: WarehouseState,
   now: number,
   drop: DropContext,
+  /** И-13: снимается при отправке (см. `depart`). Опционально — старые вызовы не ломаются. */
+  deficit_locks: DeficitLockState = {},
 ): LoadResult & { price: number } {
   const empty = { ok: false, loaded: 0, departed: false, drop_state: null, price: 0 };
   if (trip.state !== 'ORDER') return empty;
@@ -511,7 +694,7 @@ export function buyoutSlot(
   slot.filled_by = 'purchase';
 
   const departed = allSlotsLoaded(trip);
-  const drop_state = departed ? depart(trip, warehouse, now, drop) : null;
+  const drop_state = departed ? depart(trip, warehouse, now, drop, deficit_locks) : null;
   return { ok: true, loaded: short, departed, drop_state, price };
 }
 

@@ -416,9 +416,23 @@ describe('Прибытие и сбор', () => {
 describe('И-8: дефицитный отсек по канону 1.4 (PINCH_MODE = absolute)', () => {
   /** Постоянный ролл: и выбор товара, и `slotQuantity` становятся счетными. */
   const ROLL = 0.01;
-  const DEFICIT_POOL = ['jumpsuit', 'algae', 'soy'] as const;
+  /**
+   * Дефицитный товар — кислород-баллон, не комбинезон.
+   *
+   * До И-10 (реализуемость, `rushcost.ts` `totalProductionMinutes` +
+   * `shuttle.ts` `rebalanceForAchievability`) здесь стоял `jumpsuit`:
+   * двухзвенная цепочка (ткань ← хлопок) с пустого склада стоит 120+ минут
+   * даже на полу количества — больше любого бюджета шаттла (максимум 54 мин
+   * на верхнем брекете). Достижимость теперь ПРАВОМЕРНО (канон 1.3: приоритет
+   * И-10 выше пинча/покрытия) урезает такую позицию, и число расходилось с
+   * чистой формулой пинча, которую эти тесты проверяют. Кислород-баллон —
+   * однозвенная цепочка (вход — водоросли, которых на складе с избытком),
+   * поэтому его время производства не зависит от этой правки и формула пинча
+   * проверяется в изоляции, как и задумано этим блоком.
+   */
+  const DEFICIT_POOL = ['oxygen_tank', 'algae', 'soy'] as const;
 
-  /** Склад покрывает легкие позиции и пуст по тяжелой — дефицит ровно один. */
+  /** Склад покрывает легкие позиции и вход дефицитной — дефицит ровно один. */
   function deficitCtx(level: number): ShuttleGenContext {
     return genCtx({
       level,
@@ -431,28 +445,28 @@ describe('И-8: дефицитный отсек по канону 1.4 (PINCH_MOD
   it('количество дефицитного отсека равно stock + clamp(target - stock)', () => {
     const level = 20;
     const trip = generateTrip(deficitCtx(level));
-    const slot = trip.slots.find((s) => s.good_id === 'jumpsuit');
+    const slot = trip.slots.find((s) => s.good_id === 'oxygen_tank');
 
     expect(slot).toBeDefined();
-    const target = slotQuantity('jumpsuit', 'shuttle', level, ROLL);
+    const target = slotQuantity('oxygen_tank', 'shuttle', level, ROLL);
     expect(slot?.qty_required).toBe(applyPinch(0, target));
   });
 
   it('дефицитный отсек растет вместе с bracket_mult, а не роллом', () => {
     // Тот же ролл, тот же пул, разные брекеты (каркас 3.1). Случайный пинч дал
     // бы одно и то же число на обоих уровнях — связь с уровнем колонии рвется.
-    const low = generateTrip(deficitCtx(6)).slots.find((s) => s.good_id === 'jumpsuit');
-    const high = generateTrip(deficitCtx(20)).slots.find((s) => s.good_id === 'jumpsuit');
+    const low = generateTrip(deficitCtx(6)).slots.find((s) => s.good_id === 'oxygen_tank');
+    const high = generateTrip(deficitCtx(20)).slots.find((s) => s.good_id === 'oxygen_tank');
 
-    expect(slotQuantity('jumpsuit', 'shuttle', 20, ROLL)).toBeGreaterThan(
-      slotQuantity('jumpsuit', 'shuttle', 6, ROLL),
+    expect(slotQuantity('oxygen_tank', 'shuttle', 20, ROLL)).toBeGreaterThan(
+      slotQuantity('oxygen_tank', 'shuttle', 6, ROLL),
     );
     expect(high?.qty_required).toBeGreaterThan(low?.qty_required ?? 0);
   });
 
   it('дефицит не выходит за PINCH_MIN..PINCH_MAX сверх склада', () => {
     const trip = generateTrip(deficitCtx(20));
-    const slot = trip.slots.find((s) => s.good_id === 'jumpsuit');
+    const slot = trip.slots.find((s) => s.good_id === 'oxygen_tank');
     expect(slot?.qty_required).toBeGreaterThanOrEqual(PINCH_MIN);
     expect(slot?.qty_required).toBeLessThanOrEqual(PINCH_MAX);
   });
