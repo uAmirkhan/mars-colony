@@ -47,7 +47,14 @@ describe('очередь фабрики просыпается на освобо
           state: 'active' as const,
           npc_name: 'тест',
           positions: [
-            { good_id: 'soy' as const, qty: 8, filled: false, filled_by: null, easy: true },
+            {
+              good_id: 'soy' as const,
+              qty: 8,
+              qty_filled: 0,
+              filled_by: null,
+              qty_purchased: 0,
+              easy: true,
+            },
           ],
           credits_reward: 10,
           xp_reward: 1,

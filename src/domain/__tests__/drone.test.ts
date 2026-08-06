@@ -21,18 +21,22 @@ import { GOODS } from '../config/goods';
 import {
   applyPinch,
   availableGoodsFor,
+  buyoutPosition,
   canFulfillNow,
+  discardImpact,
   discardOrder,
   generateOrder,
   loadPosition,
   type OrderPosition,
   orderReward,
+  positionBuyoutPrice,
   positionCovered,
   positionsCountFor,
   releaseReserved,
   sendOrder,
   slotsAtLevel,
 } from '../drone';
+import { buyoutPrice } from '../rushcost';
 import { availableOf, createWarehouse, deposit, qtyOf, reserve, totalQty } from '../warehouse';
 import { deficitByCanon, easyByCanon } from './canon';
 
@@ -43,8 +47,9 @@ const pos = (
 ): OrderPosition => ({
   good_id,
   qty,
-  filled: false,
+  qty_filled: 0,
   filled_by: null,
+  qty_purchased: 0,
   easy,
 });
 
@@ -451,7 +456,12 @@ describe('Погрузка и отправка', () => {
     expect(order.state).toBe('ready');
   });
 
-  it('без товара погрузка не проходит и состояние не меняется', () => {
+  /**
+   * Т3-1: ТЗ дрона 7.2, строка «на складе, не хватает (0 < stock < qty_required)»
+   * — «Погрузить {stock}» списывает наличное, позиция остается неполной.
+   * Булев `filled` такое состояние выразить не мог — находка проверяющего.
+   */
+  it('частичная погрузка списывает наличное и оставляет позицию открытой', () => {
     const w = createWarehouse();
     deposit(w, 'soy', 2);
     const order = {
@@ -464,9 +474,27 @@ describe('Погрузка и отправка', () => {
       refresh_at: 0,
     };
 
+    expect(loadPosition(order, 0, w)).toBe(true);
+    expect(order.positions[0]?.qty_filled).toBe(2);
+    expect(order.state).toBe('in_progress'); // недостача еще есть, заказ не ready
+    expect(availableOf(w, 'soy')).toBe(0); // забрано все, что было
+  });
+
+  it('без товара на складе погрузка не проходит и состояние не меняется', () => {
+    const w = createWarehouse();
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 5)],
+      credits_reward: 100,
+      xp_reward: 10,
+      refresh_at: 0,
+    };
+
     expect(loadPosition(order, 0, w)).toBe(false);
     expect(order.state).toBe('active');
-    expect(availableOf(w, 'soy')).toBe(2);
+    expect(order.positions[0]?.qty_filled).toBe(0);
   });
 
   it('выполнение частями: заказ ждет между визитами', () => {
@@ -561,6 +589,172 @@ describe('Выброс: отказ обязан быть дешевым', () => 
 
   it('бесплатный путь существует: по истечении таймера цена ноль', () => {
     expect(droneRefreshPrice(0)).toBe(0);
+  });
+});
+
+/**
+ * Т3-1: докупка добирает НЕДОСТАЧУ, а цена считается по ней же — не по полной
+ * величине позиции. ТЗ дрона 7.2 подписывает кнопку «Докупить {qty-stock}»:
+ * прежняя реализация игнорировала складскую часть и брала полный `qty`.
+ */
+describe('Т3-1: докупка позиции — цена и количество по недостаче', () => {
+  it('докупка позиции с нуля на складе стоит по полному qty', () => {
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 6)],
+      credits_reward: 100,
+      xp_reward: 10,
+      refresh_at: 0,
+    };
+
+    expect(positionBuyoutPrice(order.positions[0]!)).toBe(buyoutPrice('soy', 6));
+    expect(buyoutPosition(order, 0)).toBe(true);
+    expect(order.positions[0]?.qty_filled).toBe(6);
+    expect(order.positions[0]?.qty_purchased).toBe(6);
+    expect(order.state).toBe('ready');
+  });
+
+  it('докупка ПОСЛЕ частичной погрузки стоит по остатку, а не по полной позиции', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 4);
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 6)],
+      credits_reward: 100,
+      xp_reward: 10,
+      refresh_at: 0,
+    };
+
+    loadPosition(order, 0, w); // 4 из 6 со склада
+    expect(order.positions[0]?.qty_filled).toBe(4);
+
+    // Недостача — 2, а не 6. Цена дешевле полной докупки той же позиции.
+    const price_after_partial = positionBuyoutPrice(order.positions[0]!);
+    expect(price_after_partial).toBe(buyoutPrice('soy', 2));
+    expect(price_after_partial).toBeLessThan(buyoutPrice('soy', 6));
+
+    expect(buyoutPosition(order, 0)).toBe(true);
+    expect(order.positions[0]?.qty_filled).toBe(6); // 4 со склада + 2 докуплено
+    expect(order.positions[0]?.qty_purchased).toBe(2);
+    expect(order.state).toBe('ready');
+  });
+
+  it('закрытая позиция докупке недоступна: цена ноль, действие отклонено', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 6);
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 6)],
+      credits_reward: 100,
+      xp_reward: 10,
+      refresh_at: 0,
+    };
+    loadPosition(order, 0, w);
+
+    expect(positionBuyoutPrice(order.positions[0]!)).toBe(0);
+    expect(buyoutPosition(order, 0)).toBe(false);
+  });
+
+  it('смешанная позиция отправляет со склада ровно складскую часть', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 4);
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 6)],
+      credits_reward: 250,
+      xp_reward: 30,
+      refresh_at: 0,
+    };
+    loadPosition(order, 0, w); // 4 со склада
+    buyoutPosition(order, 0); // 2 докуплено
+
+    const result = sendOrder(order, w);
+    expect(result.ok).toBe(true);
+    // Уехало ровно 4 (складская часть), докупленные 2 склада не касались.
+    expect(qtyOf(w, 'soy')).toBe(0);
+  });
+});
+
+/**
+ * Т3-5: confirm-диалог выброса (ТЗ дрона 7.2, АС 10 и 11). `discardImpact`
+ * поставляет данные для текста диалога — сумма изотопов и число позиций.
+ */
+describe('Т3-5: последствия выброса для confirm-диалога', () => {
+  const order = (positions: OrderPosition[]) => ({
+    idx: 0,
+    state: 'active' as const,
+    npc_name: 'тест',
+    positions,
+    credits_reward: 100,
+    xp_reward: 10,
+    refresh_at: 0,
+  });
+
+  it('АС 10: заказ не тронут — confirm не нужен', () => {
+    const impact = discardImpact(order([pos('soy', 4)]));
+    expect(impact.needs_confirm).toBe(false);
+    expect(impact.stock_positions).toBe(0);
+    expect(impact.purchased_isotopes).toBe(0);
+  });
+
+  it('только склад: confirm нужен, сумма изотопов ноль', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 4);
+    const o = order([pos('soy', 4)]);
+    loadPosition(o, 0, w);
+
+    const impact = discardImpact(o);
+    expect(impact.needs_confirm).toBe(true);
+    expect(impact.stock_positions).toBe(1);
+    expect(impact.purchased_isotopes).toBe(0);
+  });
+
+  it('АС 11: докупленная позиция — confirm нужен, сумма совпадает с уплаченной ценой', () => {
+    const o = order([pos('soy', 4)]);
+    const price = positionBuyoutPrice(o.positions[0]!);
+    buyoutPosition(o, 0);
+
+    const impact = discardImpact(o);
+    expect(impact.needs_confirm).toBe(true);
+    expect(impact.stock_positions).toBe(0);
+    expect(impact.purchased_isotopes).toBe(price);
+  });
+
+  it('смешанный случай: и склад, и докупка учтены раздельно', () => {
+    const w = createWarehouse();
+    deposit(w, 'soy', 4);
+    const o = order([pos('soy', 6), pos('mushrooms', 3)]);
+    loadPosition(o, 0, w); // соя частично со склада
+    buyoutPosition(o, 0); // остаток сои докуплен
+    buyoutPosition(o, 1); // грибы целиком докуплены
+
+    const impact = discardImpact(o);
+    expect(impact.needs_confirm).toBe(true);
+    expect(impact.stock_positions).toBe(1); // только позиция сои держит складскую часть
+    expect(impact.purchased_isotopes).toBe(buyoutPrice('soy', 2) + buyoutPrice('mushrooms', 3));
+  });
+
+  it('releaseReserved обнуляет позицию целиком: докупленное не возвращается на склад', () => {
+    // АС 11: «докупленные единицы аннулируются безвозвратно (не возвращаются
+    // ни на склад, ни рефандом изотопов)».
+    const w = createWarehouse();
+    const o = order([pos('soy', 4)]);
+    buyoutPosition(o, 0);
+
+    releaseReserved(o, w);
+
+    expect(availableOf(w, 'soy')).toBe(0); // ничего не появилось на складе
+    expect(o.positions[0]?.qty_filled).toBe(0);
+    expect(o.positions[0]?.qty_purchased ?? 0).toBe(0);
+    expect(discardImpact(o).needs_confirm).toBe(false);
   });
 });
 

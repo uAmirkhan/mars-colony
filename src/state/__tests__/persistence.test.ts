@@ -290,16 +290,24 @@ describe('Шаттл: сейв не перекатывает награду', ()
   it('счетчики дроп-роллера переживают перезагрузку: F5 не сбрасывает pity', async () => {
     useGame.setState({
       drop_pity: { sealant: 3 },
-      drop_without_needed: 2,
-      drop_last_floor: 4,
+      // Окно И-11 теперь на стройку (канон 2.6 п.2), а не скаляром на игрока —
+      // ключ здесь тот же `BuildKind`, что использует `dropCtx()`.
+      drop_floor_guarantee: {
+        habitat_block: { arrivals_without_needed: 2, last_floor_arrival: 4 },
+      },
+      warehouse_avg: { avg: { sealant: 1.5 }, updated_at: T0 },
       shuttle_arrivals: 5,
     });
 
     await reload();
 
     expect(s().drop_pity).toEqual({ sealant: 3 });
-    expect(s().drop_without_needed).toBe(2);
-    expect(s().drop_last_floor).toBe(4);
+    expect(s().drop_floor_guarantee).toEqual({
+      habitat_block: { arrivals_without_needed: 2, last_floor_arrival: 4 },
+    });
+    // reload не двигает часы (clock не менялся) — среднее не должно съехать
+    // за нулевой прошедший интервал.
+    expect(s().warehouse_avg.avg).toEqual({ sealant: 1.5 });
     expect(s().shuttle_arrivals).toBe(5);
   });
 });
@@ -324,7 +332,7 @@ describe('Тихая порча', () => {
 
     expect(s().warehouse.cells[good_id]?.reserved).toBe(reserved);
     // Обе половины пары на месте: резерв склада и позиция, которая его держит.
-    expect(s().orders[0]?.positions[0]?.filled).toBe(true);
+    expect(s().orders[0]?.positions[0]?.qty_filled).toBe(position?.qty);
     expect(s().orders[0]?.positions[0]?.filled_by).toBe('self');
   });
 });

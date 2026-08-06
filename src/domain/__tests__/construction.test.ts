@@ -18,11 +18,13 @@ import {
   activeLinesUsed,
   activeNeed,
   addModule,
+  buyModules,
   type ConstructionState,
   createConstruction,
   createConstruction as fresh,
   missingFor,
   moduleCapacity,
+  modulePurchasePrice,
   moduleSpaceLeft,
   moduleTotal,
   refreshBuilds,
@@ -285,7 +287,8 @@ describe('Потребность для дроп-роллера', () => {
 
   it('покрытый рецепт не числится в потребности', () => {
     const state = readyToBuild();
-    expect(missingFor('warehouse_upgrade', state.stock)).toEqual({});
+    const build = state.builds.find((b) => b.kind === 'warehouse_upgrade')!;
+    expect(missingFor(build, state.stock)).toEqual({});
   });
 
   /**
@@ -324,5 +327,123 @@ describe('Потребность для дроп-роллера', () => {
     state.stock.sealant = from_warehouse;
 
     expect(activeNeed(state).sealant).toBe(from_warehouse + from_habitat);
+  });
+});
+
+/**
+ * Второй канал получения строй-модулей: изотопы вместо шаттла.
+ *
+ * Инвариант И-1 разрешает ровно два пути, и до этих тестов существовал один.
+ * Цена лежала в конфиге и читалась единственной формулой ожидаемой ценности
+ * отсека шаттла — то есть параметр работал только как множитель в чужом
+ * расчете, а купить модуль было нельзя вовсе.
+ *
+ * Числа в проверках выписаны литералами из каркаса (раздел 5: «базовый 150,
+ * редкий 200, гейтовый 400»), а не взяты из `MODULE_PRICE_ISOTOPES`. Тест,
+ * который считает ожидаемое той же таблицей, что проверяет, зеленеет при любом
+ * ее содержимом — в этом проекте такой уже ловили.
+ */
+describe('Докупка модулей за изотопы (И-1, И-12)', () => {
+  /** Жилой блок доступен, склад пуст. Рецепт: панель 6, каркас 5, герметик 7. */
+  function habitatAvailable(): ConstructionState {
+    const state = createConstruction();
+    const build = state.builds.find((b) => b.kind === 'habitat_block')!;
+    build.state = 'AVAILABLE';
+    return state;
+  }
+
+  function habitat(state: ConstructionState) {
+    return state.builds.find((b) => b.kind === 'habitat_block')!;
+  }
+
+  it('цена линейна и берет тир модуля по каркасу', () => {
+    expect(modulePurchasePrice('panel', 6)).toBe(900); // базовый 150
+    expect(modulePurchasePrice('sealant', 7)).toBe(1400); // редкий 200
+    expect(modulePurchasePrice('drill_head', 1)).toBe(400); // гейтовый 400
+    expect(modulePurchasePrice('panel', 0)).toBe(0);
+  });
+
+  it('докупка закрывает дефицит своего модуля и не трогает соседние', () => {
+    const state = habitatAvailable();
+    const build = habitat(state);
+
+    const bought = buyModules(build, state.stock, 'sealant');
+
+    expect(bought).toEqual({ qty: 7, price: 1400 });
+    expect(missingFor(build, state.stock).sealant ?? 0).toBe(0);
+    expect(missingFor(build, state.stock).panel).toBe(6);
+    expect(missingFor(build, state.stock).frame).toBe(5);
+  });
+
+  it('докупленное не попадает на склад модулей', () => {
+    // И-12 дословно: докупленное «не может быть изъято, продано или
+    // переиспользовано». Попади оно на общий склад — и открывается арбитраж
+    // «докупить под дешевую стройку, потратить на дорогую».
+    const state = habitatAvailable();
+    const before = moduleTotal(state.stock);
+
+    buyModules(habitat(state), state.stock, 'panel');
+
+    expect(moduleTotal(state.stock)).toBe(before);
+    expect(state.stock.panel ?? 0).toBe(0);
+  });
+
+  it('докупка не упирается в лимит склада модулей', () => {
+    // Склад забит под потолок чужим модулем. Обычное зачисление тут откажет,
+    // и если бы докупка шла через склад, игрок платил бы изотопы в никуда.
+    const state = habitatAvailable();
+    state.stock.drill_head = MODULE_STOCK_CAP;
+    expect(moduleSpaceLeft(state)).toBe(0);
+    expect(addModule(state, 'panel', 1)).toBe(false);
+
+    expect(buyModules(habitat(state), state.stock, 'panel')).toEqual({ qty: 6, price: 900 });
+  });
+
+  it('повторная докупка на закрытом дефиците не берет денег', () => {
+    const state = habitatAvailable();
+    const build = habitat(state);
+    buyModules(build, state.stock, 'panel');
+
+    expect(buyModules(build, state.stock, 'panel')).toBeNull();
+    expect(build.purchased.panel).toBe(6);
+  });
+
+  it('докупка недоступна, пока стройка не открыта', () => {
+    const state = createConstruction(); // все стройки LOCKED
+    const build = state.builds.find((b) => b.kind === 'habitat_block')!;
+
+    expect(buyModules(build, state.stock, 'panel')).toBeNull();
+    expect(build.purchased.panel ?? 0).toBe(0);
+  });
+
+  it('старт стройки тратит сначала докупленное, потом склад', () => {
+    // Порядок не косметический: склад после старта остается общим ресурсом, а
+    // докупленное привязано к этой стройке и больше нигде не годится. Спиши
+    // сначала склад — и оплаченные модули останутся заперты на стройке,
+    // которая уже идет, то есть игрок потеряет изотопы дважды.
+    const state = habitatAvailable();
+    const build = habitat(state);
+    state.stock.panel = 6;
+    state.stock.frame = 5;
+    state.stock.sealant = 3;
+
+    expect(buyModules(build, state.stock, 'sealant')).toEqual({ qty: 4, price: 800 });
+    expect(startBuild(state, 'habitat_block', NOW).ok).toBe(true);
+
+    expect(state.stock.sealant).toBe(0);
+    expect(build.purchased.sealant).toBe(0);
+    expect(moduleTotal(state.stock)).toBe(0);
+  });
+
+  it('докупленное считается комплектом: стройка стартует без единого модуля на складе', () => {
+    const state = habitatAvailable();
+    const build = habitat(state);
+    for (const id of ['panel', 'frame', 'sealant'] as ModuleId[]) {
+      buyModules(build, state.stock, id);
+    }
+
+    expect(startBuild(state, 'habitat_block', NOW)).toEqual({ ok: true });
+    expect(habitat(state).state).toBe('IN_PROGRESS');
+    expect(moduleTotal(state.stock)).toBe(0);
   });
 });

@@ -205,7 +205,7 @@ describe('Д-13: выброс докупленного заказа снимае
     idx,
     state: 'active',
     npc_name: `npc-${idx}`,
-    positions: [{ good_id, qty, filled: false, filled_by: null, easy: true }],
+    positions: [{ good_id, qty, qty_filled: 0, filled_by: null, qty_purchased: 0, easy: true }],
     credits_reward: 100,
     xp_reward: 10,
     refresh_at: 0,
@@ -279,19 +279,27 @@ describe('Д-13: выброс докупленного заказа снимае
               releaseReserved(slot, warehouse);
               slot.state = 'active';
               for (const p of slot.positions) {
-                p.filled = false;
+                p.qty_filled = 0;
                 p.filled_by = null;
+                p.qty_purchased = 0;
               }
             } else if (step.send && slot.state === 'ready') {
               const r = sendOrder(slot, warehouse);
               if (r.ok) {
                 // Отправленный заказ обязан был увезти со склада все, что не
                 // докуплено. Считаем ожидаемую убыль независимо от склада.
-                for (const p of slot.positions) if (p.filled_by === 'self') shipped += p.qty;
+                // Складская часть — qty_filled за вычетом докупленного, а не
+                // "весь qty, если последний взнос был self": позиция могла
+                // закрыться в два приема (частичная погрузка + докупка
+                // остатка, Т3-1), и последний взнос не описывает всю позицию.
+                for (const p of slot.positions) {
+                  shipped += p.qty_filled - (p.qty_purchased ?? 0);
+                }
                 slot.state = 'active';
                 for (const p of slot.positions) {
-                  p.filled = false;
+                  p.qty_filled = 0;
                   p.filled_by = null;
+                  p.qty_purchased = 0;
                 }
               }
             }
@@ -628,8 +636,9 @@ describe('Д-17: округление награды выносит премию
         return {
           good_id,
           qty: min + Math.round(r * (max - min)),
-          filled: false,
+          qty_filled: 0,
           filled_by: null,
+          qty_purchased: 0,
           easy: true,
         } as const;
       });
@@ -686,8 +695,9 @@ describe('Д-13-бис: отправка платит за груз, котор�
     positions: positions.map(([good_id, qty]) => ({
       good_id,
       qty,
-      filled: false,
+      qty_filled: 0,
       filled_by: null,
+      qty_purchased: 0,
       easy: true,
     })),
     credits_reward: 250,
@@ -799,10 +809,10 @@ describe('Д-18: докупка поверх частичной погрузки
     pity: {},
     stock: {},
     need: {},
+    warehouse_avg_24h: {},
     gated_open: false,
     arrival_no: 5,
-    arrivals_without_needed: 0,
-    last_floor_arrival: 0,
+    constructions: [],
     rng: makeRng(3),
   });
 
@@ -1124,10 +1134,10 @@ describe('Д-22 (закрыт): серия рейсов с докупкой не
     pity: {},
     stock: {},
     need: {},
+    warehouse_avg_24h: {},
     gated_open: false,
     arrival_no: 5,
-    arrivals_without_needed: 0,
-    last_floor_arrival: 0,
+    constructions: [],
     rng: makeRng(11),
   });
 

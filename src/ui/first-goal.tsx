@@ -65,8 +65,7 @@ interface Step {
 function readyBuild(s: Snapshot): BuildKind | null {
   for (const build of s.construction.builds) {
     if (build.state !== 'AVAILABLE') continue;
-    if (Object.keys(missingFor(build.kind, s.construction.stock)).length === 0)
-      return build.kind;
+    if (Object.keys(missingFor(build, s.construction.stock)).length === 0) return build.kind;
   }
   return null;
 }

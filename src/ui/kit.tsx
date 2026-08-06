@@ -19,7 +19,9 @@ export function Panel({
 }) {
   return (
     <div className="panel" style={{ padding: '32px 22px 20px', minWidth: 320, ...style }}>
-      <div style={{ position: 'relative' }}>
+      {/* Шапка не уезжает: она вне прокручиваемой области, а значит крестик
+          доступен при любой высоте содержимого. */}
+      <div style={{ position: 'relative', flex: '0 0 auto' }}>
         <div className="panel-title">{title}</div>
         {onClose && (
           <button
@@ -33,7 +35,12 @@ export function Panel({
           </button>
         )}
       </div>
-      {children}
+      {/* `minHeight: 0` обязателен: без него флекс-элемент отказывается быть
+          меньше своего содержимого, прокрутка не включается, и панель снова
+          вырастает выше экрана — ровно тот дефект, ради которого все это. */}
+      <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -131,7 +138,25 @@ export function Timer({ remaining_sec }: { remaining_sec: number }) {
   );
 }
 
-export function ProgressBar({ value, max }: { value: number; max: number }) {
+/**
+ * Порог, при котором капасити-бар красится предупреждающим цветом — ТЗ
+ * производства 9.2: «цвет бара меняется на предупреждающий (акцент) при
+ * заполнении >= 90%». Число не из конфиг-таблицы ТЗ (раздел 7 его не знает) —
+ * это UI-порог экрана, а не тюнимая экономика; общая константа вместо двух
+ * литералов в двух местах (склад, бейдж хаба того же склада).
+ */
+export const WAREHOUSE_WARN_RATIO = 0.9;
+
+export function ProgressBar({
+  value,
+  max,
+  warn,
+}: {
+  value: number;
+  max: number;
+  /** Красит бар предупреждающим цветом — capacity-бар склада у порога (9.2). */
+  warn?: boolean;
+}) {
   const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
   return (
     <div
@@ -147,7 +172,9 @@ export function ProgressBar({ value, max }: { value: number; max: number }) {
         style={{
           width: `${pct}%`,
           height: '100%',
-          background: 'linear-gradient(180deg,#6ec4f0,var(--xp))',
+          background: warn
+            ? 'linear-gradient(180deg,#ffb37a,var(--close))'
+            : 'linear-gradient(180deg,#6ec4f0,var(--xp))',
           transition: 'width 320ms ease',
         }}
       />

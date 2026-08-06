@@ -13,6 +13,7 @@ import {
   type BuildSlot,
   missingFor,
   moduleCapacity,
+  modulePurchasePrice,
   moduleTotal,
 } from '../domain/construction';
 import { useGame } from '../state/gameStore';
@@ -65,10 +66,17 @@ function ModuleStock() {
 }
 
 function BuildCard({ build }: { build: BuildSlot }) {
-  const { construction, now, isotopes, level, startConstruction, speedupConstruction } =
-    useGame();
+  const {
+    construction,
+    now,
+    isotopes,
+    level,
+    startConstruction,
+    buyModulesFor,
+    speedupConstruction,
+  } = useGame();
   const def = CONSTRUCTION_RECIPE[build.kind];
-  const missing = missingFor(build.kind, construction.stock);
+  const missing = missingFor(build, construction.stock);
   const enough = Object.keys(missing).length === 0;
   // Указатель первой цели стоит на той стройке, комплект которой уже собран, —
   // ровно на одной, а не на всех сразу.
@@ -115,7 +123,10 @@ function BuildCard({ build }: { build: BuildSlot }) {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {(Object.entries(def.recipe) as Array<[keyof typeof MODULES, number]>).map(
               ([id, need]) => {
-                const have = construction.stock[id] ?? 0;
+                // Докупленное считается наравне со складским: игрок за него
+                // заплатил, и чек-лист, который этого не видит, требует
+                // купить второй раз.
+                const have = (construction.stock[id] ?? 0) + (build.purchased[id] ?? 0);
                 const ok = have >= need;
                 return (
                   <span
@@ -126,12 +137,43 @@ function BuildCard({ build }: { build: BuildSlot }) {
                       color: ok ? 'var(--action-dark)' : 'var(--text-muted)',
                     }}
                   >
-                    {MODULES[id].name} {have}/{need}
+                    {MODULES[id].name} {Math.min(have, need)}/{need}
                   </span>
                 );
               },
             )}
           </div>
+
+          {/*
+            Второй канал получения модулей, разрешенный инвариантом И-1: шаттл
+            или изотопы. До этой кнопки канал существовал только в конфиге —
+            цена лежала в `MODULE_PRICE_ISOTOPES` и читалась одной формулой
+            ожидаемой ценности отсека, а купить модуль было нельзя вовсе.
+            Игроку, которому не хватало двух панелей, оставалось только ждать
+            рейса, и ровно на этом месте казуальный ситибилдер зарабатывает.
+
+            Глагол «Докупить», а не «Открыть» — по UX-стандарту каркаса
+            (раздел 13): это разовый расходник под конкретную стройку, а не
+            постоянное расширение. Цена стоит НА кнопке: каркас запрещает
+            кнопку траты изотопов без числа.
+          */}
+          {(Object.entries(missing) as Array<[keyof typeof MODULES, number]>).map(
+            ([id, short]) => {
+              const price = modulePurchasePrice(id, short);
+              return (
+                <Button
+                  key={id}
+                  kind="secondary"
+                  full
+                  disabled={price > isotopes}
+                  onClick={() => buyModulesFor(build.kind, id)}
+                >
+                  Докупить {short} {MODULES[id].name.toLowerCase()} за {price} {ISOTOPE_GLYPH}
+                </Button>
+              );
+            },
+          )}
+
           <Button
             full
             disabled={!enough}

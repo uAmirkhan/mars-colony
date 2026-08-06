@@ -32,10 +32,10 @@ function drop(patch: Partial<DropContext> = {}): DropContext {
     pity: {},
     stock: {},
     need: {},
+    warehouse_avg_24h: {},
     gated_open: false,
     arrival_no: 5,
-    arrivals_without_needed: 0,
-    last_floor_arrival: 0,
+    constructions: [],
     rng: () => 0.5,
     ...patch,
   };
