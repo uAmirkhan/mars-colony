@@ -255,11 +255,24 @@ describe('Потребность для дроп-роллера', () => {
     expect(need.panel).toBe(CONSTRUCTION_RECIPE.habitat_block.recipe.panel);
   });
 
-  it('запас уменьшает потребность ровно на свой размер', () => {
+  /**
+   * Потребность валовая: склад из нее не вычитается.
+   *
+   * [[tz-common-systems-mars]] 2.3 сравнивает с этим числом САМ ЗАПАС —
+   * `activeNeed = activeContextNeed(item, colony_state)`, следом `if activeNeed
+   * > 0 and avgStock24h > activeNeed * config.ANTISTOCKPILE_THRESHOLD`; 2.6 п.3
+   * делает то же для гарантии: «`warehouseCoversConstruction` — сравнение
+   * `ModuleStock.qty` игрока с оставшейся потребностью рецепта стройки».
+   * Вычесть склад здесь — значит сравнить запас с самим собой: порог
+   * анти-стокпайла превращается в «запас больше собственной нехватки» и бьет по
+   * дефицитному модулю (Д-25), а покрытие И-11 — в «запас больше половины
+   * рецепта» и гасит гарантию на почти собранном комплекте (Д-24).
+   */
+  it('склад потребность не уменьшает: с ней сравнивается сам запас', () => {
     const state = fresh();
     state.builds = refreshBuilds(state, 21, NOW, createWarehouse());
     state.stock.filter = 2;
-    expect(activeNeed(state).filter).toBe((WAREHOUSE_RECIPE.recipe.filter ?? 0) - 2);
+    expect(activeNeed(state).filter).toBe(WAREHOUSE_RECIPE.recipe.filter);
   });
 
   it('идущая стройка потребности не создает: ее рецепт уже списан', () => {
@@ -298,10 +311,11 @@ describe('Потребность для дроп-роллера', () => {
   /**
    * Та же 3.4, п.2: «`ModuleStock` не имеет `reserved` — начисленный модуль
    * сразу физически на складе, стройка резервирует его только логически в
-   * момент `start`». Одна единица не может быть засчитана двум линиям, поэтому
-   * склад вычитается из суммы один раз, а не из каждого рецепта отдельно.
+   * момент `start`». Одна единица не может быть засчитана двум линиям: комплект
+   * герметика, покрывающий склад, не уменьшает потребность второй линии, и
+   * потребность обеих остается суммой рецептов.
    */
-  it('склад вычитается из суммарной потребности один раз, а не из каждой стройки', () => {
+  it('полный комплект одной стройки не срезает потребность второй', () => {
     const state = fresh();
     state.builds = refreshBuilds(state, 21, NOW, createWarehouse());
 
@@ -309,6 +323,6 @@ describe('Потребность для дроп-роллера', () => {
     const from_habitat = CONSTRUCTION_RECIPE.habitat_block.recipe.sealant ?? 0;
     state.stock.sealant = from_warehouse;
 
-    expect(activeNeed(state).sealant).toBe(from_habitat);
+    expect(activeNeed(state).sealant).toBe(from_warehouse + from_habitat);
   });
 });

@@ -192,8 +192,8 @@ export function applyDemoState(): boolean {
 
   for (const type of DEMO_BUILDINGS) store.getState().buyBuilding(type);
 
-  // Модули кладутся до рейса: `activeNeed` читает их при генерации, и от
-  // потребности зависит, что именно привезут контейнеры.
+  // Модули кладутся до рейса: дроп-роллер читает склад при генерации (И-7
+  // анти-стокпайл и покрытие И-11), и от него зависит, что привезут контейнеры.
   store.setState({
     construction: {
       ...store.getState().construction,

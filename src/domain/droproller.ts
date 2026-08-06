@@ -34,7 +34,12 @@ export interface DropContext {
   pity: ModuleCounts;
   /** Что лежит на складе модулей. */
   stock: ModuleCounts;
-  /** Чего не хватает активным и доступным стройкам: модуль -> дефицит. */
+  /**
+   * Сколько модулей просят рецепты активных и доступных строек: модуль -> сумма
+   * рецептов. Валовая величина, склад из нее НЕ вычтен — иначе формулы ниже
+   * сравнивали бы запас с самим собой (канон 2.3 и 2.6 п.3, см. `activeNeed`).
+   * Дефицит роллер считает сам, из пары (`need`, `stock`).
+   */
   need: ModuleCounts;
   /** Открыт ли гейтовый тир (буровая, реактор). В MVP обычно false. */
   gated_open: boolean;
@@ -57,6 +62,18 @@ export interface ArrivalRoll {
   next_last_floor_arrival: number;
 }
 
+/**
+ * Чего не хватает до рецептов доступных строек: потребность минус склад.
+ *
+ * Считается здесь, а не приходит полем: дефицит — производная от `need` и
+ * `stock`, и вторая копия разъехалась бы с оригиналом. Правила делятся ровно
+ * пополам — И-7 сравнивает запас с валовой потребностью (2.3), а И-11 чинит
+ * именно нехватку (2.6 п.3), и путать их нельзя.
+ */
+function deficitOf(ctx: DropContext, module_id: ModuleId): number {
+  return Math.max(0, (ctx.need[module_id] ?? 0) - (ctx.stock[module_id] ?? 0));
+}
+
 /** Базовый вес модуля: вес тира, поделенный между модулями пула поровну. */
 function baseWeight(module_id: ModuleId): number {
   const tier = MODULES[module_id].tier;
@@ -76,14 +93,18 @@ export function moduleWeight(module_id: ModuleId, ctx: DropContext): number {
   const needed = ctx.need[module_id] ?? 0;
   const owned = ctx.stock[module_id] ?? 0;
 
-  // Pity — только для того, что реально требуется хотя бы одной стройке.
-  // Иначе счетчик разгонял бы вес модуля, который игроку некуда девать.
+  // Pity — только для того, что реально требуется хотя бы одной стройке
+  // (канон 2.3, `isNeededForActiveContext`): модуль входит в рецепт доступной
+  // стройки. Иначе счетчик разгонял бы вес модуля, который игроку некуда девать.
   if (needed > 0 && (ctx.pity[module_id] ?? 0) >= PITY_K) {
     weight *= PITY_MULTIPLIER;
   }
 
-  // Анти-стокпайл. При нулевой потребности порог равен нулю, и любой запас
-  // считается излишком — это и есть смысл правила.
+  // Анти-стокпайл: каркас И-7 «запас > потребность x2 → вес /2», где
+  // потребность — валовый рецепт, а не нехватка. Пока модуля не хватает,
+  // правило не срабатывает никогда: запас меньше рецепта, а порог — вдвое выше
+  // рецепта. При нулевой потребности (ни одна доступная стройка модуль не
+  // просит) порог равен нулю, и любой запас считается излишком.
   if (owned > needed * ANTISTOCKPILE_THRESHOLD) {
     weight *= ANTISTOCKPILE_FACTOR;
   }
@@ -136,14 +157,19 @@ export function floorGuaranteeAllowed(ctx: DropContext, rolled: ModuleId[]): boo
   );
   if (needed_ids.length === 0) return false;
 
-  // Прибытие уже дало нужное — чинить нечего.
-  if (rolled.some((id) => (ctx.need[id] ?? 0) > 0)) return false;
+  // Прибытие уже дало нужное — чинить нечего. «Нужное» здесь — недостающее:
+  // контейнер с модулем, которого и так хватает на рецепт, фрустрацию не
+  // снимает и окно И-11 не закрывает.
+  if (rolled.some((id) => deficitOf(ctx, id) > 0)) return false;
 
   // Front-loaded удача: первые прибытия форсируют гарантию поверх И-11,
   // не спрашивая ни серию неудач, ни разрыв между срабатываниями.
   if (ctx.arrival_no <= FRONT_LOADED_LUCK_ARRIVALS) return true;
 
-  // Гарантия чинит нехватку дропа, а не выдает модули впрок.
+  // Гарантия чинит нехватку дропа, а не выдает модули впрок. Канон 2.6 п.3:
+  // `warehouseCoversConstruction` сравнивает запас игрока с потребностью
+  // рецепта — «если запаса достаточно закрыть стройку без дополнительных
+  // дропов, форс-выдача не имеет смысла».
   if (stockCoversNeed(ctx.stock, ctx.need)) return false;
 
   // Окно И-11: два прибытия подряд без нужного модуля, третье форсирует.
@@ -185,9 +211,11 @@ export function rollArrival(slot_count: number, ctx: DropContext): ArrivalRoll {
         (ctx.need[id] ?? 0) > 0 && FLOOR_GUARANTEE_ALLOWED_TIERS.includes(MODULES[id].tier),
     );
     // Из нужного выдаем самое дефицитное — так гарантия закрывает узкое место,
-    // а не самый частый базовый модуль, которого и без нее нападает.
+    // а не самый частый базовый модуль, которого и без нее нападает. Именно
+    // дефицит, а не валовый рецепт: модуль с большим рецептом может уже лежать
+    // на складе целиком, и выдать его значило бы выдать впрок.
     const forced = candidates.reduce((worst, id) =>
-      (ctx.need[id] ?? 0) > (ctx.need[worst] ?? 0) ? id : worst,
+      deficitOf(ctx, id) > deficitOf(ctx, worst) ? id : worst,
     );
     floor_forced_slot = modules.length - 1;
     modules[floor_forced_slot] = forced;
@@ -217,7 +245,10 @@ export function rollArrival(slot_count: number, ctx: DropContext): ArrivalRoll {
     else next_pity[id] = (ctx.need[id] ?? 0) > 0 ? before + 1 : before;
   }
 
-  const gave_needed = modules.some((id) => (ctx.need[id] ?? 0) > 0);
+  // Счетчик окна И-11 закрывает только недостающий модуль: канон 2.4 растит его
+  // «на прибытие без нужного предмета», а предмет, которого на складе уже
+  // хватает на рецепт, стройку не двигает.
+  const gave_needed = modules.some((id) => deficitOf(ctx, id) > 0);
 
   return {
     modules,
