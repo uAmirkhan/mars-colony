@@ -35,7 +35,7 @@ import { levelUpReward } from '../domain/config/levels';
 import { CONSTRUCTION_RECIPE } from '../domain/config/modules';
 import { createField } from '../domain/production';
 import type { GoodId, ModuleId } from '../domain/types';
-import { totalQty } from '../domain/warehouse';
+import { availableOf, totalQty } from '../domain/warehouse';
 import {
   createInitialState,
   type GameState,
@@ -184,7 +184,28 @@ export function createDemoState(): SaveData & Pick<GameState, VolatileKey> {
  * открылась бы пустой колонией первого уровня, и это выглядело бы как
  * замысел, а не как поломка.
  */
+/**
+ * Почему сборка показа сорвалась в последний раз. `null` — не срывалась.
+ *
+ * Молчаливый провал здесь дороже всего в проекте: точка входа откатывается на
+ * канонический старт, гость получает пустой первый уровень вместо колонии с
+ * рейсом на подлете, и НИЧЕГО об этом не сообщает — ни консоль, ни экран.
+ * Игра работает, ошибок нет, показа нет. Ровно тот случай, который в этом
+ * проекте ловили только глазами владельца.
+ */
+let last_failure: string | null = null;
+
+export function demoFailure(): string | null {
+  return last_failure;
+}
+
+function fail(why: string): false {
+  last_failure = why;
+  return false;
+}
+
 export function applyDemoState(): boolean {
+  last_failure = null;
   const store = useGame;
   const now = Math.floor(Date.now() / 1000);
 
@@ -212,14 +233,23 @@ export function applyDemoState(): boolean {
   store.getState().tick(now);
 
   const trip = store.getState().shuttle;
-  if (trip === null) return false;
+  if (trip === null) return fail('шаг времени не выдал рейс шаттла');
 
   // Отсеки закрываются со склада. Товар докладывается ровно под требование
   // отсека, а не «побольше»: лишнее на полке — это лишний повод для вопроса
   // «откуда», а ответ должен быть один и короткий.
   for (const slot of trip.slots) {
     const w = store.getState().warehouse;
-    const have = w.cells[slot.good_id]?.qty ?? 0;
+    // Считаем ДОСТУПНОЕ, а не общее.
+    //
+    // Здесь стояло `cells[good].qty`, то есть весь остаток вместе с тем, что
+    // уже зарезервировано ранее закрытым отсеком. Генератор рейса иногда
+    // выдает два отсека под один товар — случайно, от прогона к прогону, — и
+    // тогда второму отсеку не хватало ровно того, что забрал первый: рейс не
+    // улетал, состояние показа не строилось, ссылка открывалась чистым
+    // первым уровнем. Проверка падала через раз и на разных тестах, потому что
+    // ломался не тест, а сборка показа.
+    const have = availableOf(w, slot.good_id);
     const short = Math.max(0, slot.qty_required - have);
     if (short > 0) {
       w.cells[slot.good_id] = {
@@ -232,7 +262,15 @@ export function applyDemoState(): boolean {
   }
 
   const departed = store.getState().shuttle;
-  if (departed === null || departed.state !== 'IN_TRANSIT') return false;
+  if (departed === null || departed.state !== 'IN_TRANSIT') {
+    const left = (departed?.slots ?? [])
+      .filter((s) => s.qty_filled < s.qty_required)
+      .map((s) => `${s.good_id} ${s.qty_filled}/${s.qty_required}`);
+    return fail(
+      `рейс не улетел: состояние ${departed?.state ?? 'нет рейса'}, ` +
+        `не закрыты отсеки [${left.join(', ')}]`,
+    );
+  }
 
   // Отмотка: рейс улетел давно, до прибытия остались минуты. Отматывается
   // именно ОТПРАВКА, а не прибытие, — цена скипа (И-6) считается от доли

@@ -383,7 +383,22 @@ export function saveStorage(backend: SaveBackend): PersistStorage<SaveData | und
         const raw = backend.getItem(name);
         if (raw === null) return null;
         const parsed: unknown = JSON.parse(raw);
-        return isRecord(parsed) ? (parsed as StorageValue<SaveData | undefined>) : null;
+        if (!isRecord(parsed)) return null;
+        /*
+          Версия проверяется ЗДЕСЬ, а не только сравнением в middleware.
+          Тот сравнивает версии лишь когда поле оказалось числом: конверт со
+          строковым `version` или вовсе без него проскакивает мимо проверки
+          версии и мимо `migrate` — и попадает прямо в слияние. Дальше его
+          держит только форма верхнего уровня, а она у сейва версии 2
+          совпадает с нынешней. Итог: сейв позапрошлого формата принимается за
+          свой, если испортить ему один байт в номере версии.
+
+          Поэтому конверт без числовой версии считается не нашим и читается как
+          пустота. Правило то же, что для мусора и чужого объекта: играть не с
+          чего — заход первый.
+        */
+        if (typeof parsed.version !== 'number') return null;
+        return parsed as StorageValue<SaveData | undefined>;
       } catch {
         return null; // не разобралось — значит это не наш сейв, а мусор
       }
@@ -748,7 +763,15 @@ export const useGame = create<GameState>()(
           const construction = {
             ...s.construction,
             stock: { ...s.construction.stock },
-            builds: s.construction.builds.map((b) => ({ ...b })),
+            // Копия ГЛУБОКАЯ по `purchased`, как и у соседней докупки.
+            // Неглубокая оставляла бы объект докупок общим с прежним
+            // состоянием, а `startBuild` списывает докупленное по месту — то
+            // есть менял бы снимок, который состояние отдало ДО действия.
+            // Ничего не падает, подписчики не уведомлены, число уехало: та
+            // самая тихая порча, ради которой в этом проекте и держат
+            // ломателя. Соседняя `buyModulesFor` эту ловушку обходила, а
+            // здесь ее не увидели — доказано `state/__tests__/defects-run5`.
+            builds: s.construction.builds.map((b) => ({ ...b, purchased: { ...b.purchased } })),
           };
           const result = startBuild(construction, kind, s.now);
           if (!result.ok) {

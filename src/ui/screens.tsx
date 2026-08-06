@@ -33,6 +33,7 @@ import {
   type Toast,
   useGame,
 } from '../state/gameStore';
+import { useConfirmSpend } from './confirm-spend';
 import { actWithFx } from './feel/act';
 import { useGoalFieldIdx, useGoalSpot } from './first-goal';
 
@@ -111,6 +112,8 @@ export function Hud() {
 export function DomeScreen() {
   const { fields, now, plant, collectField, speedupField, level } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
+  // Та же необратимая трата, то же подтверждение (каркас, раздел 13).
+  const { ask, dialog } = useConfirmSpend();
   // Грядка, на которую показывает первая цель. Спрашиваем один раз на экран:
   // из цикла по грядкам хук не вызвать.
   const goal_field = useGoalFieldIdx();
@@ -181,7 +184,19 @@ export function DomeScreen() {
                           // Слот целиком кликабелен под сбор — ускорение не должно
                           // проваливаться в него и собирать несозревшее.
                           e.stopPropagation();
-                          speedupField(field.idx);
+                          const price = productionSpeedupCost(remaining, good.kind);
+                          // Бесплатное ускорение подтверждать нечего: каркас
+                          // требует попап для необратимой ТРАТЫ, а не для тапа.
+                          if (price === 0) {
+                            speedupField(field.idx);
+                            return;
+                          }
+                          ask({
+                            title: 'Ускорить рост?',
+                            body: `«${good.name}» созреет немедленно. Списанные изотопы не возвращаются.`,
+                            price,
+                            onConfirm: () => speedupField(field.idx),
+                          });
                         }}
                       >
                         {(() => {
@@ -246,6 +261,7 @@ export function DomeScreen() {
           </div>
         </div>
       )}
+      {dialog}
     </>
   );
 }
@@ -571,6 +587,11 @@ function BuildingCard({
     speedupFactory,
     warehouse,
   } = useGame();
+  // Каркас, раздел 13: подтверждение требуется для ЛЮБОЙ необратимой траты
+  // изотопов, а не только для шаттла. До этой правки попап стоял на двух
+  // точках шаттла, а ускорение фабрики списывало молча — и разнобой между
+  // экранами игрок читает не как правило, а как случайность (находка Т5-1).
+  const { ask, dialog } = useConfirmSpend();
 
   const def = FACTORY_PRICES[type];
   const owned = buildings.includes(type);
@@ -649,7 +670,21 @@ function BuildingCard({
                       // Слот целиком кликабелен под сбор — ускорение не должно
                       // проваливаться в него и забирать несозревшее.
                       e.stopPropagation();
-                      speedupFactory(slot.idx);
+                      const price = productionSpeedupCost(slot.ends_at - now, 'factory');
+                      // Бесплатное ускорение подтверждать нечего: каркас
+                      // (раздел 13) требует попап для НЕОБРАТИМОЙ ТРАТЫ, а не
+                      // для всякого тапа. Ниже порога цена ноль, и лишняя
+                      // модалка там — ровно та, которую каркас запрещает.
+                      if (price === 0) {
+                        speedupFactory(slot.idx);
+                        return;
+                      }
+                      ask({
+                        title: 'Ускорить производство?',
+                        body: 'Партия будет готова немедленно. Списанные изотопы не возвращаются.',
+                        price,
+                        onConfirm: () => speedupFactory(slot.idx),
+                      });
                     }}
                   >
                     {(() => {
@@ -668,6 +703,7 @@ function BuildingCard({
           </div>
         );
       })}
+      {dialog}
     </div>
   );
 }

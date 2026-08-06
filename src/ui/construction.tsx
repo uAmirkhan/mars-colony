@@ -17,6 +17,7 @@ import {
   moduleTotal,
 } from '../domain/construction';
 import { useGame } from '../state/gameStore';
+import { type ConfirmSpend, useConfirmSpend } from './confirm-spend';
 import { useGoalBuild } from './first-goal';
 import { Button, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
@@ -65,7 +66,16 @@ function ModuleStock() {
   );
 }
 
-function BuildCard({ build }: { build: BuildSlot }) {
+/**
+ * Диалог подтверждения живет НА ПАНЕЛИ, а не в карточке.
+ *
+ * Карточка перестраивается по таймеру стройки и меняет состояние прямо в
+ * момент подтверждения: постройка уходит из IN_PROGRESS, поддерево
+ * перерисовывается, а кнопка диалога отрывается от документа посреди нажатия.
+ * Браузерная проверка ловила это зависанием клика, а не падением. Один диалог
+ * на экран и снаружи перестраиваемого поддерева — и вопрос снят.
+ */
+function BuildCard({ build, ask }: { build: BuildSlot; ask: ConfirmSpend }) {
   const {
     construction,
     now,
@@ -111,7 +121,19 @@ function BuildCard({ build }: { build: BuildSlot }) {
             kind="secondary"
             full
             disabled={constructionSpeedupCost(build.ends_at - now) > isotopes}
-            onClick={() => speedupConstruction(build.kind)}
+            onClick={() => {
+              const price = constructionSpeedupCost(build.ends_at - now);
+              if (price === 0) {
+                speedupConstruction(build.kind);
+                return;
+              }
+              ask({
+                title: 'Ускорить стройку?',
+                body: `«${def.name}» достроится немедленно. Списанные изотопы не возвращаются.`,
+                price,
+                onConfirm: () => speedupConstruction(build.kind),
+              });
+            }}
           >
             Ускорить за {constructionSpeedupCost(build.ends_at - now)} {ISOTOPE_GLYPH}
           </Button>
@@ -166,7 +188,14 @@ function BuildCard({ build }: { build: BuildSlot }) {
                   kind="secondary"
                   full
                   disabled={price > isotopes}
-                  onClick={() => buyModulesFor(build.kind, id)}
+                  onClick={() =>
+                    ask({
+                      title: 'Докупить модули?',
+                      body: `${short} шт. «${MODULES[id].name}» зачислится в эту стройку напрямую, минуя склад, и не вернется обратно (И-12).`,
+                      price,
+                      onConfirm: () => buyModulesFor(build.kind, id),
+                    })
+                  }
                 >
                   Докупить {short} {MODULES[id].name.toLowerCase()} за {price} {ISOTOPE_GLYPH}
                 </Button>
@@ -190,6 +219,9 @@ function BuildCard({ build }: { build: BuildSlot }) {
 
 export function ConstructionPanel({ onClose }: { onClose: () => void }) {
   const builds = useGame((s) => s.construction.builds);
+  // Каркас, раздел 13: подтверждение на любую необратимую трату изотопов.
+  // Обе точки списания этого экрана — ускорение стройки и докупка модуля.
+  const { ask, dialog } = useConfirmSpend();
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -198,11 +230,12 @@ export function ConstructionPanel({ onClose }: { onClose: () => void }) {
           <ModuleStock />
           <div style={{ display: 'grid', gap: 10 }}>
             {builds.map((build) => (
-              <BuildCard key={build.kind} build={build} />
+              <BuildCard key={build.kind} build={build} ask={ask} />
             ))}
           </div>
         </Panel>
       </div>
+      {dialog}
     </div>
   );
 }
