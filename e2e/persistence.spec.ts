@@ -30,6 +30,32 @@ async function saveMeta(page: Page): Promise<{ name: string; version: number }> 
 
 const emptyFields = (page: Page) => page.getByText('+', { exact: true });
 
+/**
+ * Ждет подпись показа и, если не дождался, ГОВОРИТ ПОЧЕМУ.
+ *
+ * Сборка состояния показа может сорваться, и тогда точка входа откатывается на
+ * канонический старт — подписи нет, игра работает, ошибок нет. Голое «элемент
+ * не найден» про это не сообщает ничего, и такой отказ уже стоил половины
+ * прогона: он воспроизводился примерно дважды из семидесяти двух под шестью
+ * параллельными браузерами, а причину назвать было нечем.
+ *
+ * Сама сборка теперь называет причину срыва в консоль. Здесь мы ее слушаем и
+ * подставляем в текст падения. Следующий случай объяснит себя сам.
+ */
+async function expectDemoBadge(page: Page) {
+  const said: string[] = [];
+  page.on('console', (m) => {
+    if (m.text().includes('[показ]')) said.push(m.text());
+  });
+
+  try {
+    await expect(page.getByTestId('demo-badge')).toBeVisible();
+  } catch (e) {
+    const why = said.length > 0 ? said.join('; ') : 'сборка показа молчала, причина неизвестна';
+    throw new Error(`подписи показа нет. Что сказала сборка: ${why}`, { cause: e });
+  }
+}
+
 test('прогресс переживает перезагрузку страницы', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -110,7 +136,7 @@ test('битое хранилище не мешает игре открытьс�
   // впервые. Обоим показывается одно и то же. Проверяется здесь не уровень, а
   // то, ради чего проверка написана: страница жива, мусор из ключа никуда не
   // просочился, играть можно.
-  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  await expectDemoBadge(page);
   await expect(page.getByRole('button', { name: 'Склад' })).toBeVisible();
   expect(errors, 'битый сейв не должен ронять страницу').toEqual([]);
 });
@@ -129,7 +155,7 @@ test('чужое содержимое ключа игнорируется', asyn
   // Чужая запись в нашем ключе — это не прогресс, поэтому заход считается
   // первым и открывается показом. Главное здесь другое: ни одно поле чужого
   // объекта не должно доехать до состояния игры.
-  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  await expectDemoBadge(page);
   const state = await page.evaluate(
     () =>
       (
@@ -164,7 +190,7 @@ test('сейв другой версии выбрасывается, игра н
   // заход считается первым и открывается показом. Проверяется здесь ровно то,
   // ради чего проверка написана: ни одно число из чужой версии не доехало до
   // экрана. Уровень 12 и 999999 кредитов оттуда, показ дает свои.
-  await expect(page.getByTestId('demo-badge')).toBeVisible();
+  await expectDemoBadge(page);
   await expect(page.getByText('999999')).toHaveCount(0);
   await expect(page.getByText('ур. 12')).toHaveCount(0);
 });
