@@ -47,7 +47,21 @@ test('первый ход проходит: посев списывает кре
 test('склад открывается и сообщает, что пуст', async ({ page }) => {
   await openGame(page);
   await page.getByRole('button', { name: 'Склад' }).click();
-  await expect(page.getByText('Пока пусто.')).toBeVisible();
+
+  // Пустой склад больше не отвечает строкой «Пока пусто»: ТЗ производства 9.2
+  // требует показывать ВЕСЬ ассортимент открытого, приглушая нулевые позиции,
+  // а не прятать их. Игрок видит, что вообще бывает, а не только то, что уже
+  // успел собрать. Поэтому проверяем то же утверждение по-другому: позиции на
+  // экране есть, продавать нечего.
+  const panel = page.locator('.panel').filter({ hasText: 'Склад' }).first();
+  await expect(panel.getByRole('button', { name: 'Продать 1' }).first()).toBeVisible();
+
+  const sell_all = panel.getByRole('button', { name: 'Все', exact: true });
+  const count = await sell_all.count();
+  expect(count, 'ассортимент обязан быть виден целиком, а не спрятан').toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    await expect(sell_all.nth(i), 'на пустом складе продавать нечего').toBeDisabled();
+  }
 });
 
 test('на узком экране интерфейс не разъезжается', async ({ page }) => {

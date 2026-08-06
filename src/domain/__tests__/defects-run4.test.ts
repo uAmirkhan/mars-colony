@@ -30,7 +30,7 @@ import {
 } from '../construction';
 import {
   type DropContext,
-  floorGuaranteeAllowed,
+  floorGuaranteeAllowedFor,
   type ModuleCounts,
   moduleWeight,
 } from '../droproller';
@@ -72,10 +72,10 @@ function ctx(over: Partial<DropContext> = {}): DropContext {
     pity: {},
     stock: {},
     need: {},
+    warehouse_avg_24h: {},
     gated_open: false,
     arrival_no: 20,
-    arrivals_without_needed: 0,
-    last_floor_arrival: 0,
+    constructions: [],
     rng: () => 0.5,
     ...over,
   };
@@ -90,10 +90,18 @@ function ctx(over: Partial<DropContext> = {}): DropContext {
  * гарантия «два прибытия подряд без нужного модуля — третье выдает нужный» не
  * включается ни на третьем прибытии, ни на сороковом.
  *
- * Где ломается: `floorGuaranteeAllowed` спрашивает `stockCoversNeed(ctx.stock,
- * ctx.need)`, то есть «запас >= дефицита». Но `need` УЖЕ есть разность рецепта и
- * запаса. Условие вырождается в «запас >= рецепт/2» и гасит гарантию ровно в тот
- * момент, ради которого она написана.
+ * Где ломалось (историческая причина, до перевода И-11 на счетчик по
+ * стройкам): `floorGuaranteeAllowed` спрашивала `stockCoversNeed(ctx.stock,
+ * ctx.need)`, то есть «запас >= дефицита». Но `need` УЖЕ есть разность рецепта
+ * и запаса. Условие вырождалось в «запас >= рецепт/2» и гасило гарантию ровно
+ * в тот момент, ради которого она написана.
+ *
+ * После перевода на `ConstructionNeed`/`floorGuaranteeAllowedFor` (три
+ * инварианта дроп-роллера, прогон 4) отдельной сверки со складом внутри
+ * роллера больше нет вовсе: `deficit` стройки уже приходит НЕТТО (`missingFor`
+ * — рецепт минус склад минус докупленное, И-12), и «покрыта» — это просто
+ * «дефицит пуст». Тест переживает как сторож формы: подает деффицит через ту
+ * же `missingFor`, которой пользуется стор в `dropCtx()`.
  *
  * Каркас, И-11: «если 2 прибытия шаттла подряд не дали ни одного модуля,
  * нужного активной стройке, третье гарантирует один такой модуль... не
@@ -104,20 +112,22 @@ function ctx(over: Partial<DropContext> = {}): DropContext {
 describe('Д-24: И-11 гасится собственной проверкой покрытия', () => {
   it('гарантия обязана сработать, когда до постройки не хватает одной панели', () => {
     const construction = oneShortOfHabitat();
-    const need = activeNeed(construction);
+    const build = construction.builds.find((b) => b.kind === 'habitat_block')!;
+    const deficit = missingFor(build, construction.stock);
 
     // Предпосылка: стройку начать нельзя — склад ее НЕ покрывает, не хватает
     // ровно одной панели. Это и есть состояние, ради которого написана И-11.
-    expect(missingFor('habitat_block', construction.stock)).toEqual({ panel: 1 });
-    expect(need.panel ?? 0).toBeGreaterThan(0);
+    expect(deficit).toEqual({ panel: 1 });
 
-    const allowed = floorGuaranteeAllowed(
-      ctx({
-        stock: construction.stock,
-        need,
+    const allowed = floorGuaranteeAllowedFor(
+      {
+        construction_id: 'habitat_block',
+        deficit,
         // Окно И-11 выбрано: два прибытия подряд не дали нужного.
         arrivals_without_needed: FLOOR_GUARANTEE_WINDOW - 1,
-      }),
+        last_floor_arrival: 0,
+      },
+      ctx({ arrival_no: 20 }),
       // Это прибытие тоже не дало ничего нужного — чинить есть что.
       ['cable', 'cable', 'cable'],
     );
@@ -127,13 +137,15 @@ describe('Д-24: И-11 гасится собственной проверкой 
 
   it('гарантия не включается и после двадцати пустых прибытий подряд', () => {
     const construction = oneShortOfHabitat();
-    const allowed = floorGuaranteeAllowed(
-      ctx({
-        stock: construction.stock,
-        need: activeNeed(construction),
-        arrival_no: 40,
+    const build = construction.builds.find((b) => b.kind === 'habitat_block')!;
+    const allowed = floorGuaranteeAllowedFor(
+      {
+        construction_id: 'habitat_block',
+        deficit: missingFor(build, construction.stock),
         arrivals_without_needed: 20,
-      }),
+        last_floor_arrival: 0,
+      },
+      ctx({ arrival_no: 40 }),
       ['cable'],
     );
     expect(allowed, 'серия из двадцати неудач обязана пробить гарантию').toBe(true);
@@ -156,11 +168,18 @@ describe('Д-24: И-11 гасится собственной проверкой 
 describe('Д-25: анти-стокпайл наказывает за почти собранный рецепт', () => {
   it('запас, которого не хватает на постройку, не должен считаться излишком', () => {
     const construction = oneShortOfHabitat();
+    const build = construction.builds.find((b) => b.kind === 'habitat_block')!;
     const need = activeNeed(construction);
-    expect(missingFor('habitat_block', construction.stock)).toEqual({ panel: 1 });
+    expect(missingFor(build, construction.stock)).toEqual({ panel: 1 });
 
+    // Анти-стокпайл (прогон 4) читает `warehouse_avg_24h`, не мгновенный
+    // `stock` — сюда подставлен тот же склад как имитация «среднее равно
+    // текущему остатку» (стабильный склад, ничего не продавали).
     const bare = moduleWeight('panel', ctx({ need }));
-    const with_stock = moduleWeight('panel', ctx({ need, stock: construction.stock }));
+    const with_stock = moduleWeight(
+      'panel',
+      ctx({ need, warehouse_avg_24h: construction.stock }),
+    );
 
     expect(with_stock / bare).not.toBeCloseTo(ANTISTOCKPILE_FACTOR);
     expect(with_stock, 'вес дефицитного модуля не режется за неполный комплект').toBeCloseTo(
@@ -175,7 +194,7 @@ describe('Д-25: анти-стокпайл наказывает за почти 
     const bare = moduleWeight('panel', ctx({ need }));
     const pitied = moduleWeight(
       'panel',
-      ctx({ need, stock: construction.stock, pity: { panel: PITY_K } }),
+      ctx({ need, warehouse_avg_24h: construction.stock, pity: { panel: PITY_K } }),
     );
 
     expect(

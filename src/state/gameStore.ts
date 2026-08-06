@@ -28,8 +28,11 @@ import { CONSTRUCTION_RECIPE, MODULES } from '../domain/config/modules';
 import {
   activeNeed,
   addModule,
+  buyModules,
   type ConstructionState,
   createConstruction,
+  missingFor,
+  modulePurchasePrice,
   refreshBuilds,
   startBuild,
 } from '../domain/construction';
@@ -45,7 +48,14 @@ import {
   sendOrder,
   slotsAtLevel,
 } from '../domain/drone';
-import type { DropContext, ModuleCounts } from '../domain/droproller';
+import {
+  advanceWarehouseAvg,
+  type ConstructionNeed,
+  createWarehouseAvg,
+  type DropContext,
+  type ModuleCounts,
+  type WarehouseAvgState,
+} from '../domain/droproller';
 import {
   createFactorySlot,
   createField,
@@ -75,11 +85,23 @@ import {
   startCooldown,
   tripXp,
 } from '../domain/shuttle';
-import type { BuildingType, GoodId } from '../domain/types';
+import type { BuildingType, GoodId, ModuleId } from '../domain/types';
 import { createWarehouse, totalQty, type WarehouseState } from '../domain/warehouse';
 
 /** Здания класса А: покупаются за кредиты по достижении уровня. */
 export type PurchasableBuilding = keyof typeof FACTORY_PRICES;
+
+/**
+ * Сохраняемая форма счетчиков И-11 по стройкам. Ключ — `BuildKind`
+ * (`construction.ts`), значение — ровно те два поля `ConstructionNeed`
+ * (droproller.ts), что мутирует роллер; `deficit` в сейве не лежит — он
+ * производный от `construction.stock`/`purchased` и пересчитывается в
+ * `dropCtx()` при каждом обращении, как и весь остальной контекст роллера.
+ */
+export type FloorGuaranteeByConstruction = Record<
+  string,
+  { arrivals_without_needed: number; last_floor_arrival: number }
+>;
 
 export interface Toast {
   id: number;
@@ -125,8 +147,20 @@ export interface GameState {
   /** Сколько прибытий уже случилось. Вход FTUE-удачи и окна И-11. */
   shuttle_arrivals: number;
   drop_pity: ModuleCounts;
-  drop_without_needed: number;
-  drop_last_floor: number;
+  /**
+   * Окно floor guarantee (И-11) НА КАЖДУЮ стройку отдельно, ключ — `BuildKind`.
+   * Раньше здесь стояли два скаляра на игрока (`drop_without_needed`,
+   * `drop_last_floor`) — канон 2.6 п.2/2.8 требует счетчик на стройку, иначе
+   * две стройки подряд делят одно окно и гарантия срабатывает не там, где
+   * обещана (droproller.ts, `ConstructionNeed`).
+   */
+  drop_floor_guarantee: FloorGuaranteeByConstruction;
+  /**
+   * Скользящее среднее склада модулей за 24ч (канон `warehouse_avg_24h`),
+   * которое читает анти-стокпайл вместо мгновенного остатка (И-7). Состояние,
+   * которого раньше не было вовсе — формула резала вес по `stock` напрямую.
+   */
+  warehouse_avg: WarehouseAvgState;
   loadShuttleSlot: (idx: number) => void;
   buyoutShuttleSlot: (idx: number) => void;
   skipShuttle: () => void;
@@ -135,6 +169,7 @@ export interface GameState {
 
   construction: ConstructionState;
   startConstruction: (kind: BuildKind) => void;
+  buyModulesFor: (kind: BuildKind, module_id: ModuleId) => void;
   speedupConstruction: (kind: BuildKind) => void;
 
   dismissToast: (id: number) => void;
@@ -190,27 +225,54 @@ export const SAVE_KEY = 'mars-colony-save';
  * закрытые Д-1 и Д-18: рейс улетал, а докупленная часть оставалась висеть в
  * `reserved` без владельца, вместимость терялась навсегда.
  *
- * Сейв прошлой версии выбрасывается целиком. Это дешево: игра нигде не
- * выложена, живых сохранений нет, а починить старый файл нечем — по нему
- * нельзя восстановить, сколько единиц отсека было докуплено.
+ * **3 — стройка получила `purchased`**: модули, докупленные за изотопы под
+ * нее (И-12, второй канал И-1). Отсутствие поля читать как пустой объект
+ * нельзя по той же причине, что и в случае выше: у сейва, где игрок уже
+ * заплатил изотопы за модули, такое чтение молча стирает покупку, и стройка
+ * снова просит то, за что деньги взяты.
+ *
+ * **4 — окно И-11 переехало со скаляра на игрока (`drop_without_needed`,
+ * `drop_last_floor`) на счетчик по стройкам (`drop_floor_guarantee`)**: канон
+ * 2.6 п.2/2.8 ведет floor guarantee на СТРОЙКУ, а не на игрока, иначе две
+ * активные стройки подряд делят одно окно. Заодно добавлен `warehouse_avg` —
+ * скользящее среднее склада модулей за 24ч (И-7 анти-стокпайл), которого не
+ * было вовсе: формула резала вес по мгновенному остатку. Оба поля — новая
+ * форма состояния, у старого сейва их нет и подставлять дефолт молча нельзя
+ * по тому же правилу, что и версии 2/3.
+ *
+ * Той же версии 4 попутно досталась находка Т3-1: позиция заказа дрона
+ * (`OrderPosition`) потеряла булев `filled` в пользу `qty_filled`/
+ * `qty_purchased` — тот же класс правки, что версия 2 у отсека шаттла (частичная
+ * погрузка требует количество, а не факт закрытия). Версия не поднимается
+ * повторно ради одной этой правки: сейва живых игроков нет, а бампать номер
+ * за каждую находку в одном и том же незавершенном прогоне незачем — достаточно,
+ * что старый сейв все еще выбрасывается целиком версией 4.
+ *
+ * Сейв прошлой версии выбрасывается целиком. Это дешево: живых сохранений
+ * нет, а починить старый файл нечем — по нему нельзя восстановить, сколько
+ * единиц было докуплено.
  */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 4;
 
 const SAVED_NUMBER_KEYS = [
   'level',
   'xp_into_level',
   'credits',
   'isotopes',
-  // Счетчики дроп-роллера: без них И-7 (pity) и И-11 (гарантия пола)
-  // обнулялись бы каждой перезагрузкой, то есть F5 стал бы рычагом экономики.
+  // Счетчик прибытий: без него И-7 (pity) и И-11 (гарантия пола) обнулялись
+  // бы каждой перезагрузкой, то есть F5 стал бы рычагом экономики.
   'shuttle_arrivals',
-  'drop_without_needed',
-  'drop_last_floor',
 ] as const;
 
 const SAVED_ARRAY_KEYS = ['fields', 'factory_slots', 'buildings', 'orders'] as const;
 
-const SAVED_OBJECT_KEYS = ['warehouse', 'construction', 'drop_pity'] as const;
+const SAVED_OBJECT_KEYS = [
+  'warehouse',
+  'construction',
+  'drop_pity',
+  'drop_floor_guarantee',
+  'warehouse_avg',
+] as const;
 
 /**
  * Что попадает в сейв. Список один и тот же для записи и для проверки формы
@@ -273,8 +335,8 @@ export function createInitialState(): SaveData & Pick<GameState, VolatileKey> {
     shuttle: null,
     shuttle_arrivals: 0,
     drop_pity: {},
-    drop_without_needed: 0,
-    drop_last_floor: 0,
+    drop_floor_guarantee: {},
+    warehouse_avg: createWarehouseAvg({}, nowSec()),
     construction: createConstruction(),
   };
 }
@@ -469,6 +531,14 @@ export const useGame = create<GameState>()(
        * Контекст дроп-роллера. Собирается на каждый вызов, а не хранится: половина
        * его полей — производные от склада модулей и списка доступных строек, и
        * копия этих полей разъехалась бы с оригиналом на первой же постройке.
+       *
+       * `constructions` — по одной записи на каждую AVAILABLE стройку, со своим
+       * счетчиком окна И-11 (`drop_floor_guarantee`, ключ — `BuildKind`, канон
+       * 2.6 п.2/2.8: счетчик на стройку, не на игрока). `deficit` считает
+       * `missingFor` — рецепт минус склад минус уже докупленное под нее (И-12),
+       * той же функцией, что читает экран стройки: [[spec-prototype-build]]
+       * раздел 8 пункт 19 закрыт в сторону «докупленное — уже покрытие И-11»,
+       * `need` (агрегат ниже, читает И-7 pity/anti-stockpile) остается валовым.
        */
       const dropCtx = (): DropContext => {
         const s = get();
@@ -476,11 +546,21 @@ export const useGame = create<GameState>()(
           pity: s.drop_pity,
           stock: s.construction.stock,
           need: activeNeed(s.construction),
+          warehouse_avg_24h: s.warehouse_avg.avg,
           // Гейтовый тир требует построенных зданий, которых в MVP нет (ТЗ 7).
           gated_open: false,
           arrival_no: s.shuttle_arrivals + 1,
-          arrivals_without_needed: s.drop_without_needed,
-          last_floor_arrival: s.drop_last_floor,
+          constructions: s.construction.builds
+            .filter((b) => b.state === 'AVAILABLE')
+            .map((b) => {
+              const saved = s.drop_floor_guarantee[b.kind];
+              return {
+                construction_id: b.kind,
+                deficit: missingFor(b, s.construction.stock),
+                arrivals_without_needed: saved?.arrivals_without_needed ?? 0,
+                last_floor_arrival: saved?.last_floor_arrival ?? 0,
+              } satisfies ConstructionNeed;
+            }),
           rng: Math.random,
         };
       };
@@ -505,13 +585,24 @@ export const useGame = create<GameState>()(
         drop_state: NonNullable<ReturnType<typeof loadSlot>['drop_state']>,
       ) => {
         const s = get();
+        // Счетчики И-11 пишутся обратно по ключу стройки: запись, которой не
+        // было в `constructions` этого прибытия (стройка не AVAILABLE),
+        // сохраненного значения не теряет — просто не трогается.
+        const drop_floor_guarantee: FloorGuaranteeByConstruction = {
+          ...s.drop_floor_guarantee,
+        };
+        for (const c of drop_state.next_constructions) {
+          drop_floor_guarantee[c.construction_id] = {
+            arrivals_without_needed: c.arrivals_without_needed,
+            last_floor_arrival: c.last_floor_arrival,
+          };
+        }
         set({
           shuttle: trip,
           warehouse: { ...s.warehouse },
           shuttle_arrivals: s.shuttle_arrivals + 1,
           drop_pity: drop_state.next_pity,
-          drop_without_needed: drop_state.next_arrivals_without_needed,
-          drop_last_floor: drop_state.next_last_floor_arrival,
+          drop_floor_guarantee,
         });
         applyXp(tripXp(trip));
         pushToast('Шаттл ушел на орбиту', 'reward');
@@ -555,6 +646,11 @@ export const useGame = create<GameState>()(
             builds: refreshBuilds(s.construction, s.level, now, s.warehouse),
           };
 
+          // Скользящее среднее склада модулей (И-7 анти-стокпайл) продвигается
+          // тем же тиком, что и остальные таймеры: настоящего фонового job'а
+          // (каркас раздел 11) в прототипе нет, тик — его клиентский аналог.
+          const warehouse_avg = advanceWarehouseAvg(s.warehouse_avg, s.construction.stock, now);
+
           set({
             now,
             fields,
@@ -563,6 +659,7 @@ export const useGame = create<GameState>()(
             shuttle,
             construction,
             warehouse: { ...s.warehouse },
+            warehouse_avg,
           });
         },
 
@@ -661,6 +758,42 @@ export const useGame = create<GameState>()(
           }
           set({ construction });
           pushToast(`Стройка начата: ${CONSTRUCTION_RECIPE[kind].name}`, 'reward');
+        },
+
+        /**
+         * Докупка недостающих модулей за изотопы — второй канал И-1.
+         *
+         * Копия стройки глубокая по `purchased`: соседние действия копируют
+         * список строек мелко (`builds.map(b => ({...b}))`), и объект докупок
+         * остался бы общим с прежним состоянием. Мутация такого объекта
+         * прошла бы мимо подписчиков — экран не перерисовался бы, а сейв
+         * получил бы число, которого игрок на экране не видел.
+         */
+        buyModulesFor: (kind, module_id) => {
+          const s = get();
+          const builds = s.construction.builds.map((b) => ({
+            ...b,
+            purchased: { ...b.purchased },
+          }));
+          const build = builds.find((b) => b.kind === kind);
+          if (!build) return;
+
+          const short = missingFor(build, s.construction.stock)[module_id] ?? 0;
+          const price = modulePurchasePrice(module_id, short);
+          if (short <= 0) return;
+          if (price > s.isotopes) {
+            pushToast(`Нужно ${price} изотопов`, 'warn');
+            return;
+          }
+
+          const bought = buyModules(build, s.construction.stock, module_id);
+          if (bought === null) return;
+
+          set({
+            construction: { ...s.construction, builds },
+            isotopes: s.isotopes - bought.price,
+          });
+          pushToast(`+${bought.qty} ${MODULES[module_id].name}`, 'reward');
         },
 
         speedupConstruction: (kind) => {

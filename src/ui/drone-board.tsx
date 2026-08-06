@@ -21,6 +21,7 @@ import { droneRefreshPrice } from '../domain/config/economy';
 import { GOODS } from '../domain/config/goods';
 import {
   canFulfillNow,
+  discardImpact,
   type OrderSlot,
   positionBuyoutPrice,
   positionCovered,
@@ -76,9 +77,11 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
         {slot.positions.map((position, i) => {
           const good = GOODS[position.good_id];
           const covered = positionCovered(position, warehouse);
-          const have = position.filled
-            ? position.qty
-            : availableOf(warehouse, position.good_id);
+          // Позиция закрыта, когда недостачи не осталось — частичная погрузка
+          // (qty_filled между 0 и qty) держит счетчик открытым до докупки или
+          // повторного «Погрузить» (Т3-1).
+          const done = position.qty_filled >= position.qty;
+          const have = done ? position.qty : availableOf(warehouse, position.good_id);
           return (
             <div key={`${position.good_id}-${i}`} style={{ textAlign: 'center' }}>
               <GoodIcon name={good.name} size={30} />
@@ -89,7 +92,7 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
                   color: covered ? 'var(--action-dark)' : 'var(--text-muted)',
                 }}
               >
-                {position.filled ? '✓' : `${have}/${position.qty}`}
+                {done ? '✓' : `${have}/${position.qty}`}
               </div>
             </div>
           );
@@ -114,7 +117,52 @@ function OrderCard({ slot, onOpen }: { slot: OrderSlot; onOpen: () => void }) {
   );
 }
 
-/** Окно заказа: позиции с кнопками «Погрузить», внизу «Отправить» и «Выбросить». */
+/**
+ * Confirm-диалог выброса (ТЗ дрона 7.2, решение консилиума: один
+ * универсальный текст, а не «мягкий/жесткий» развилка). Тело собирается из
+ * фактического состояния заказа — игрок видит точную цену решения.
+ */
+function DiscardConfirm({
+  slot,
+  onCancel,
+  onConfirm,
+}: {
+  slot: OrderSlot;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const impact = discardImpact(slot);
+
+  return (
+    <div className="scrim" onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <Panel title="Выбросить заказ?" style={{ maxWidth: 380, width: '90vw' }}>
+          <div style={{ display: 'grid', gap: 8, marginBottom: 14, fontSize: 13 }}>
+            {impact.stock_positions > 0 && (
+              <div>Товар со склада ({impact.stock_positions} поз.) вернется на склад.</div>
+            )}
+            {impact.purchased_isotopes > 0 && (
+              <div>
+                Докупленное на {impact.purchased_isotopes} {ISOTOPE_GLYPH} сгорит — изотопы не
+                возвращаются (И-12).
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button kind="secondary" full onClick={onCancel}>
+              Отмена
+            </Button>
+            <Button full onClick={onConfirm}>
+              Выбросить
+            </Button>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/** Окно заказа: позиции с кнопками «Погрузить»/«Докупить», внизу «Отправить» и «Выбросить». */
 function OrderWindow({ slot, onClose }: { slot: OrderSlot; onClose: () => void }) {
   const {
     warehouse,
@@ -125,106 +173,153 @@ function OrderWindow({ slot, onClose }: { slot: OrderSlot; onClose: () => void }
     isotopes,
   } = useGame();
   const ready = slot.state === 'ready';
+  // Confirm нужен только когда есть что терять (АС 10): заказ, которого
+  // никто не трогал, выбрасывается мгновенно, без диалога.
+  const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="scrim" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()}>
-        <Panel title={slot.npc_name} onClose={onClose} style={{ maxWidth: 440, width: '92vw' }}>
-          <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-            {slot.positions.map((position, i) => {
-              const good = GOODS[position.good_id];
-              const have = availableOf(warehouse, position.good_id);
-              const covered = positionCovered(position, warehouse);
-              // Докупка закрывает позицию ЦЕЛИКОМ и по И-12 кладет товар мимо
-              // склада, не трогая остаток. Поэтому и платить надо за всю
-              // позицию, а не за недостачу: скидка за остаток, который никуда
-              // не делся, открывает арбитраж «докупить дешево, продать
-              // сэкономленное». Тот же разбор — у отсека шаттла.
-              const price = positionBuyoutPrice(position);
+    <>
+      <div className="scrim" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Panel
+            title={slot.npc_name}
+            onClose={onClose}
+            style={{ maxWidth: 440, width: '92vw' }}
+          >
+            <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+              {slot.positions.map((position, i) => {
+                const good = GOODS[position.good_id];
+                const have = availableOf(warehouse, position.good_id);
+                // Недостача — сколько еще нужно закрыть погрузкой или докупкой.
+                // Частичная погрузка (Т3-1): позиция может быть закрыта в два
+                // приема, «Погрузить» и «Докупить» показываются ОДНОВРЕМЕННО,
+                // пока недостача не обнулилась.
+                const short = position.qty - position.qty_filled;
+                const done = short <= 0;
+                // Складом покрывается остаток целиком — тогда докупка не нужна
+                // вовсе (ТЗ дрона 7.2, строка «на складе, хватает»).
+                const covered = positionCovered(position, warehouse);
+                // Цена и докупаемое количество — по НЕДОСТАЧЕ, а не по полной
+                // величине позиции: докупка добирает только то, чего не хватает.
+                const price = positionBuyoutPrice(position);
 
-              return (
-                <div
-                  key={`${position.good_id}-${i}`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
-                >
-                  <GoodIcon name={good.name} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
-                    <div style={{ fontSize: 12 }}>
-                      на складе {have} из {position.qty}
+                return (
+                  <div
+                    key={`${position.good_id}-${i}`}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                  >
+                    <GoodIcon name={good.name} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                      <div style={{ fontSize: 12 }}>
+                        {done
+                          ? `погружено ${position.qty_filled}`
+                          : `есть ${have} / нужно ${position.qty}`}
+                      </div>
                     </div>
+
+                    {done ? (
+                      <span style={{ fontSize: 22, color: 'var(--action-dark)' }}>✓</span>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 6 }}>
+                        <Button
+                          disabled={have < 1}
+                          title={have < 1 ? 'Нет на складе' : undefined}
+                          onClick={() => loadOrderPosition(slot.idx, i)}
+                        >
+                          {have >= short || have < 1 ? 'Погрузить' : `Погрузить ${have}`}
+                        </Button>
+                        {/* Докупка не рисуется, когда склад и так закрывает
+                          остаток целиком — «Докупки нет — незачем» (тот же
+                          паттерн, что у отсека шаттла). Цена стоит на кнопке
+                          всегда — правило каркаса: кнопка без цены считается
+                          багом, игрок не должен угадывать. */}
+                        {!covered && (
+                          <Button
+                            kind="secondary"
+                            disabled={price > isotopes}
+                            onClick={() => buyoutOrderPosition(slot.idx, i)}
+                          >
+                            Докупить {short} за {price} {ISOTOPE_GLYPH}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
 
-                  {position.filled ? (
-                    <span style={{ fontSize: 22, color: 'var(--action-dark)' }}>✓</span>
-                  ) : covered ? (
-                    <Button onClick={() => loadOrderPosition(slot.idx, i)}>Погрузить</Button>
-                  ) : (
-                    // Цена стоит на кнопке всегда — правило каркаса: кнопка
-                    // без цены считается багом, игрок не должен угадывать.
-                    <Button
-                      kind="secondary"
-                      disabled={price > isotopes}
-                      onClick={() => buyoutOrderPosition(slot.idx, i)}
-                    >
-                      Докупить {position.qty} за {price} {ISOTOPE_GLYPH}
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 10,
-              justifyContent: 'center',
-              fontWeight: 800,
-              marginBottom: 10,
-            }}
-          >
-            <span style={{ color: 'var(--title)' }}>Награда: {slot.credits_reward} кр</span>
-            <span style={{ color: 'var(--xp)' }}>{slot.xp_reward} XP</span>
-          </div>
-
-          <Button
-            full
-            disabled={!ready}
-            onClick={() => {
-              sendOrderAt(slot.idx);
-              onClose();
-            }}
-          >
-            Отправить
-          </Button>
-          {!ready && (
             <div
               style={{
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                textAlign: 'center',
-                marginTop: 4,
+                display: 'flex',
+                gap: 10,
+                justifyContent: 'center',
+                fontWeight: 800,
+                marginBottom: 10,
               }}
             >
-              Погрузите все позиции
+              <span style={{ color: 'var(--title)' }}>Награда: {slot.credits_reward} кр</span>
+              <span style={{ color: 'var(--xp)' }}>{slot.xp_reward} XP</span>
             </div>
-          )}
 
-          <div style={{ marginTop: 10, textAlign: 'center' }}>
             <Button
-              kind="secondary"
+              full
+              disabled={!ready}
               onClick={() => {
-                discardOrderAt(slot.idx);
+                sendOrderAt(slot.idx);
                 onClose();
               }}
             >
-              Выбросить
+              Отправить
             </Button>
-          </div>
-        </Panel>
+            {!ready && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--text-muted)',
+                  textAlign: 'center',
+                  marginTop: 4,
+                }}
+              >
+                Погрузите все позиции
+              </div>
+            )}
+
+            <div style={{ marginTop: 10, textAlign: 'center' }}>
+              <Button
+                kind="secondary"
+                onClick={() => {
+                  // АС 10: ничего не тронуто — выброс мгновенный, без диалога.
+                  // АС 11: есть что терять (склад и/или докупка) — confirm
+                  // обязателен, цена решения показана явно.
+                  if (discardImpact(slot).needs_confirm) {
+                    setConfirming(true);
+                  } else {
+                    discardOrderAt(slot.idx);
+                    onClose();
+                  }
+                }}
+              >
+                Выбросить
+              </Button>
+            </div>
+          </Panel>
+        </div>
       </div>
-    </div>
+
+      {confirming && (
+        <DiscardConfirm
+          slot={slot}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            discardOrderAt(slot.idx);
+            setConfirming(false);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 }
 

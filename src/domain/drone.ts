@@ -51,16 +51,36 @@ export type OrderSlotState = 'active' | 'in_progress' | 'ready' | 'empty_cooldow
 export interface OrderPosition {
   good_id: GoodId;
   qty: number;
-  /** Позиция закрыта: погружена со склада или докуплена. */
-  filled: boolean;
   /**
-   * ЧЕМ закрыта, а не только закрыта ли. Различие несущее: погрузка резервирует
-   * товар на складе и при отправке обязана его списать, а докупка по И-12 кладет
-   * товар мимо склада и списывать нечего. Без этого поля `sendOrder` списал бы
-   * резерв, которого не было, — ровно тот дефект, который уже случился у шаттла
-   * (Д-1) и запер товар на складе навсегда.
+   * Сколько единиц позиции закрыто: погруженное со склада плюс докупленное.
+   * Замена булеву `filled` — ТЗ дрона 7.2 требует частичную погрузку («на
+   * складе, не хватает» — «Погрузить {stock}» списывает наличное, позиция
+   * остается открытой до догрузки или докупки остатка). Булев флаг такое
+   * состояние выразить не может — это и есть находка Т3-1.
+   *
+   * Модель зеркалит отсек шаттла (`ShuttleSlot.qty_filled`, `shuttle.ts`) —
+   * один способ хранить частичное закрытие на обе механики, а не два.
+   */
+  qty_filled: number;
+  /**
+   * ЧЕМ закрыт ПОСЛЕДНИЙ взнос, а не то, чем закрыта позиция целиком. Взносов
+   * в позицию два (погрузка и докупка), одного флага на оба не хватает —
+   * ровно тот дефект, что был у отсека шаттла (Д-1/Д-18) до починки: докупка
+   * поверх частичной погрузки перетирала метку, и отправка либо не списывала
+   * уже зарезервированное складом, либо списывала резерв, которого не было.
    */
   filled_by: 'self' | 'purchase' | null;
+  /**
+   * Сколько из `qty_filled` пришло докупкой за изотопы (И-12), минуя склад.
+   * Остальное (`qty_filled - qty_purchased`) держит склад в `reserved` и
+   * обязано физически уехать при отправке (`sendOrder`). Признак ТЗ дрона
+   * `has_purchased_units` — это `qty_purchased > 0`, отдельным полем не
+   * хранится, чтобы два описания одного факта не разошлись.
+   *
+   * Поле необязательное сознательно, как у шаттла: сейв, записанный до этой
+   * правки, его не несет, отсутствие читается как ноль — «докупки не было».
+   */
+  qty_purchased?: number;
   /**
    * И-8 на момент генерации: покрыто складом ИЛИ производится не дольше
    * `EASY_PRODUCE_MAX_MIN`. Поле канона ([[tz-common-systems-mars]] 1.3,
@@ -79,6 +99,26 @@ export interface OrderSlot {
   xp_reward: number;
   /** Когда истекает бесплатный рефреш. Значимо только в `empty_cooldown`. */
   refresh_at: number;
+}
+
+/** Недостача позиции: сколько еще нужно закрыть погрузкой или докупкой. */
+function positionShort(position: OrderPosition): number {
+  return Math.max(0, position.qty - position.qty_filled);
+}
+
+/** Докупленная часть позиции (И-12). Сейв без поля читается как «докупки не было». */
+function purchasedIn(position: OrderPosition): number {
+  return position.qty_purchased ?? 0;
+}
+
+/**
+ * Складская часть позиции: то, что лежит в `reserved` и обязано уехать при
+ * отправке. Считается вычитанием докупленного, а не по метке `filled_by`:
+ * метка описывает один (последний) взнос, а позиция может быть закрыта в два
+ * приема — сколько нашлось на складе плюс докупка остатка.
+ */
+function stockedIn(position: OrderPosition): number {
+  return Math.max(0, position.qty_filled - purchasedIn(position));
 }
 
 /**
@@ -272,7 +312,14 @@ function fallbackMinimalPositions(
 
   const qty = GOOD_BASE_QTY[good_id].min;
   return [
-    { good_id, qty, filled: false, filled_by: null, easy: isEasy(good_id, qty, ctx.warehouse) },
+    {
+      good_id,
+      qty,
+      qty_filled: 0,
+      filled_by: null,
+      qty_purchased: 0,
+      easy: isEasy(good_id, qty, ctx.warehouse),
+    },
   ];
 }
 
@@ -400,8 +447,9 @@ export function generateOrder(idx: number, ctx: GeneratorContext): OrderSlot {
       positions.push({
         good_id,
         qty,
-        filled: false,
+        qty_filled: 0,
         filled_by: null,
+        qty_purchased: 0,
         easy: isEasy(good_id, qty, ctx.warehouse),
       });
     }
@@ -536,8 +584,9 @@ export function orderReward(
  * поздно разойдется с кнопкой «Погрузить», которая рядом.
  */
 export function positionCovered(position: OrderPosition, warehouse: WarehouseState): boolean {
-  if (position.filled) return true;
-  return availableOf(warehouse, position.good_id) >= position.qty;
+  const short = positionShort(position);
+  if (short === 0) return true;
+  return availableOf(warehouse, position.good_id) >= short;
 }
 
 /**
@@ -560,8 +609,9 @@ export function canFulfillNow(slot: OrderSlot, warehouse: WarehouseState): boole
   // заказа должны покрываться вместе, а не каждая по отдельности.
   const needed = new Map<GoodId, number>();
   for (const position of slot.positions) {
-    if (position.filled) continue;
-    needed.set(position.good_id, (needed.get(position.good_id) ?? 0) + position.qty);
+    const short = positionShort(position);
+    if (short === 0) continue;
+    needed.set(position.good_id, (needed.get(position.good_id) ?? 0) + short);
   }
 
   for (const [good_id, qty] of needed) {
@@ -570,50 +620,79 @@ export function canFulfillNow(slot: OrderSlot, warehouse: WarehouseState): boole
   return true;
 }
 
-/** Погрузка одной позиции: резерв со склада в слот заказа. */
+/**
+ * Погрузка позиции со склада. Частичная допустима (ТЗ дрона 7.2, строка
+ * «на складе, не хватает» — «Погрузить {stock}» списывает наличное, позиция
+ * остается открытой до догрузки или докупки остатка). Запрет частичной
+ * погрузки — находка Т3-1: булев `filled` такое состояние выразить не мог.
+ *
+ * Форма — как у `loadSlot` шаттла: списывается `min(short, available)`, а не
+ * все-или-ничего.
+ */
 export function loadPosition(
   slot: OrderSlot,
   position_idx: number,
   warehouse: WarehouseState,
 ): boolean {
   const position = slot.positions[position_idx];
-  if (!position || position.filled) return false;
+  if (!position) return false;
   if (slot.state !== 'active' && slot.state !== 'in_progress') return false;
-  if (!reserve(warehouse, position.good_id, position.qty)) return false;
 
-  position.filled = true;
-  position.filled_by = 'self';
-  slot.state = slot.positions.every((p) => p.filled) ? 'ready' : 'in_progress';
+  const short = positionShort(position);
+  if (short === 0) return false;
+
+  const take = Math.min(short, availableOf(warehouse, position.good_id));
+  if (take <= 0) return false;
+  if (!reserve(warehouse, position.good_id, take)) return false;
+
+  position.qty_filled += take;
+  if (position.filled_by === null) position.filled_by = 'self';
+
+  slot.state = slot.positions.every((p) => positionShort(p) === 0) ? 'ready' : 'in_progress';
   return true;
 }
 
 /**
- * Цена докупки позиции: И-4, rush-cost цепочки с наценкой.
+ * Цена докупки НЕДОСТАЮЩЕЙ части позиции: И-4, rush-cost цепочки с наценкой.
  *
- * Складской остаток в цену не входит по той же причине, что и у отсека шаттла:
- * докупка по И-12 кладет товар мимо склада и остатка не трогает, поэтому скидка
- * за него открывала бы арбитраж «докупить дешево, продать сэкономленное».
+ * Единица докупки — недостача (`positionShort`), а не полная величина позиции.
+ * ТЗ дрона 7.2 подписывает кнопку «Докупить {qty-stock}»: цена по полному
+ * `qty` независимо от того, что уже погружено со склада, — находка Т3-1,
+ * вторая половина. Складской остаток в цену НЕ входит по той же причине, что
+ * и у отсека шаттла: докупка по И-12 кладет товар мимо склада и остатка не
+ * трогает, поэтому скидка за него открывала бы арбитраж «докупить дешево,
+ * продать сэкономленное».
  */
 export function positionBuyoutPrice(position: OrderPosition): number {
-  if (position.filled) return 0;
-  return buyoutPrice(position.good_id, position.qty);
+  const short = positionShort(position);
+  if (short === 0) return 0;
+  return buyoutPrice(position.good_id, short);
 }
 
 /**
- * Докупка позиции за изотопы (ТЗ дрона 4.5, И-12).
+ * Докупка НЕДОСТАЮЩЕЙ части позиции за изотопы (ТЗ дрона 7.2, И-12).
  *
  * Товар приходит извне и на складе не появляется ни на секунду: ни резерва, ни
- * прихода. Поэтому отправка обязана отличать такую позицию от погруженной, иначе
- * спишет резерв, которого не было.
+ * прихода. Докупает ровно недостачу (`positionShort`), а не позицию заново —
+ * иначе докупка поверх частичной погрузки задвоила бы уже погруженное со
+ * склада (тот же класс дефекта, что Д-18 у шаттла).
  */
 export function buyoutPosition(slot: OrderSlot, position_idx: number): boolean {
   const position = slot.positions[position_idx];
-  if (!position || position.filled) return false;
+  if (!position) return false;
   if (slot.state !== 'active' && slot.state !== 'in_progress') return false;
 
-  position.filled = true;
+  const short = positionShort(position);
+  if (short === 0) return false;
+
+  position.qty_filled += short;
+  // Взнос запоминается количеством и НЕ затирает уже погруженное со склада:
+  // метка `filled_by` меняется (закрывающий взнос действительно докупка), а
+  // списание при отправке идет по `qty_purchased`/`stockedIn`.
+  position.qty_purchased = purchasedIn(position) + short;
   position.filled_by = 'purchase';
-  slot.state = slot.positions.every((p) => p.filled) ? 'ready' : 'in_progress';
+
+  slot.state = slot.positions.every((p) => positionShort(p) === 0) ? 'ready' : 'in_progress';
   return true;
 }
 
@@ -638,11 +717,19 @@ export function sendOrder(
 
   // Потребность считается по товару, а не по позиции: две позиции одного товара
   // делят одну ячейку склада, и резерв под ними тоже общий.
+  //
+  // Уезжает ровно складская часть позиции (`stockedIn`), а не вся позиция при
+  // проверке метки `filled_by`: позиция могла быть закрыта в два приема —
+  // погрузка части плюс докупка остатка, — и метка хранит только ПОСЛЕДНИЙ
+  // взнос. Проверка `filled_by === 'purchase'` пропускала бы такую позицию
+  // целиком и запирала бы уже зарезервированный складом товар навсегда — тот
+  // же класс дефекта, что Д-18 у шаттла, только у дрона.
   const shipping = new Map<GoodId, number>();
   for (const position of slot.positions) {
-    // Докупленное на складе не лежало — списывать нечего (И-12).
-    if (position.filled_by === 'purchase') continue;
-    shipping.set(position.good_id, (shipping.get(position.good_id) ?? 0) + position.qty);
+    const from_stock = stockedIn(position);
+    if (from_stock > 0) {
+      shipping.set(position.good_id, (shipping.get(position.good_id) ?? 0) + from_stock);
+    }
   }
 
   for (const [good_id, qty] of shipping) {
@@ -683,13 +770,57 @@ export function discardOrder(slot: OrderSlot, now: number): void {
  */
 export function releaseReserved(slot: OrderSlot, warehouse: WarehouseState): void {
   for (const position of slot.positions) {
-    if (!position.filled || position.filled_by === 'purchase') continue;
-    unreserve(warehouse, position.good_id, position.qty);
-    position.filled = false;
-    // Позиция снова открыта — «чем закрыта» обязано обнулиться вместе с
-    // признаком закрытия, иначе состояние противоречит само себе.
+    // Возвращается ровно складская часть (`stockedIn`), а не позиция целиком
+    // по метке последнего взноса: смешанная позиция (часть со склада, часть
+    // докуплена) иначе теряла бы складскую часть, если последней легла
+    // докупка, — тот же класс дефекта, что Д-18 у шаттла.
+    const from_stock = stockedIn(position);
+    if (from_stock > 0) unreserve(warehouse, position.good_id, from_stock);
+
+    // Позиция снова открыта целиком. Докупленная часть аннулируется
+    // безвозвратно — «не возвращается ни на склад, ни рефандом изотопов»
+    // (ТЗ дрона AC 11) — поэтому qty_purchased тоже обнуляется, а не только
+    // складская часть.
+    position.qty_filled = 0;
     position.filled_by = null;
+    position.qty_purchased = 0;
   }
+}
+
+/**
+ * Последствия выброса заказа — то, из чего собирается текст confirm-диалога
+ * (ТЗ дрона 7.2, решение консилиума: «один универсальный confirm-диалог...
+ * тело собирается из динамической строки о последствиях по фактическому
+ * состоянию заказа»).
+ *
+ * `stock_positions` — число позиций, у которых есть складская часть
+ * (`stockedIn > 0`): при выбросе она вернется на склад.
+ * `purchased_isotopes` — сумма изотопов, которая сгорит безвозвратно (И-12):
+ * пересчитана тем же чистым `buyoutPrice`, каким была списана при докупке
+ * (тот же good_id и то же количество дают ту же цену), отдельного поля под
+ * «уплачено» заводить незачем.
+ * `needs_confirm` — АС 10: заказ не тронут (0 позиций `filled`) — диалог не
+ * показывается вовсе, выброс мгновенный.
+ */
+export interface DiscardImpact {
+  stock_positions: number;
+  purchased_isotopes: number;
+  needs_confirm: boolean;
+}
+
+export function discardImpact(slot: OrderSlot): DiscardImpact {
+  let stock_positions = 0;
+  let purchased_isotopes = 0;
+  for (const position of slot.positions) {
+    if (stockedIn(position) > 0) stock_positions += 1;
+    const purchased = purchasedIn(position);
+    if (purchased > 0) purchased_isotopes += buyoutPrice(position.good_id, purchased);
+  }
+  return {
+    stock_positions,
+    purchased_isotopes,
+    needs_confirm: stock_positions > 0 || purchased_isotopes > 0,
+  };
 }
 
 /** Пул товаров, доступных игроку: открытые культуры и рецепты построенных зданий. */

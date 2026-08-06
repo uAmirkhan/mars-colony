@@ -24,22 +24,56 @@ interface Offender {
   text: string;
   x: number;
   right: number;
+  y: number;
+  bottom: number;
   width: number;
 }
 
 async function offscreenButtons(page: Page): Promise<Offender[]> {
   return page.evaluate((tolerance) => {
     const out: Offender[] = [];
+
+    /**
+     * Можно ли доскроллить до кнопки.
+     *
+     * По вертикали «за краем экрана» само по себе не дефект: панель склада
+     * прокручивается внутри себя, и десять кнопок продажи честно лежат ниже
+     * окна — до них доезжают пальцем. Первая редакция вертикальной проверки
+     * этого не различала и краснела на здоровом складе и здоровой фабрике.
+     *
+     * Дефект — кнопка, до которой доскроллить НЕЛЬЗЯ. Ровно такой был крестик
+     * закрытия панели: он абсолютно спозиционирован выше рамки, ни один
+     * предок не прокручивается, и страница тоже.
+     */
+    const reachable = (el: Element): boolean => {
+      for (let node = el.parentElement; node !== null; node = node.parentElement) {
+        const overflow = getComputedStyle(node).overflowY;
+        const scrolls = /auto|scroll/.test(overflow) && node.scrollHeight > node.clientHeight;
+        if (scrolls) return true;
+      }
+      return document.documentElement.scrollHeight > window.innerHeight;
+    };
+
     for (const el of document.querySelectorAll('button')) {
       const r = el.getBoundingClientRect();
       // Скрытое и схлопнутое не проверяем: это не «за краем», это «не на экране».
       if (r.width === 0 || r.height === 0) continue;
       if (getComputedStyle(el).visibility === 'hidden') continue;
-      if (r.left < -tolerance || r.right > window.innerWidth + tolerance) {
+      // Верх и низ проверяются наравне с боками. Первая редакция смотрела
+      // только по горизонтали — и пропустила крестик закрытия панели стройки
+      // на координате y = -17: кнопка стояла ЗА ВЕРХНИМ краем экрана, панель
+      // было нечем закрыть, а проверка честно докладывала «чисто». Дефект
+      // нашелся падением чужого теста, а не этой проверкой.
+      const off_x = r.left < -tolerance || r.right > window.innerWidth + tolerance;
+      const off_y =
+        (r.top < -tolerance || r.bottom > window.innerHeight + tolerance) && !reachable(el);
+      if (off_x || off_y) {
         out.push({
           text: (el.textContent ?? '').trim().slice(0, 24),
           x: Math.round(r.left),
           right: Math.round(r.right),
+          y: Math.round(r.top),
+          bottom: Math.round(r.bottom),
           width: Math.round(r.width),
         });
       }
@@ -149,6 +183,68 @@ test('кнопки каждой панели помещаются в экран'
     await page.getByRole('button', { name, exact: true }).click();
     const bad = await offscreenButtons(page);
     expect(bad, `панель «${name}»: кнопки за краем ${JSON.stringify(bad)}`).toEqual([]);
+    await page.getByRole('button', { name: 'Закрыть' }).first().click();
+  }
+});
+
+/**
+ * Состояние, при котором панели максимально высокие.
+ *
+ * Канонический старт для этой проверки бесполезен: на первом уровне стройки
+ * заперты, склад пуст, у заказов дрона нет позиций — панели низкие, и дефект
+ * высоты на них не воспроизводится в принципе. Дырой оказалась именно она:
+ * проверка ходила по пустым панелям и зеленела, пока настоящая панель стройки
+ * не влезала в экран.
+ *
+ * Девятый уровень открывает обе стройки, а склад модулей закрывает ровно одну
+ * из них — вторая тянет за собой три кнопки докупки за изотопы. Это и есть
+ * самая высокая панель среза.
+ */
+async function seedTallPanels(page: Page) {
+  await page.evaluate(() => {
+    const store = (window as unknown as { __game: { getState: () => unknown; setState: (s: unknown) => void } }).__game;
+    const state = store.getState() as { construction: unknown };
+    store.setState({
+      level: 9,
+      credits: 100_000,
+      isotopes: 100_000,
+      construction: {
+        ...(state.construction as object),
+        stock: { filter: 6, cable: 6, sealant: 6 },
+      },
+      now: Math.floor(Date.now() / 1000),
+    });
+  });
+  // Состояния строек пересчитываются шагом времени, а не присвоением уровня.
+  await page.waitForTimeout(900);
+}
+
+test('в открытой панели ни одна кнопка не накрыта и не за краем', async ({ page }) => {
+  // Отдельная проверка, и это не дубль соседних.
+  //
+  // «Помещается в экран» и «не накрыта» — разные свойства, и панель ломала оба
+  // сразу. У стройки к чек-листу добавились кнопки докупки модуля за изотопы,
+  // панель переросла экран, и ее крестик закрытия — он по замыслу выступает на
+  // 34 точки ВЫШЕ рамки панели — оказался на координате y = -17 на десктопе и
+  // под шапкой на телефоне, где та переносится на две строки. Панель стало
+  // нечем закрыть.
+  //
+  // Корень был не в высоте, а в слоях: затемнение модалки лежало ниже шапки и
+  // ниже выключателя звука. Модалка, которую перекрывает то, что под ней, — не
+  // модалка. Тот же класс, из-за которого выключатель однажды накрыл «Играть».
+  await openGame(page);
+  await seedTallPanels(page);
+
+  for (const name of ['Склад', 'Фабрика', 'Дрон', 'Шаттл', 'Стройка']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Закрыть' }).first()).toBeVisible();
+
+    const covered = await coveredButtons(page);
+    expect(covered, `панель «${name}»: накрыто`).toEqual([]);
+
+    const off = await offscreenButtons(page);
+    expect(off, `панель «${name}»: за краем ${JSON.stringify(off)}`).toEqual([]);
+
     await page.getByRole('button', { name: 'Закрыть' }).first().click();
   }
 });

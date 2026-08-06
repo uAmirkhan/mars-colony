@@ -11,6 +11,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CREDITS_START, SLOT_COUNT_MIN } from '../../domain/config/economy';
 import { createConstruction } from '../../domain/construction';
+import { createWarehouseAvg } from '../../domain/droproller';
 import { createField } from '../../domain/production';
 import { createWarehouse } from '../../domain/warehouse';
 import { useGame } from '../gameStore';
@@ -34,8 +35,8 @@ beforeEach(() => {
     shuttle: null,
     shuttle_arrivals: 0,
     drop_pity: {},
-    drop_without_needed: 0,
-    drop_last_floor: 0,
+    drop_floor_guarantee: {},
+    warehouse_avg: createWarehouseAvg({}, NOW),
     construction: createConstruction(),
   });
 });

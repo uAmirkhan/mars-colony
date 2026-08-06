@@ -29,6 +29,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { CREDITS_START, WAREHOUSE_MAX_CAPACITY } from '../../domain/config/economy';
 import { ALL_BUILD_KINDS, type BuildKind } from '../../domain/config/modules';
 import { createConstruction, moduleCapacity, moduleTotal } from '../../domain/construction';
+import { createWarehouseAvg } from '../../domain/droproller';
 import { createField } from '../../domain/production';
 import type { GoodId } from '../../domain/types';
 import { createWarehouse, deposit, totalQty } from '../../domain/warehouse';
@@ -146,8 +147,8 @@ function reset(seed: number, isotopes: number, stock: number) {
     shuttle: null,
     shuttle_arrivals: 0,
     drop_pity: {},
-    drop_without_needed: 0,
-    drop_last_floor: 0,
+    drop_floor_guarantee: {},
+    warehouse_avg: createWarehouseAvg({}, NOW),
     construction: createConstruction(),
   });
   Math.random = seededRandom(seed);

@@ -13,11 +13,12 @@
  */
 
 import {
+  MODULE_PRICE_ISOTOPES,
   MODULE_STOCK_CAP,
   WAREHOUSE_MAX_CAPACITY,
   WAREHOUSE_UPGRADE_STEP,
 } from './config/economy';
-import { ALL_MODULE_IDS, type BuildKind, CONSTRUCTION_RECIPE } from './config/modules';
+import { ALL_MODULE_IDS, type BuildKind, CONSTRUCTION_RECIPE, MODULES } from './config/modules';
 import type { ModuleCounts } from './droproller';
 import type { ModuleId } from './types';
 import { upgradeCapacity, type WarehouseState } from './warehouse';
@@ -30,6 +31,21 @@ export interface BuildSlot {
   /** Тир повторяемого здания: сколько раз уже построено. У склада растет. */
   tier: number;
   ends_at: number;
+  /**
+   * Модули, докупленные за изотопы ПОД ЭТУ стройку.
+   *
+   * Лежат отдельно от `ConstructionState.stock` не для удобства, а по
+   * инварианту И-12: «докупленный за изотопы товар или модуль зачисляется
+   * напрямую в слот заказа и не может быть изъят, продан или
+   * переиспользован». Зачисли покупку на общий склад — и открывается
+   * арбитраж «докупить дешево под одну стройку, скормить другой механике»,
+   * ровно тот, который инвариант и закрывает.
+   *
+   * Лимит склада модулей на них не распространяется по той же причине: они
+   * на складе не лежат. Иначе докупка упиралась бы в переполнение и молча
+   * съедала изотопы.
+   */
+  purchased: ModuleCounts;
 }
 
 export interface ConstructionState {
@@ -48,6 +64,7 @@ export function createConstruction(): ConstructionState {
       state: 'LOCKED' as BuildState,
       tier: 0,
       ends_at: 0,
+      purchased: {},
     })),
     lines: 1,
   };
@@ -113,14 +130,67 @@ export function recipeFor(kind: BuildKind): Partial<Record<ModuleId, number>> {
   return CONSTRUCTION_RECIPE[kind].recipe;
 }
 
-/** Чего не хватает на постройку: модуль -> дефицит. Пустой объект = хватает. */
-export function missingFor(kind: BuildKind, stock: ModuleCounts): ModuleCounts {
+/**
+ * Чего не хватает на постройку: модуль -> дефицит. Пустой объект = хватает.
+ *
+ * Берет стройку целиком, а не один ее вид, потому что докупленное за изотопы
+ * лежит на самой стройке (`purchased`), а не на общем складе. Функция от вида
+ * здания физически не смогла бы про него узнать и рисовала бы дефицит на
+ * оплаченном модуле.
+ */
+export function missingFor(build: BuildSlot, stock: ModuleCounts): ModuleCounts {
   const missing: ModuleCounts = {};
-  for (const [id, need] of Object.entries(recipeFor(kind)) as Array<[ModuleId, number]>) {
-    const short = need - (stock[id] ?? 0);
+  for (const [id, need] of Object.entries(recipeFor(build.kind)) as Array<[ModuleId, number]>) {
+    const short = need - (stock[id] ?? 0) - (build.purchased[id] ?? 0);
     if (short > 0) missing[id] = short;
   }
   return missing;
+}
+
+/**
+ * Цена докупки недостающих модулей одного вида за изотопы.
+ *
+ * [[mars-colony-frame]] раздел 5: «Докупка модуля за изотопы: базовый 150,
+ * редкий 200, гейтовый 400». Цена линейна по количеству — лестницы за объем
+ * каркас для модулей не задает, в отличие от докупки товара, где она есть.
+ */
+export function modulePurchasePrice(module_id: ModuleId, qty: number): number {
+  if (qty <= 0) return 0;
+  return MODULE_PRICE_ISOTOPES[MODULES[module_id].tier] * qty;
+}
+
+export interface ModulePurchase {
+  qty: number;
+  price: number;
+}
+
+/**
+ * Докупка недостающих модулей одного вида под конкретную стройку — второй
+ * канал получения строй-модулей, разрешенный инвариантом И-1.
+ *
+ * До этой функции канал существовал только на бумаге: цена лежала в конфиге и
+ * читалась одной формулой ожидаемой ценности отсека шаттла, а купить модуль
+ * было нельзя вообще. Игрок, которому до постройки не хватало двух панелей,
+ * мог только ждать следующего рейса.
+ *
+ * Закрывает ВЕСЬ дефицит по этому модулю разом, а не по одному: так же устроен
+ * отсек шаттла (`buyoutSlot`), и второй способ считать то же самое означал бы
+ * два разных ответа на вопрос «сколько это стоит».
+ *
+ * Деньги не списывает — их держит стор. Домен возвращает цену, чтобы решение
+ * «хватает ли изотопов» принималось там же, где лежит баланс.
+ */
+export function buyModules(
+  build: BuildSlot,
+  stock: ModuleCounts,
+  module_id: ModuleId,
+): ModulePurchase | null {
+  if (build.state !== 'AVAILABLE') return null;
+  const qty = missingFor(build, stock)[module_id] ?? 0;
+  if (qty <= 0) return null;
+
+  build.purchased[module_id] = (build.purchased[module_id] ?? 0) + qty;
+  return { qty, price: modulePurchasePrice(module_id, qty) };
 }
 
 /**
@@ -191,11 +261,17 @@ export function startBuild(
   if (activeLinesUsed(state) >= state.lines) return { ok: false, reason: 'no_free_line' };
 
   const recipe = recipeFor(kind);
-  for (const [id, need] of Object.entries(recipe) as Array<[ModuleId, number]>) {
-    if ((state.stock[id] ?? 0) < need) return { ok: false, reason: 'missing_modules' };
+  if (Object.keys(missingFor(build, state.stock)).length > 0) {
+    return { ok: false, reason: 'missing_modules' };
   }
+  // Докупленное тратится ПЕРВЫМ. Оно и так привязано к этой стройке и никуда
+  // больше не денется, а склад после старта останется общим ресурсом. Списать
+  // сначала склад значило бы запереть оплаченные модули на стройке, которая
+  // уже началась, — игрок заплатил изотопы и потерял их дважды.
   for (const [id, need] of Object.entries(recipe) as Array<[ModuleId, number]>) {
-    state.stock[id] = (state.stock[id] ?? 0) - need;
+    const from_purchase = Math.min(need, build.purchased[id] ?? 0);
+    if (from_purchase > 0) build.purchased[id] = (build.purchased[id] ?? 0) - from_purchase;
+    state.stock[id] = (state.stock[id] ?? 0) - (need - from_purchase);
   }
 
   build.state = 'IN_PROGRESS';

@@ -14,8 +14,18 @@ import {
   productionSpeedupCost,
 } from '../domain/config/economy';
 import { ALL_GOOD_IDS, GOODS } from '../domain/config/goods';
-import type { GoodId } from '../domain/types';
-import { availableOf, occupiedGoods, qtyOf } from '../domain/warehouse';
+import { MECHANIC_UNLOCK_LEVEL } from '../domain/config/levels';
+import { ALL_MODULE_IDS, MODULES } from '../domain/config/modules';
+import {
+  type BuildSlot,
+  type ConstructionState,
+  missingFor,
+  moduleCapacity,
+  moduleTotal,
+} from '../domain/construction';
+import type { ModuleCounts } from '../domain/droproller';
+import type { GoodId, ModuleId } from '../domain/types';
+import { availableOf, qtyOf, totalQty, type WarehouseState } from '../domain/warehouse';
 import {
   type PurchasableBuilding,
   selectWarehouseLoad,
@@ -34,7 +44,16 @@ const PURCHASABLE_BUILDINGS: PurchasableBuilding[] = [
   'textile_module',
 ];
 
-import { Button, Currency, GoodIcon, ISOTOPE_GLYPH, Panel, ProgressBar, Timer } from './kit';
+import {
+  Button,
+  Currency,
+  GoodIcon,
+  ISOTOPE_GLYPH,
+  Panel,
+  ProgressBar,
+  Timer,
+  WAREHOUSE_WARN_RATIO,
+} from './kit';
 
 export function Hud() {
   const { level, credits, isotopes } = useGame();
@@ -231,52 +250,296 @@ export function DomeScreen() {
   );
 }
 
-export function WarehousePanel({ onClose }: { onClose: () => void }) {
-  const { warehouse, sell } = useGame();
-  const goods = occupiedGoods(warehouse);
-  const load = useGame(useShallow(selectWarehouseLoad));
+type WarehouseTab = 'goods' | 'modules';
+
+export interface WarehouseGoodsRow {
+  id: GoodId;
+  name: string;
+  price: number;
+  qty: number;
+  free: number;
+  /** Позиция с нулевым остатком приглушена, но не скрыта (ТЗ 9.2). */
+  dimmed: boolean;
+}
+
+export interface WarehouseModuleRow {
+  id: ModuleId;
+  name: string;
+  qty: number;
+  /** Гейтовый тир: в этом срезе гейт всегда закрыт (нет построенных гейтовых
+   *  зданий) — рисуется заблокированным безусловно (spec-prototype-build 16). */
+  locked: boolean;
+  /** ТЗ 9.2: нужна ли позиция активной стройке (бейдж-иконка кирки). */
+  needed: boolean;
+}
+
+export interface WarehouseCapacityView {
+  used: number;
+  cap: number;
+  /** ТЗ 9.2: капасити-бар красится предупреждающим цветом при заполнении >= 90%. */
+  warn: boolean;
+}
+
+export interface WarehousePanelView {
+  goodsCapacity: WarehouseCapacityView;
+  modulesCapacity: WarehouseCapacityView;
+  goods: WarehouseGoodsRow[];
+  /** Первая ПРОДАВАЕМАЯ строка — куда указывает первая цель FTUE, если активна. */
+  firstSellableGoodId: GoodId | null;
+  /** ТЗ 9.2 edge: вкладка «Модули» видна всегда, но до открытия шаттла — заглушка. */
+  modulesUnlocked: boolean;
+  modules: WarehouseModuleRow[];
+}
+
+function capacityView(used: number, cap: number): WarehouseCapacityView {
+  return { used, cap, warn: cap > 0 && used / cap >= WAREHOUSE_WARN_RATIO };
+}
+
+/**
+ * Строка модуля на вкладке «Модули»: нужна ли она хотя бы одной доступной
+ * стройке прямо сейчас. Считается по `missingFor` — тому же предикату,
+ * которым карточка стройки решает, показывать ли «Докупить»: если позиция
+ * ЕЩЕ значится дефицитной у стройки в `AVAILABLE`, склад и стройка реально
+ * конкурируют за эту единицу (ТЗ производства 9.2, п.3.4). Стройка в
+ * `IN_PROGRESS` модули уже списала при старте — конкурировать ей больше не за
+ * что, повторный интерес к тому же модулю был бы двойным счетом.
+ */
+function neededByActiveConstruction(
+  module_id: ModuleId,
+  builds: BuildSlot[],
+  stock: ModuleCounts,
+): boolean {
+  return builds.some(
+    (b) => b.state === 'AVAILABLE' && (missingFor(b, stock)[module_id] ?? 0) > 0,
+  );
+}
+
+/**
+ * Вся композиция экрана склада как чистая функция состояния — без JSX и без
+ * рендера. `WarehousePanel` только читает это дерево и расставляет разметку;
+ * доказывается перебором состояний (`warehouse-panel.test.ts`), а не
+ * рендером DOM, которого в этом проекте для `screens.tsx` нет вовсе.
+ */
+export function warehousePanelView(state: {
+  level: number;
+  warehouse: WarehouseState;
+  construction: ConstructionState;
+}): WarehousePanelView {
+  // ТЗ 9.2: «сортировка — по категории (грядка/фабрика), внутри категории —
+  // по порядку открытия уровня». `ALL_GOOD_IDS` уже в этом порядке (раздел
+  // объявления `config/goods.ts`: сперва все `crop`, затем все `factory`,
+  // внутри — по возрастанию `unlock_level`) — отдельной сортировки не нужно.
+  const goods: WarehouseGoodsRow[] = ALL_GOOD_IDS.filter(
+    (id) => GOODS[id].unlock_level <= state.level,
+  ).map((id) => {
+    const good = GOODS[id];
+    const qty = qtyOf(state.warehouse, id);
+    const free = availableOf(state.warehouse, id);
+    return { id, name: good.name, price: good.price, qty, free, dimmed: qty === 0 };
+  });
+  const firstSellableGoodId = goods.find((g) => g.free >= 1)?.id ?? null;
+
+  const modulesUnlocked = state.level >= MECHANIC_UNLOCK_LEVEL.shuttle;
+  const modules: WarehouseModuleRow[] = ALL_MODULE_IDS.map((id) => {
+    const module = MODULES[id];
+    const locked = module.tier === 'gated';
+    return {
+      id,
+      name: module.name,
+      qty: state.construction.stock[id] ?? 0,
+      locked,
+      needed:
+        !locked &&
+        neededByActiveConstruction(id, state.construction.builds, state.construction.stock),
+    };
+  });
+
+  return {
+    goodsCapacity: capacityView(totalQty(state.warehouse), state.warehouse.capacity),
+    modulesCapacity: capacityView(
+      moduleTotal(state.construction.stock),
+      moduleCapacity(state.construction),
+    ),
+    goods,
+    firstSellableGoodId,
+    modulesUnlocked,
+    modules,
+  };
+}
+
+/**
+ * Склад — [[tz-production-mars]] 9.2: «заголовок с двумя вкладками — Товары
+ * и Модули... здесь объединены в один вход намеренно — у игрока один
+ * ментальный объект "мой склад"».
+ *
+ * До этой правки вкладка «Модули» существовала только внутри экрана стройки
+ * (`ConstructionPanel` → `ModuleStock`) — находка Н-6: со склада ее было
+ * не увидеть вовсе, хотя это тот же физический склад со своим лимитом (каркас
+ * раздел 6, «строй-модули хранятся отдельным лимитом»). `ModuleStock` внутри
+ * стройки не тронут — он читает то же состояние (`construction.stock`), но
+ * живет в чужом файле, который сейчас правит другой агент.
+ */
+export function WarehousePanel({
+  onClose,
+  onOpenConstruction,
+}: {
+  onClose: () => void;
+  /**
+   * ТЗ 9.2: «Апгрейд емкости»: кнопка «Расширить склад»... тап ведет на экран
+   * стройки (9.4) с подсветкой соответствующего рецепта». Подсветка рецепта
+   * не реализована этой правкой — она требует состояния внутри экрана
+   * стройки, а этот файл сознательно не трогает `construction.tsx` (там
+   * параллельно работает другой агент); переход на экран стройки без
+   * подсветки уже выполняет буквальное требование «тап ведет на экран
+   * стройки», просто без последнего слоя полировки.
+   */
+  onOpenConstruction?: () => void;
+}) {
+  const { warehouse, sell, level, construction } = useGame();
   // Первая цель довела до склада — здесь она показывает на продажу.
   const point_sell = useGoalSpot('sell');
+  const [tab, setTab] = useState<WarehouseTab>('goods');
+
+  const view = warehousePanelView({ level, warehouse, construction });
+  const capacity = tab === 'goods' ? view.goodsCapacity : view.modulesCapacity;
 
   return (
     <div className="scrim" onClick={onClose}>
       <div onClick={(e) => e.stopPropagation()}>
         <Panel title="Склад" onClose={onClose} style={{ maxWidth: 460, width: '92vw' }}>
-          <div style={{ marginBottom: 10, fontWeight: 700 }}>
-            Занято {load.used} из {load.cap}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button
+              type="button"
+              className={`btn btn-${tab === 'goods' ? 'primary' : 'secondary'}`}
+              style={{ padding: '6px 16px', fontSize: 13 }}
+              onClick={() => setTab('goods')}
+            >
+              Товары
+            </button>
+            <button
+              type="button"
+              className={`btn btn-${tab === 'modules' ? 'primary' : 'secondary'}`}
+              style={{ padding: '6px 16px', fontSize: 13 }}
+              onClick={() => setTab('modules')}
+            >
+              Модули
+            </button>
           </div>
-          {goods.length === 0 && <div style={{ color: 'var(--text-muted)' }}>Пока пусто.</div>}
-          <div style={{ display: 'grid', gap: 8, maxHeight: '50vh', overflowY: 'auto' }}>
-            {goods.map((id) => {
-              const good = GOODS[id];
-              const qty = qtyOf(warehouse, id);
-              const free = availableOf(warehouse, id);
-              return (
-                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <GoodIcon name={good.name} />
+
+          {/* Капасити-бар ТЕКУЩЕЙ вкладки — у товаров и модулей разные лимиты
+              (каркас раздел 6: емкости растут вместе, но считаются раздельно). */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>
+              {capacity.used} / {capacity.cap}
+            </div>
+            <ProgressBar value={capacity.used} max={capacity.cap} warn={capacity.warn} />
+          </div>
+
+          {tab === 'goods' && (
+            <div style={{ display: 'grid', gap: 8, maxHeight: '46vh', overflowY: 'auto' }}>
+              {view.goods.map((row) => (
+                <div
+                  key={row.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    // Позиция с нулевым остатком приглушена, но не скрыта
+                    // (ТЗ 9.2): игрок видит полный ассортимент открытого,
+                    // а не только то, что уже успел собрать.
+                    opacity: row.dimmed ? 0.45 : 1,
+                  }}
+                >
+                  <GoodIcon name={row.name} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, color: 'var(--title)' }}>{good.name}</div>
+                    <div style={{ fontWeight: 800, color: 'var(--title)' }}>{row.name}</div>
                     <div style={{ fontSize: 12 }}>
-                      {qty} шт{qty !== free ? ` · свободно ${free}` : ''} · {good.price} кр/шт
+                      {row.qty} шт{row.qty !== row.free ? ` · свободно ${row.free}` : ''} ·{' '}
+                      {row.price} кр/шт
                     </div>
                   </div>
-                  <Button kind="secondary" disabled={free < 1} onClick={() => sell(id, 1)}>
+                  <Button
+                    kind="secondary"
+                    disabled={row.free < 1}
+                    onClick={() => sell(row.id, 1)}
+                  >
                     Продать 1
                   </Button>
                   <Button
                     kind="secondary"
-                    disabled={free < 1}
-                    // Указатель стоит на первой строке, а не на всех сразу:
-                    // цель на экране одна, иначе это уже не указатель.
-                    pointer={point_sell && free >= 1 && id === goods[0]}
-                    onClick={() => sell(id, free)}
+                    disabled={row.free < 1}
+                    // Указатель стоит на первой ПРОДАВАЕМОЙ строке, а не на
+                    // всех сразу и не на первой позиции списка вообще:
+                    // список теперь показывает и пустые позиции, а цель
+                    // должна вести туда, где есть что продать.
+                    pointer={point_sell && row.id === view.firstSellableGoodId}
+                    onClick={() => sell(row.id, row.free)}
                   >
                     Все
                   </Button>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'modules' &&
+            (view.modulesUnlocked ? (
+              <div style={{ display: 'grid', gap: 8, maxHeight: '46vh', overflowY: 'auto' }}>
+                {view.modules.map((row) => (
+                  <div
+                    key={row.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      opacity: row.locked || row.qty === 0 ? 0.45 : 1,
+                    }}
+                  >
+                    <GoodIcon name={row.name} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 800, color: 'var(--title)' }}>
+                        {row.name}
+                        {row.locked ? ' 🔒' : ''}
+                      </div>
+                      <div style={{ fontSize: 12 }}>
+                        {row.locked ? 'Требует гейтового здания' : `${row.qty} шт`}
+                        {/* ТЗ 9.2: бейдж-иконка кирки — требуется ли позиция
+                            активной стройке, видимость конкуренции без
+                            захода на экран стройки (п.3.4). */}
+                        {row.needed && (
+                          <span style={{ color: 'var(--secondary-dark)', fontWeight: 800 }}>
+                            {' '}
+                            · ⛏ нужен стройке
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // ТЗ 9.2 edge: вкладка не скрывается вовсе — «модули физически
+              // не могут появиться раньше, но вкладка не скрывается полностью,
+              // чтобы не создавать впечатление отсутствующей фичи».
+              <div style={{ color: 'var(--text-muted)' }}>
+                Появится после открытия Грузового шаттла
+              </div>
+            ))}
+
+          {onOpenConstruction && (
+            <Button
+              kind="secondary"
+              full
+              onClick={() => {
+                onClose();
+                onOpenConstruction();
+              }}
+              // ТЗ 9.2: «Расширить склад» переводит на экран стройки (9.4),
+              // не открывает стройку inline здесь же.
+            >
+              Расширить склад
+            </Button>
+          )}
         </Panel>
       </div>
     </div>

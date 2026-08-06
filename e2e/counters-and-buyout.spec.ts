@@ -124,7 +124,9 @@ test('Д-11: кнопка «Докупить» на доске дрона спи
           idx: 0,
           state: 'active',
           npc_name: 'Ирина, гидропоника',
-          positions: [{ good_id: 'tomatoes', qty: 5, filled: false }],
+          // Позиция помнит КОЛИЧЕСТВО погруженного, а не флаг «закрыта»
+          // (Т3-1): без этого частичная погрузка невыразима в принципе.
+          positions: [{ good_id: 'tomatoes', qty: 5, qty_filled: 0, filled_by: null }],
           credits_reward: 40,
           xp_reward: 10,
           refresh_at: now + 100_000,
@@ -150,13 +152,22 @@ test('Д-11: кнопка «Докупить» на доске дрона спи
 
   const after = await page.evaluate(() => {
     const state = (window as unknown as { __game: Store }).__game.getState();
+    const position = (
+      state.orders as Array<{
+        positions: Array<{ qty: number; qty_filled: number; qty_purchased?: number }>;
+      }>
+    )[0]?.positions[0];
     return {
       isotopes: state.isotopes as number,
-      filled: (state.orders as Array<{ positions: Array<{ filled: boolean }> }>)[0]
-        ?.positions[0]?.filled,
+      qty: position?.qty,
+      qty_filled: position?.qty_filled,
+      qty_purchased: position?.qty_purchased ?? 0,
     };
   });
 
   expect(after.isotopes, 'докупка обязана списать изотопы').toBeLessThan(before);
-  expect(after.filled, 'докупленная позиция обязана закрыться').toBe(true);
+  // «Закрыта» теперь читается количеством, а не флагом: позиция закрывается в
+  // два приема, и флаг на два взноса не разложить (Т3-1).
+  expect(after.qty_filled, 'докупленная позиция обязана закрыться').toBe(after.qty);
+  expect(after.qty_purchased, 'закрыта именно докупкой, а не складом').toBe(5);
 });

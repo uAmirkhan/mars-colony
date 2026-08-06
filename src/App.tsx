@@ -6,6 +6,7 @@ import { DemoBadge } from './ui/demo-badge';
 import { DroneBoard } from './ui/drone-board';
 import { Feel } from './ui/feel';
 import { GoalBar, type GoalHub, GoalScope, useFirstGoal } from './ui/first-goal';
+import { useHubBadge } from './ui/hub-badge';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
 import { ShuttleStation } from './ui/shuttle-station';
 import { SimScreen } from './ui/sim-screen';
@@ -105,6 +106,9 @@ function GameScreen() {
   const [modal, setModal] = useState<Modal>(null);
   // Первая цель: одна на экран, указателем, и она кончается ([[first-goal]]).
   const { goal, dismiss } = useFirstGoal();
+  // Бейдж хаба внимания (Н-15, каркас 13): не более одного индикатора сразу,
+  // логика приоритета — чистая функция в ui/hub-badge.ts.
+  const hub_badge = useHubBadge();
 
   // Единый шаг времени: домен считает по абсолютным меткам, UI только опрашивает.
   useEffect(() => {
@@ -202,29 +206,42 @@ function GameScreen() {
               gap: '16px 10px',
             }}
           >
-            {HUB.map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                // Кольцо цели стоит на кнопке хаба, но НИКОГДА на «Куполе»:
-                // купол и так на экране, цель в нем показывает стрелка на самой
-                // грядке, а кольцо на кнопке уводило бы от нее. Плюс кнопка
-                // «Купол» лежит в 44 точках от «Склада», и лишняя пульсация
-                // ломала опорный замер покоя в проверке ощущения.
-                className={`btn btn-secondary${
-                  goal !== null && modal === null && goal.hub !== 'dome' && goal.hub === item.id
-                    ? ' goal-point'
-                    : ''
-                }`}
-                onClick={() => setModal(item.id === 'dome' ? null : item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
+            {HUB.map((item) => {
+              // Кольцо цели стоит на кнопке хаба, но НИКОГДА на «Куполе»:
+              // купол и так на экране, цель в нем показывает стрелка на самой
+              // грядке, а кольцо на кнопке уводило бы от нее. Плюс кнопка
+              // «Купол» лежит в 44 точках от «Склада», и лишняя пульсация
+              // ломала опорный замер покоя в проверке ощущения.
+              const has_goal_ring =
+                goal !== null && modal === null && goal.hub !== 'dome' && goal.hub === item.id;
+              // Бейдж и кольцо не спорят за одну кнопку (Н-15): если на кнопке
+              // уже горит кольцо первой цели, точка на ней не рисуется — это
+              // тот же индикатор «сюда» другим способом, второй поверх первого
+              // только шумит. Купол бейджа не несет вовсе — см. hub-badge.ts.
+              const has_badge = item.id !== 'dome' && item.id === hub_badge && !has_goal_ring;
+
+              return (
+                <div key={item.id} style={{ position: 'relative', display: 'flex' }}>
+                  <button
+                    type="button"
+                    className={`btn btn-secondary${has_goal_ring ? ' goal-point' : ''}`}
+                    onClick={() => setModal(item.id === 'dome' ? null : item.id)}
+                  >
+                    {item.label}
+                  </button>
+                  {has_badge && <span className="hub-badge-dot" aria-hidden="true" />}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {modal === 'warehouse' && <WarehousePanel onClose={() => setModal(null)} />}
+        {modal === 'warehouse' && (
+          <WarehousePanel
+            onClose={() => setModal(null)}
+            onOpenConstruction={() => setModal('construction')}
+          />
+        )}
         {modal === 'factory' && <FactoryPanel onClose={() => setModal(null)} />}
         {modal === 'drone' && <DroneBoard onClose={() => setModal(null)} />}
         {modal === 'shuttle' && <ShuttleStation onClose={() => setModal(null)} />}

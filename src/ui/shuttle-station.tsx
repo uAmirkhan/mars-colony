@@ -23,8 +23,9 @@ import {
   slotXp,
   tripXp,
 } from '../domain/shuttle';
-import { availableOf } from '../domain/warehouse';
+import { availableOf, type WarehouseState } from '../domain/warehouse';
 import { useGame } from '../state/gameStore';
+import { useConfirmSpend } from './confirm-spend';
 import { useGoalSpot } from './first-goal';
 import { Button, GoodIcon, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
@@ -116,92 +117,149 @@ function SlotStrip({ trip, onOpen }: { trip: ShuttleTrip; onOpen: (idx: number) 
   );
 }
 
-/** Окно отсека: счетчик, XP, бесплатный путь первым, платный вторым. */
-function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }) {
-  const { warehouse, isotopes, loadShuttleSlot, buyoutShuttleSlot } = useGame();
-  const good = GOODS[slot.good_id];
+/**
+ * Что показывает окно отсека — счетчик и видимость кнопки «Докупить» — как
+ * чистая функция без React. Вынесена из `SlotSheet` ради находок Н-3/Н-8
+ * (`__tests__/shuttle-station.test.ts`): модульный тест домена верстку не
+ * видит, а прогнать браузер здесь нельзя (порт занят соседними агентами).
+ * Функция — тот же код, что рендерит экран, а не его пересказ в тесте: JSX
+ * ниже только читает эти поля, ничего не считает заново.
+ */
+export function slotSheetView(slot: ShuttleSlot, warehouse: WarehouseState) {
   // «Есть N» — это доступное, а не сырое qty: зарезервированное под другой заказ
   // погрузить нельзя (каркас раздел 9, `reserved` отделен от `qty`). Счетчик по
   // `qty` обещал погрузку, которой домен не давал, и тап отвечал «Нет на складе».
   const have = availableOf(warehouse, slot.good_id);
   const short = slot.qty_required - slot.qty_filled;
-  const price = slotBuyoutPrice(slot, warehouse);
   /** Отсек набран целиком: действий над ним больше нет (ТЗ 6.2, `loaded`). */
   const closed = short <= 0;
+  // Докупки не бывает, когда склад и так закрывает остаток отсека целиком
+  // (ТЗ 6.2, `covered_by_stock`: «Докупки нет — незачем»). Один и тот же
+  // предикат, что красит ленту отсеков зеленым (SlotStrip выше) — считает
+  // домен, а не верстка второй раз.
+  const covered = slotCovered(slot, warehouse);
+  return {
+    have,
+    short,
+    closed,
+    covered,
+    // ТЗ шаттла 6.2: счетчик показывает требование ОТСЕКА целиком
+    // (`qty_required`), не остаток после частичной погрузки — иначе после
+    // «Погрузить {stock}» отсек на вид уменьшается сам собой.
+    counterText: closed
+      ? `погружено ${slot.qty_filled}`
+      : `есть ${have} / нужно ${slot.qty_required}`,
+    // ТЗ 6.2, `covered_by_stock` (stock >= qty): «Докупки нет — незачем».
+    showBuyout: !closed && !covered,
+  };
+}
+
+/** Окно отсека: счетчик, XP, бесплатный путь первым, платный вторым. */
+function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }) {
+  const { warehouse, isotopes, loadShuttleSlot, buyoutShuttleSlot } = useGame();
+  const good = GOODS[slot.good_id];
+  const price = slotBuyoutPrice(slot, warehouse);
+  const { have, short, closed, showBuyout, counterText } = slotSheetView(slot, warehouse);
+  // Докупка тратит изотопы необратимо (И-12: не изымается) — каркас раздел 13
+  // требует подтверждающий попап для любой такой траты, не только для скипа.
+  const { ask, dialog } = useConfirmSpend();
 
   return (
-    <div className="scrim" onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()}>
-        <Panel title={good.name} onClose={onClose} style={{ maxWidth: 380, width: '92vw' }}>
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
-            <GoodIcon name={good.name} size={54} />
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--title)', marginTop: 6 }}>
-              {closed ? `погружено ${slot.qty_filled}` : `есть ${have} / нужно ${short}`}
+    <>
+      <div className="scrim" onClick={onClose}>
+        <div onClick={(e) => e.stopPropagation()}>
+          <Panel title={good.name} onClose={onClose} style={{ maxWidth: 380, width: '92vw' }}>
+            <div style={{ textAlign: 'center', marginBottom: 12 }}>
+              <GoodIcon name={good.name} size={54} />
+              <div
+                style={{ fontSize: 22, fontWeight: 800, color: 'var(--title)', marginTop: 6 }}
+              >
+                {counterText}
+              </div>
+              <div style={{ color: 'var(--xp)', fontWeight: 800 }}>
+                +{slotXp(slot)} XP за отсек
+              </div>
             </div>
-            <div style={{ color: 'var(--xp)', fontWeight: 800 }}>
-              +{slotXp(slot)} XP за отсек
+
+            {/*
+              Закрытый отсек — только справка, без единой кнопки действия. ТЗ
+              шаттла 6.2 задает для состояния `loaded` отдельный вид: «read-only
+              "Погружено: {qty}" без кнопок действия», и отдельной строкой в Edge:
+              «отмены погруженного отсека UI не предоставляет».
+
+              Дефект Д-29: закрытый отсек открывал то же окно, что и пустой, и
+              рисовал «Докупить 0 за 0 ⚛» рядом с «Погрузить», которая отвечала
+              «Нет на складе». Игроку предлагали купить ноль за ноль, а склад был
+              тут ни при чем.
+            */}
+            {closed && (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>
+                Отсек закрыт. Ждет отправки рейса.
+              </div>
+            )}
+
+            {/*
+              Кнопки не рисуются вовсе, а не прячутся атрибутом `hidden`: рядом
+              стоит `display: grid` инлайном, и он перебивает `[hidden]` из
+              таблицы браузера. Скрытая таким образом кнопка остается на экране
+              и остается нажимаемой — то есть дефект выглядит починенным, а
+              не является.
+            */}
+            <div style={{ display: closed ? 'none' : 'grid', gap: 8 }}>
+              {/* Три состояния кнопки по ТЗ 6.2: `covered_by_stock` — «Погрузить»;
+                  `partial` — «Погрузить {stock}», частичная погрузка допустима;
+                  `empty` — «Погрузить» задизейблена с подписью «Нет на складе».
+                  Подписи «Погрузить 0» ТЗ не знает, и она обещала бы действие,
+                  которого домен не выполнит. */}
+              <Button
+                full
+                disabled={have < 1}
+                title={have < 1 ? 'Нет на складе' : undefined}
+                onClick={() => {
+                  loadShuttleSlot(slot.idx);
+                  onClose();
+                }}
+              >
+                {have >= short || have < 1 ? 'Погрузить' : `Погрузить ${have}`}
+              </Button>
+
+              {/* ТЗ 6.2, `covered_by_stock` (stock >= qty): «Докупки нет —
+                  незачем». Кнопка не рисуется вовсе, а не прячется стилем —
+                  тот же урок Д-29: скрытая CSS'ом кнопка остается нажимаемой,
+                  непоказанная — нет. Цена стоит на самой кнопке: правило
+                  каркаса — кнопка без цены считается багом, игрок не должен
+                  угадывать, во что ему встанет тап.
+
+                  Тап не тратит изотопы напрямую — открывает подтверждающий
+                  попап (каркас раздел 13, Н-7): докупка так же необратима,
+                  как скип рейса (И-12), и то же правило защиты от случайного
+                  списания действует на нее. */}
+              {showBuyout && (
+                <Button
+                  kind="secondary"
+                  full
+                  disabled={price > isotopes}
+                  onClick={() =>
+                    ask({
+                      title: 'Докупить остаток отсека?',
+                      body: `${short} ед. «${good.name}» зачислится в отсек напрямую, минуя склад, и не вернется обратно (И-12).`,
+                      price,
+                      onConfirm: () => {
+                        buyoutShuttleSlot(slot.idx);
+                        onClose();
+                      },
+                    })
+                  }
+                >
+                  Докупить {short} за {price} {ISOTOPE_GLYPH}
+                </Button>
+              )}
             </div>
-          </div>
-
-          {/*
-            Закрытый отсек — только справка, без единой кнопки действия. ТЗ
-            шаттла 6.2 задает для состояния `loaded` отдельный вид: «read-only
-            "Погружено: {qty}" без кнопок действия», и отдельной строкой в Edge:
-            «отмены погруженного отсека UI не предоставляет».
-
-            Дефект Д-29: закрытый отсек открывал то же окно, что и пустой, и
-            рисовал «Докупить 0 за 0 ⚛» рядом с «Погрузить», которая отвечала
-            «Нет на складе». Игроку предлагали купить ноль за ноль, а склад был
-            тут ни при чем.
-          */}
-          {closed && (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Отсек закрыт. Ждет отправки рейса.
-            </div>
-          )}
-
-          {/*
-            Кнопки не рисуются вовсе, а не прячутся атрибутом `hidden`: рядом
-            стоит `display: grid` инлайном, и он перебивает `[hidden]` из
-            таблицы браузера. Скрытая таким образом кнопка остается на экране
-            и остается нажимаемой — то есть дефект выглядит починенным, а
-            не является.
-          */}
-          <div style={{ display: closed ? 'none' : 'grid', gap: 8 }}>
-            {/* Три состояния кнопки по ТЗ 6.2: `covered_by_stock` — «Погрузить»;
-                `partial` — «Погрузить {stock}», частичная погрузка допустима;
-                `empty` — «Погрузить» задизейблена с подписью «Нет на складе».
-                Подписи «Погрузить 0» ТЗ не знает, и она обещала бы действие,
-                которого домен не выполнит. */}
-            <Button
-              full
-              disabled={have < 1}
-              title={have < 1 ? 'Нет на складе' : undefined}
-              onClick={() => {
-                loadShuttleSlot(slot.idx);
-                onClose();
-              }}
-            >
-              {have >= short || have < 1 ? 'Погрузить' : `Погрузить ${have}`}
-            </Button>
-
-            {/* Цена стоит на самой кнопке: правило каркаса — кнопка без цены
-                считается багом, игрок не должен угадывать, во что ему встанет тап. */}
-            <Button
-              kind="secondary"
-              full
-              disabled={price > isotopes}
-              onClick={() => {
-                buyoutShuttleSlot(slot.idx);
-                onClose();
-              }}
-            >
-              Докупить {short} за {price} {ISOTOPE_GLYPH}
-            </Button>
-          </div>
-        </Panel>
+          </Panel>
+        </div>
       </div>
-    </div>
+      {dialog}
+    </>
   );
 }
 
@@ -212,6 +270,9 @@ function FlightView({ trip }: { trip: ShuttleTrip }) {
   const price = skipPrice(trip, now);
   // Первая цель привела сюда: дальше нажимают ускорение, иначе экран — таймер.
   const point = useGoalSpot('skip');
+  // ТЗ шаттла 6.3/11: «Ускорить» требует подтверждающего попапа с ценой —
+  // защита от случайного списания необратимой траты (каркас раздел 13).
+  const { ask, dialog } = useConfirmSpend();
 
   return (
     <>
@@ -231,11 +292,19 @@ function FlightView({ trip }: { trip: ShuttleTrip }) {
           full
           disabled={price > isotopes}
           pointer={point && price <= isotopes}
-          onClick={skipShuttle}
+          onClick={() =>
+            ask({
+              title: 'Ускорить рейс?',
+              body: 'Шаттл прибудет немедленно. Списанные изотопы не возвращаются.',
+              price,
+              onConfirm: skipShuttle,
+            })
+          }
         >
           Ускорить за {price} {ISOTOPE_GLYPH}
         </Button>
       )}
+      {dialog}
     </>
   );
 }

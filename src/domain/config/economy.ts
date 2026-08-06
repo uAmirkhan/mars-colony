@@ -224,6 +224,14 @@ export const ANTISTOCKPILE_THRESHOLD = 2;
  */
 export const ANTISTOCKPILE_FACTOR = 0.5;
 
+/**
+ * Окно скользящего среднего склада модулей, которое читает анти-стокпайл
+ * (`warehouse_avg_24h`, [[tz-common-systems-mars]] 2.3/2.4: «скользящее
+ * среднее запаса за 24ч»). Не отдельное тюнимое число из конфиг-таблицы ТЗ —
+ * прямое чтение канона «24ч» в секундах, нужное коду для формулы EMA.
+ */
+export const WAREHOUSE_AVG_WINDOW_SEC = 24 * 60 * 60;
+
 // --- И-11: floor guarantee ----------------------------------------------
 
 /**
