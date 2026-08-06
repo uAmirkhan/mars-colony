@@ -87,7 +87,7 @@ export interface Toast {
   kind: 'info' | 'warn' | 'reward';
 }
 
-interface GameState {
+export interface GameState {
   now: number;
   level: number;
   xp_into_level: number;
@@ -221,7 +221,7 @@ type SavedKey = (typeof SAVED_KEYS)[number];
 export type SaveData = Pick<GameState, SavedKey>;
 
 /** Производное состояние: пересчитывается при загрузке, а не восстанавливается. */
-type VolatileKey = 'now' | 'toasts';
+export type VolatileKey = 'now' | 'toasts';
 
 type DataKey = {
   [K in keyof GameState]: GameState[K] extends (...args: never[]) => unknown ? never : K;
@@ -265,59 +265,6 @@ export function createInitialState(): SaveData & Pick<GameState, VolatileKey> {
     drop_without_needed: 0,
     drop_last_floor: 0,
     construction: createConstruction(),
-  };
-}
-
-/**
- * Изотопы, выданные состоянию показа.
- *
- * Единственное число во всем состоянии показа, которое НЕ заработано игрой, и
- * поэтому оно названо явно, а не размазано по коду. Полный скип рейса из трех
- * отсеков стоит 210 (И-6), значит тысячи хватает примерно на пять полных
- * скипов плюс ускорения стройки.
- *
- * Почему не «бесконечно»: цена скипа выведена формулой и стоит на кнопке —
- * это единственное место, где видно, как устроена монетизация. Безлимит
- * стирает ровно то, ради чего экран показывают. Почему не «сколько заработал»:
- * к седьмому уровню экономика дает 145 изотопов, а полный скип стоит 210, то
- * есть смотрящему пришлось бы ждать половину рейса.
- */
-export const DEMO_ISOTOPES = 1000;
-
-/** Уровень состояния показа: на нем открыты все четыре механики среза. */
-export const DEMO_LEVEL = 7;
-
-/**
- * Состояние показа: колония игрока, который уже поиграл.
- *
- * Ссылку откроет рекрутер на несколько минут, а не игрок на вечер. С
- * канонического старта до шаттла идти часы, и это гарантированно закрытая
- * вкладка. Поэтому показ начинается не с начала сессии, а с ее середины.
- *
- * **Ни одно число здесь не выдумано, кроме изотопов.** Уровень, кредиты и опыт
- * — ровно то, что начислила бы экономика за семь уровней; постройки — те, что
- * игрок к этому моменту купил бы. Изотопы выданы для показа и подписаны на
- * экране отдельно.
- */
-export function createDemoState(): SaveData & Pick<GameState, VolatileKey> {
-  const base = createInitialState();
-
-  let credits = base.credits;
-  let isotopes = 0;
-  for (let lvl = 1; lvl < DEMO_LEVEL; lvl++) {
-    const reward = levelUpReward(lvl + 1);
-    credits += reward.credits ?? 0;
-    isotopes += reward.isotopes ?? 0;
-  }
-
-  return {
-    ...base,
-    level: DEMO_LEVEL,
-    credits,
-    // Заработанное складываем с выданным, а не заменяем: так число на экране
-    // остается объяснимым до последней единицы.
-    isotopes: isotopes + DEMO_ISOTOPES,
-    fields: Array.from({ length: fieldsAtLevel(DEMO_LEVEL) }, (_, i) => createField(i)),
   };
 }
 

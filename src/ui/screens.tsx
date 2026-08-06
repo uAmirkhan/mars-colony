@@ -24,6 +24,7 @@ import {
   useGame,
 } from '../state/gameStore';
 import { actWithFx } from './feel/act';
+import { useGoalFieldIdx, useGoalSpot } from './first-goal';
 
 /** Порядок карточек — порядок открытия по уровню, он же порядок покупки. */
 const PURCHASABLE_BUILDINGS: PurchasableBuilding[] = [
@@ -83,6 +84,9 @@ export function Hud() {
 export function DomeScreen() {
   const { fields, now, plant, collectField, speedupField, level } = useGame();
   const [picker, setPicker] = useState<number | null>(null);
+  // Грядка, на которую показывает первая цель. Спрашиваем один раз на экран:
+  // из цикла по грядкам хук не вызвать.
+  const goal_field = useGoalFieldIdx();
 
   const crops = ALL_GOOD_IDS.filter(
     (id) => GOODS[id].kind === 'crop' && GOODS[id].unlock_level <= level,
@@ -112,7 +116,9 @@ export function DomeScreen() {
           return (
             <div
               key={field.idx}
-              className={`slot ${ready ? 'slot-ready' : ''}`}
+              className={`slot ${ready ? 'slot-ready' : ''}${
+                goal_field === field.idx ? ' goal-point' : ''
+              }`}
               style={{ height: 104 }}
               onClick={(e) =>
                 ready
@@ -221,6 +227,8 @@ export function WarehousePanel({ onClose }: { onClose: () => void }) {
   const { warehouse, sell } = useGame();
   const goods = occupiedGoods(warehouse);
   const load = useGame(useShallow(selectWarehouseLoad));
+  // Первая цель довела до склада — здесь она показывает на продажу.
+  const point_sell = useGoalSpot('sell');
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -247,7 +255,14 @@ export function WarehousePanel({ onClose }: { onClose: () => void }) {
                   <Button kind="secondary" disabled={free < 1} onClick={() => sell(id, 1)}>
                     Продать 1
                   </Button>
-                  <Button kind="secondary" disabled={free < 1} onClick={() => sell(id, free)}>
+                  <Button
+                    kind="secondary"
+                    disabled={free < 1}
+                    // Указатель стоит на первой строке, а не на всех сразу:
+                    // цель на экране одна, иначе это уже не указатель.
+                    pointer={point_sell && free >= 1 && id === goods[0]}
+                    onClick={() => sell(id, free)}
+                  >
                     Все
                   </Button>
                 </div>

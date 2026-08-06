@@ -15,7 +15,7 @@ import {
   MAX_DEFICIT_SLOTS,
   PINCH_MAX,
   PINCH_MIN,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from '../config/economy';
 import { GOODS } from '../config/goods';
 import {
@@ -168,7 +168,7 @@ describe('4.3: награда', () => {
   it('И-3: XP считается по коэффициенту дрона, а не по производственному', () => {
     const positions = [pos('mushrooms', 3)];
     const { xp } = orderReward(positions, 0.5);
-    expect(xp).toBe(GOODS.mushrooms.base_xp * TRANSPORT_XP_K.drone * 3);
+    expect(xp).toBe(GOODS.mushrooms.base_xp * XP_MULTIPLIER_K.drone * 3);
   });
 
   it('награда всегда выше рыночной стоимости — иначе заказ бессмысленен', () => {

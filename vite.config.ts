@@ -2,7 +2,19 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+/**
+ * Префикс адреса.
+ *
+ * GitHub Pages отдает проект по пути `/<имя-репозитория>/`, и сборка с корневым
+ * префиксом там просто не находит свои же файлы: страница открывается белой, а
+ * консоль полна 404. Локально и на любом другом хостинге префикс корневой,
+ * поэтому он не зашит, а включается переменной сборки — иначе `serve-dist.mjs`
+ * и браузерные проверки пришлось бы учить чужому пути.
+ */
+const base = process.env.PAGES_BASE ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [react()],
   test: {
     include: ['src/**/*.test.ts'],

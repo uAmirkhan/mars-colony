@@ -7,8 +7,16 @@ import type { Mechanic, ModuleTier } from '../types';
 
 // --- И-3: XP транспорта -------------------------------------------------
 
-/** Коэффициент XP механики. Апгрейдами НЕ меняется. */
-export const TRANSPORT_XP_K: Record<Mechanic, number> = {
+/**
+ * Коэффициент XP механики. Апгрейдами НЕ меняется.
+ *
+ * Имя — из конфиг-таблицы [[tz-shuttle-mars]] раздел 7 (`XP_MULTIPLIER_K`,
+ * «множитель XP отсека (И-3)»). Раньше здесь стояло `TRANSPORT_XP_K` —
+ * переименование с сохранением смысла, ровно то, что каркас (`:229`) запрещает
+ * документам, а `mars-colony/CLAUDE.md` — коду: «Имена параметров задаются
+ * конфиг-таблицами ТЗ». Значения по каркасу И-3: дрон 2, шаттл 8, лайнер 8.
+ */
+export const XP_MULTIPLIER_K: Record<Mechanic, number> = {
   drone: 2,
   shuttle: 8,
   liner: 8,
@@ -171,7 +179,13 @@ export function constructionSpeedupCost(remaining_sec: number): number {
 
 // --- Строй-модули: дроп, докупка, EV ------------------------------------
 
-export const MODULE_BUYOUT_ISOTOPES: Record<ModuleTier, number> = {
+/**
+ * Цена докупки модуля за изотопы (И-12: минуя склад). Имя — из конфиг-таблицы
+ * [[tz-shuttle-mars]] раздел 7 (`MODULE_PRICE_ISOTOPES`, «базовый 150, редкий
+ * 200, гейтовый 400», «из каркаса п.4»). Прежнее `MODULE_BUYOUT_ISOTOPES` было
+ * собственным именем кода для того же параметра.
+ */
+export const MODULE_PRICE_ISOTOPES: Record<ModuleTier, number> = {
   basic: 150,
   rare: 200,
   gated: 400,
@@ -190,9 +204,9 @@ export const TIER_WEIGHTS: Record<ModuleTier, number> = {
  */
 export function shuttleSlotExpectedValue(): number {
   return (
-    TIER_WEIGHTS.basic * MODULE_BUYOUT_ISOTOPES.basic +
-    TIER_WEIGHTS.rare * MODULE_BUYOUT_ISOTOPES.rare +
-    TIER_WEIGHTS.gated * MODULE_BUYOUT_ISOTOPES.gated
+    TIER_WEIGHTS.basic * MODULE_PRICE_ISOTOPES.basic +
+    TIER_WEIGHTS.rare * MODULE_PRICE_ISOTOPES.rare +
+    TIER_WEIGHTS.gated * MODULE_PRICE_ISOTOPES.gated
   );
 }
 

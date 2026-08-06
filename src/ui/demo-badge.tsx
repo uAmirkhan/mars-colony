@@ -11,8 +11,9 @@
 
 import { useState } from 'react';
 import { skipPrice } from '../domain/shuttle';
+import { DEMO_ISOTOPES, DEMO_LEVEL } from '../state/demo';
 import { entryMode, startFresh } from '../state/entry';
-import { DEMO_ISOTOPES, DEMO_LEVEL, useGame } from '../state/gameStore';
+import { useGame } from '../state/gameStore';
 import { ISOTOPE_GLYPH } from './kit';
 
 export function DemoBadge() {

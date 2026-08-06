@@ -274,4 +274,41 @@ describe('Потребность для дроп-роллера', () => {
     const state = readyToBuild();
     expect(missingFor('warehouse_upgrade', state.stock)).toEqual({});
   });
+
+  /**
+   * [[tz-production-mars]] 3.4: «при нескольких активных стройках функция
+   * возвращает СУММАРНУЮ потребность, а приоритет отдачи — самой давно ждущей»;
+   * там же — «`active_construction_need` не врет (обе линии читаются, не только
+   * первая)». Герметик — единственный модуль в обоих рецептах, поэтому правило
+   * проверяется на нем: максимум вернул бы больший из двух, канон — их сумму.
+   */
+  it('потребность нескольких доступных строек суммируется, а не берется максимумом', () => {
+    const state = fresh();
+    state.builds = refreshBuilds(state, 21, NOW, createWarehouse());
+
+    const from_warehouse = WAREHOUSE_RECIPE.recipe.sealant ?? 0;
+    const from_habitat = CONSTRUCTION_RECIPE.habitat_block.recipe.sealant ?? 0;
+
+    expect(activeNeed(state).sealant).toBe(from_warehouse + from_habitat);
+    // Явно: максимум здесь дал бы строго меньше суммы — тест обязан краснеть,
+    // если правило снова прочитают как «самая требовательная стройка».
+    expect(activeNeed(state).sealant).toBeGreaterThan(Math.max(from_warehouse, from_habitat));
+  });
+
+  /**
+   * Та же 3.4, п.2: «`ModuleStock` не имеет `reserved` — начисленный модуль
+   * сразу физически на складе, стройка резервирует его только логически в
+   * момент `start`». Одна единица не может быть засчитана двум линиям, поэтому
+   * склад вычитается из суммы один раз, а не из каждого рецепта отдельно.
+   */
+  it('склад вычитается из суммарной потребности один раз, а не из каждой стройки', () => {
+    const state = fresh();
+    state.builds = refreshBuilds(state, 21, NOW, createWarehouse());
+
+    const from_warehouse = WAREHOUSE_RECIPE.recipe.sealant ?? 0;
+    const from_habitat = CONSTRUCTION_RECIPE.habitat_block.recipe.sealant ?? 0;
+    state.stock.sealant = from_warehouse;
+
+    expect(activeNeed(state).sealant).toBe(from_habitat);
+  });
 });
