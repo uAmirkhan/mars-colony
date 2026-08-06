@@ -36,6 +36,7 @@ import {
   refreshBuilds,
   startBuild,
 } from '../domain/construction';
+import { createDeficitLockState, type DeficitLockState } from '../domain/deficitlock';
 import {
   availableGoodsFor,
   buyoutPosition,
@@ -44,6 +45,7 @@ import {
   loadPosition,
   type OrderSlot,
   positionBuyoutPrice,
+  releaseOrderDeficitLocks,
   releaseReserved,
   sendOrder,
   slotsAtLevel,
@@ -161,6 +163,14 @@ export interface GameState {
    * которого раньше не было вовсе — формула резала вес по `stock` напрямую.
    */
   warehouse_avg: WarehouseAvgState;
+  /**
+   * И-13 (изоляция дефицита между механиками): товар -> действующий лок.
+   * Ставится генератором дрона/шаттла, когда позиция становится дефицитной,
+   * снимается на терминальном событии заказа-владельца (send/discard у
+   * дрона, отправка у шаттла). Персистентный: лок обязан пережить
+   * перезагрузку страницы так же, как сам заказ, который его держит.
+   */
+  deficit_locks: DeficitLockState;
   loadShuttleSlot: (idx: number) => void;
   buyoutShuttleSlot: (idx: number) => void;
   skipShuttle: () => void;
@@ -248,11 +258,20 @@ export const SAVE_KEY = 'mars-colony-save';
  * за каждую находку в одном и том же незавершенном прогоне незачем — достаточно,
  * что старый сейв все еще выбрасывается целиком версией 4.
  *
+ * **5 — добавлен `deficit_locks`** (И-13, изоляция дефицита между
+ * механиками, `domain/deficitlock.ts`). Новое поле состояния — товар может
+ * быть залочен дефицитом активного заказа дрона или рейса шаттла, и это
+ * обязано пережить перезагрузку так же, как сам заказ. Подставлять дефолт
+ * `{}` молча нельзя по тому же правилу, что версии 2-4: сейв без поля не
+ * отличим от сейва, где локов правда нет, а после потери всех локов другая
+ * механика получает право просить те же дефицитные товары, которые уже
+ * обещаны — ровно то, против чего написан инвариант.
+ *
  * Сейв прошлой версии выбрасывается целиком. Это дешево: живых сохранений
  * нет, а починить старый файл нечем — по нему нельзя восстановить, сколько
  * единиц было докуплено.
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 const SAVED_NUMBER_KEYS = [
   'level',
@@ -272,6 +291,7 @@ const SAVED_OBJECT_KEYS = [
   'drop_pity',
   'drop_floor_guarantee',
   'warehouse_avg',
+  'deficit_locks',
 ] as const;
 
 /**
@@ -338,6 +358,7 @@ export function createInitialState(): SaveData & Pick<GameState, VolatileKey> {
     drop_floor_guarantee: {},
     warehouse_avg: createWarehouseAvg({}, nowSec()),
     construction: createConstruction(),
+    deficit_locks: createDeficitLockState(),
   };
 }
 
@@ -520,7 +541,15 @@ export const useGame = create<GameState>()(
         set({ level, xp_into_level: xp, credits, isotopes, fields });
       };
 
-      /** Новый заказ в слот. Пул товаров — то, что игрок реально умеет производить. */
+      /**
+       * Новый заказ в слот. Пул товаров — то, что игрок реально умеет производить.
+       *
+       * `deficit_locks` мутируется доменом ПО МЕСТУ (тот же прием, что и склад):
+       * `generateOrder` сам зовет `registerDeficitLock` на дефицитные позиции.
+       * Вызывающий обязан после этого прогнать `set({ deficit_locks: {...} })` —
+       * makeOrder этого не делает сам, потому что вызывается из мест, которые
+       * и так собирают `set()` одним объектом (тик, отправка).
+       */
       const makeOrder = (idx: number, now: number): OrderSlot => {
         const s = get();
         const buildings = new Set<string>(s.buildings);
@@ -530,6 +559,8 @@ export const useGame = create<GameState>()(
           available_goods: availableGoodsFor(s.level, buildings),
           board: s.orders,
           rng: Math.random,
+          deficit_locks: s.deficit_locks,
+          now,
         });
         order.refresh_at = now;
         return order;
@@ -580,7 +611,13 @@ export const useGame = create<GameState>()(
         };
       };
 
-      /** Новый рейс шаттла. Первый в жизни игрока идет по FTUE-правилам. */
+      /**
+       * Новый рейс шаттла. Первый в жизни игрока идет по FTUE-правилам.
+       *
+       * `deficit_locks` мутируется доменом по месту — тот же прием, что у
+       * `makeOrder`: вызывающий обязан после этого прогнать `set({
+       * deficit_locks: {...} })`.
+       */
       const makeTrip = (): ShuttleTrip => {
         const s = get();
         return generateTrip({
@@ -591,6 +628,8 @@ export const useGame = create<GameState>()(
           is_first_trip: s.shuttle_arrivals === 0,
           arrival_no: s.shuttle_arrivals + 1,
           rng: Math.random,
+          deficit_locks: s.deficit_locks,
+          now: s.now,
         });
       };
 
@@ -618,6 +657,10 @@ export const useGame = create<GameState>()(
           shuttle_arrivals: s.shuttle_arrivals + 1,
           drop_pity: drop_state.next_pity,
           drop_floor_guarantee,
+          // И-13: отправка (`depart` внутри `loadSlot`/`buyoutSlot`, вызванный
+          // до `applyDeparture`) уже сняла локи этого рейса по месту — здесь
+          // только даем стору новую ссылку, как и у `warehouse`.
+          deficit_locks: { ...s.deficit_locks },
         });
         applyXp(tripXp(trip));
         pushToast('Шаттл ушел на орбиту', 'reward');
@@ -675,6 +718,11 @@ export const useGame = create<GameState>()(
             construction,
             warehouse: { ...s.warehouse },
             warehouse_avg,
+            // Новая ссылка после возможных `registerDeficitLock` внутри
+            // `makeOrder`/`makeTrip` выше — та же причина, что у `warehouse`:
+            // домен мутирует объект по месту, стор обязан отдать подписчикам
+            // новую идентичность.
+            deficit_locks: { ...s.deficit_locks },
           });
         },
 
@@ -687,7 +735,7 @@ export const useGame = create<GameState>()(
           if (!s.shuttle) return;
           const trip = { ...s.shuttle, slots: s.shuttle.slots.map((sl) => ({ ...sl })) };
 
-          const result = loadSlot(trip, idx, s.warehouse, s.now, dropCtx());
+          const result = loadSlot(trip, idx, s.warehouse, s.now, dropCtx(), s.deficit_locks);
           if (!result.ok) {
             pushToast('Нет на складе', 'warn');
             return;
@@ -709,7 +757,7 @@ export const useGame = create<GameState>()(
             return;
           }
 
-          const result = buyoutSlot(trip, idx, s.warehouse, s.now, dropCtx());
+          const result = buyoutSlot(trip, idx, s.warehouse, s.now, dropCtx(), s.deficit_locks);
           if (!result.ok) return;
 
           set({ isotopes: s.isotopes - result.price });
@@ -895,10 +943,20 @@ export const useGame = create<GameState>()(
           const result = sendOrder(slot, s.warehouse);
           if (!result.ok) return;
 
+          // И-13: терминальное событие заказа-владельца — снимаем лок ДО
+          // генерации нового заказа в тот же слот, иначе только что
+          // освободившийся слот немедленно перерегистрировал бы его же.
+          releaseOrderDeficitLocks(slot, s.deficit_locks);
+
           // Слот сразу уходит в новый заказ: у отправки нет таймера, платой за
           // скорость служит сам заказ, а не ожидание.
           orders[slot_idx] = makeOrder(slot_idx, s.now);
-          set({ orders, warehouse: { ...s.warehouse }, credits: s.credits + result.credits });
+          set({
+            orders,
+            warehouse: { ...s.warehouse },
+            credits: s.credits + result.credits,
+            deficit_locks: { ...s.deficit_locks },
+          });
           applyXp(result.xp);
           pushToast(`Дрон улетел: +${result.credits} кр, +${result.xp} XP`, 'reward');
         },
@@ -916,7 +974,9 @@ export const useGame = create<GameState>()(
           // остался бы заперт навсегда — заказа уже нет, а резерв на нем висит.
           releaseReserved(slot, s.warehouse);
           discardOrder(slot, s.now);
-          set({ orders, warehouse: { ...s.warehouse } });
+          // И-13: выброс — терминальное событие наравне с отправкой (канон 1.5).
+          releaseOrderDeficitLocks(slot, s.deficit_locks);
+          set({ orders, warehouse: { ...s.warehouse }, deficit_locks: { ...s.deficit_locks } });
           // Освобожденный резерв — такое же пополнение доступного остатка, как
           // урожай, и слот фабрики в очереди обязан на него проснуться. Раньше
           // будильник звали только сбор с грядки и сбор с фабрики, поэтому слот

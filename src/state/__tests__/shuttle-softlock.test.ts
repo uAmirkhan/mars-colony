@@ -38,6 +38,7 @@ beforeEach(() => {
     drop_floor_guarantee: {},
     warehouse_avg: createWarehouseAvg({}, NOW),
     construction: createConstruction(),
+    deficit_locks: {},
   });
 });
 

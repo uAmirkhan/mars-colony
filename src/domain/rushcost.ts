@@ -163,6 +163,40 @@ export function productionTimeMinutes(
   return minutes;
 }
 
+export interface ProductionGroupInput {
+  good_id: GoodId;
+  qty: number;
+}
+
+/**
+ * И-10 (реализуемость заказа): суммарное время производства ВСЕХ позиций
+ * заказа/рейса. Канон ([[tz-common-systems-mars]] 1.4, `totalProductionMinutes`):
+ * позиции группируются по `required_building` — внутри одного здания слоты уже
+ * учтены `productionTimeMinutes` как параллельные, а сами позиции этого здания
+ * встают в очередь друг за другом на общий пул слотов и поэтому суммируются;
+ * разные здания работают параллельно, поэтому итог — самое долгое из зданий
+ * (максимум по группам), а не сумма всех.
+ *
+ * Кропы (`required_building = null`) образуют одну общую группу — канон не
+ * дает им отдельного ключа группировки, они складываются между собой так же,
+ * как позиции одной фабрики.
+ */
+export function totalProductionMinutes(
+  positions: ProductionGroupInput[],
+  warehouse: WarehouseState = createWarehouse(),
+): number {
+  const by_building = new Map<string, number>();
+  for (const position of positions) {
+    const key = GOODS[position.good_id].required_building ?? '';
+    const minutes = productionTimeMinutes(position.good_id, position.qty, warehouse);
+    by_building.set(key, (by_building.get(key) ?? 0) + minutes);
+  }
+
+  let max_minutes = 0;
+  for (const minutes of by_building.values()) max_minutes = Math.max(max_minutes, minutes);
+  return max_minutes;
+}
+
 /**
  * Стоимость мгновенно получить `qty` единиц товара со всей недостающей цепочкой,
  * в изотопах, до наценки.
