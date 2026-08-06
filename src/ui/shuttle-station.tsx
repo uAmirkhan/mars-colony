@@ -126,6 +126,8 @@ function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }
   const have = availableOf(warehouse, slot.good_id);
   const short = slot.qty_required - slot.qty_filled;
   const price = slotBuyoutPrice(slot, warehouse);
+  /** Отсек набран целиком: действий над ним больше нет (ТЗ 6.2, `loaded`). */
+  const closed = short <= 0;
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -134,14 +136,38 @@ function SlotSheet({ slot, onClose }: { slot: ShuttleSlot; onClose: () => void }
           <div style={{ textAlign: 'center', marginBottom: 12 }}>
             <GoodIcon name={good.name} size={54} />
             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--title)', marginTop: 6 }}>
-              есть {have} / нужно {short}
+              {closed ? `погружено ${slot.qty_filled}` : `есть ${have} / нужно ${short}`}
             </div>
             <div style={{ color: 'var(--xp)', fontWeight: 800 }}>
               +{slotXp(slot)} XP за отсек
             </div>
           </div>
 
-          <div style={{ display: 'grid', gap: 8 }}>
+          {/*
+            Закрытый отсек — только справка, без единой кнопки действия. ТЗ
+            шаттла 6.2 задает для состояния `loaded` отдельный вид: «read-only
+            "Погружено: {qty}" без кнопок действия», и отдельной строкой в Edge:
+            «отмены погруженного отсека UI не предоставляет».
+
+            Дефект Д-29: закрытый отсек открывал то же окно, что и пустой, и
+            рисовал «Докупить 0 за 0 ⚛» рядом с «Погрузить», которая отвечала
+            «Нет на складе». Игроку предлагали купить ноль за ноль, а склад был
+            тут ни при чем.
+          */}
+          {closed && (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>
+              Отсек закрыт. Ждет отправки рейса.
+            </div>
+          )}
+
+          {/*
+            Кнопки не рисуются вовсе, а не прячутся атрибутом `hidden`: рядом
+            стоит `display: grid` инлайном, и он перебивает `[hidden]` из
+            таблицы браузера. Скрытая таким образом кнопка остается на экране
+            и остается нажимаемой — то есть дефект выглядит починенным, а
+            не является.
+          */}
+          <div style={{ display: closed ? 'none' : 'grid', gap: 8 }}>
             {/* Три состояния кнопки по ТЗ 6.2: `covered_by_stock` — «Погрузить»;
                 `partial` — «Погрузить {stock}», частичная погрузка допустима;
                 `empty` — «Погрузить» задизейблена с подписью «Нет на складе».
