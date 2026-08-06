@@ -42,11 +42,27 @@ describe('DeficitLock: базовый контракт (канон 1.5)', () => 
     registerDeficitLock(locks, 'jumpsuit', 'shuttle', 'trip:1', NOW);
 
     // Чужая механика не может снять чужой лок — иначе И-13 обходится в одну строку.
-    releaseDeficitLock(locks, 'jumpsuit', 'liner');
+    releaseDeficitLock(locks, 'jumpsuit', 'liner', 'trip:1');
     expect(isDeficitLockedByOtherMechanic(locks, 'jumpsuit', 'liner', NOW)).toBe(true);
 
-    releaseDeficitLock(locks, 'jumpsuit', 'shuttle');
+    releaseDeficitLock(locks, 'jumpsuit', 'shuttle', 'trip:1');
     expect(isDeficitLockedByOtherMechanic(locks, 'jumpsuit', 'liner', NOW)).toBe(false);
+  });
+
+  it('второй заказ той же механики легально делит дефицит — снятие ПЕРВОГО не трогает лок, пока жив ВТОРОЙ', () => {
+    // Прогон 6, реестр spec-prototype-build.md раздел 8 пункт 26: лок держит
+    // множество владельцев одной механики, а не единственный order_ref.
+    const locks = createDeficitLockState();
+    registerDeficitLock(locks, 'jumpsuit', 'drone', 'drone:A', NOW);
+    registerDeficitLock(locks, 'jumpsuit', 'drone', 'drone:B', NOW); // легально: та же механика
+
+    releaseDeficitLock(locks, 'jumpsuit', 'drone', 'drone:A');
+    // drone:B жив — лок все еще держит товар за дроном для другой механики.
+    expect(isDeficitLockedByOtherMechanic(locks, 'jumpsuit', 'shuttle', NOW)).toBe(true);
+
+    releaseDeficitLock(locks, 'jumpsuit', 'drone', 'drone:B');
+    // Владельцев не осталось — лок снят целиком.
+    expect(isDeficitLockedByOtherMechanic(locks, 'jumpsuit', 'shuttle', NOW)).toBe(false);
   });
 
   it('upsert-if-absent: register другой механикой поверх занятого лока — конфликт, вызывающий пропускает товар', () => {
@@ -132,7 +148,7 @@ describe('И-13: шаттл не перехватывает дефицит, за
     expect(locks.jumpsuit?.locked_by_mechanic).toBe('drone');
 
     // Терминальное событие дрон-заказа (deliver/discard) — лок снят.
-    releaseDeficitLock(locks, 'jumpsuit', 'drone');
+    releaseDeficitLock(locks, 'jumpsuit', 'drone', 'drone:0');
 
     const free_trip = generateTrip({
       level: LEVEL,

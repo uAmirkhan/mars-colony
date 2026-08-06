@@ -811,11 +811,16 @@ export function discardOrder(slot: OrderSlot, now: number): void {
  * физически (снятие и повторная установка слились бы в no-op).
  *
  * Освобождает ровно то, что сама позиция держала как дефицит (`!easy`) — та
- * же граница, что решает регистрацию в `generateOrder`.
+ * же граница, что решает регистрацию в `generateOrder`. `order_ref` —
+ * `drone:${slot.idx}`, то же значение, которым позиция регистрировалась:
+ * снимается ровно ЭТОТ заказ-владелец, а не лок целиком — сосед той же
+ * механики на тот же товар (легально по канону 1.5) остается под защитой,
+ * пока жив сам (прогон 6, реестр [[spec-prototype-build]] раздел 8, пункт 26).
  */
 export function releaseOrderDeficitLocks(slot: OrderSlot, locks: DeficitLockState): void {
   for (const position of slot.positions) {
-    if (!position.easy) releaseDeficitLock(locks, position.good_id, 'drone');
+    if (!position.easy)
+      releaseDeficitLock(locks, position.good_id, 'drone', `drone:${slot.idx}`);
   }
 }
 
