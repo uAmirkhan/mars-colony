@@ -283,6 +283,23 @@ function fallbackMinimalSlots(
  * `productionTimeMinutes` (пункт 9 реестра) — направление безопасное
  * (осторожнее, не агрессивнее), полная гарантия недостижима при узком пуле.
  *
+ * **Запоминание лучшего состояния (прогон 6, реестр [[spec-prototype-build]]
+ * раздел 8, пункт 27).** При двух и более кандидатах на замену и заведомо
+ * недостижимом бюджете цикл может ходить по кругу между уже отвергнутыми
+ * вариантами: `used` отслеживает только ТЕКУЩИЙ состав слотов, а не историю
+ * отвергнутых замен, и товар, от которого только что ушли, снова становится
+ * доступным кандидатом. Без памяти о пройденных состояниях функция отдавала
+ * то, что осталось на слоте В МОМЕНТ срабатывания `guard_limit`, — итог
+ * зависел от четности предохранителя, константы, которая настраивается по
+ * совершенно другим причинам (число попыток генератора, максимум отсеков) и
+ * ничего не знает о качестве результата. Канон 1.4 такой критерий не задает.
+ * Решено: функция запоминает лучшее из посещенных состояний — минимальное
+ * превышение бюджета (`excess = max(0, minutes - budget)`), при равенстве
+ * превышений меньшее суммарное время производства — и возвращает именно его,
+ * а не состояние на шаге останова. «Лучшее» пересчитывается на каждой
+ * итерации до мутации и один раз после выхода из цикла, чтобы не потерять
+ * последнюю мутацию, сделанную прямо перед исчерпанием `guard_limit`.
+ *
  * **И-13 на стыке с И-10 (прогон 6, реестр [[spec-prototype-build]] раздел 8,
  * пункт 25).** Канон 1.4 не оговаривает это пересечение: псевдокод
  * `rebalanceForAchievability` берет замену через `fastestProducibleGood`, не
@@ -310,7 +327,29 @@ export function rebalanceForAchievability(
   const used = new Set(slots.map((s) => s.good_id));
   const guard_limit = GEN_MAX_ATTEMPTS * SLOT_COUNT_MAX;
 
+  // Снимок состава слотов — не ссылка, а копия объектов: цикл ниже мутирует
+  // `slots` по месту, и без копии «лучшее» состояние переписывалось бы вместе
+  // с текущим.
+  const snapshotSlots = (s: ShuttleSlot[]): ShuttleSlot[] => s.map((slot) => ({ ...slot }));
+
+  let best = snapshotSlots(slots);
+  let best_excess = Math.max(0, tripProductionMinutes(best, warehouse) - budget);
+  let best_minutes = tripProductionMinutes(best, warehouse);
+
+  // «Лучшее» — см. докстринг функции: минимальное превышение бюджета, при
+  // равенстве превышений меньшее суммарное время.
+  const considerBest = (s: ShuttleSlot[]): void => {
+    const minutes = tripProductionMinutes(s, warehouse);
+    const excess = Math.max(0, minutes - budget);
+    if (excess < best_excess || (excess === best_excess && minutes < best_minutes)) {
+      best = snapshotSlots(s);
+      best_excess = excess;
+      best_minutes = minutes;
+    }
+  };
+
   for (let guard = 0; guard < guard_limit; guard++) {
+    considerBest(slots);
     if (slots.length === 0) break;
     if (tripProductionMinutes(slots, warehouse) <= budget) break;
 
@@ -360,7 +399,12 @@ export function rebalanceForAchievability(
     target.qty_required = GOOD_BASE_QTY[replacement].min;
   }
 
-  return slots;
+  // Финальное состояние после выхода из цикла — тоже кандидат: последняя
+  // мутация могла случиться прямо перед исчерпанием `guard_limit` и не успеть
+  // попасть в `considerBest` на вершине следующей итерации, которой не было.
+  considerBest(slots);
+
+  return best;
 }
 
 /**
