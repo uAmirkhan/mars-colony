@@ -16,6 +16,7 @@ import {
   moduleTotal,
 } from '../domain/construction';
 import { useGame } from '../state/gameStore';
+import { useGoalBuild } from './first-goal';
 import { Button, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
 const TIER_COLOR = {
@@ -69,6 +70,9 @@ function BuildCard({ build }: { build: BuildSlot }) {
   const def = CONSTRUCTION_RECIPE[build.kind];
   const missing = missingFor(build.kind, construction.stock);
   const enough = Object.keys(missing).length === 0;
+  // Указатель первой цели стоит на той стройке, комплект которой уже собран, —
+  // ровно на одной, а не на всех сразу.
+  const point = useGoalBuild() === build.kind && enough && build.state === 'AVAILABLE';
 
   return (
     <div className="slot" style={{ padding: 12, gap: 8, alignItems: 'stretch' }}>
@@ -128,7 +132,12 @@ function BuildCard({ build }: { build: BuildSlot }) {
               },
             )}
           </div>
-          <Button full disabled={!enough} onClick={() => startConstruction(build.kind)}>
+          <Button
+            full
+            disabled={!enough}
+            pointer={point}
+            onClick={() => startConstruction(build.kind)}
+          >
             {enough ? 'Строить' : 'Не хватает модулей'}
           </Button>
         </>

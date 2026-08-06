@@ -5,6 +5,7 @@ import { ConstructionPanel } from './ui/construction';
 import { DemoBadge } from './ui/demo-badge';
 import { DroneBoard } from './ui/drone-board';
 import { Feel } from './ui/feel';
+import { GoalBar, type GoalHub, GoalScope, useFirstGoal } from './ui/first-goal';
 import { DomeScreen, FactoryPanel, Hud, Toasts, WarehousePanel } from './ui/screens';
 import { ShuttleStation } from './ui/shuttle-station';
 import { SimScreen } from './ui/sim-screen';
@@ -95,6 +96,8 @@ export default function App() {
 function GameScreen() {
   const tick = useGame((s) => s.tick);
   const [modal, setModal] = useState<Modal>(null);
+  // Первая цель: одна на экран, указателем, и она кончается ([[first-goal]]).
+  const { goal, dismiss } = useFirstGoal();
 
   // Единый шаг времени: домен считает по абсолютным меткам, UI только опрашивает.
   useEffect(() => {
@@ -103,28 +106,47 @@ function GameScreen() {
   }, [tick]);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        flex: '1 1 auto',
-        minHeight: 0,
-        background:
-          'linear-gradient(180deg, var(--world-sky-top) 0%, var(--world-sky) 26%, var(--world-ground-far) 42%, var(--world-ground) 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
-      <Hud />
-      <Toasts />
+    <GoalScope goal={goal}>
+      <div
+        style={{
+          position: 'relative',
+          flex: '1 1 auto',
+          minHeight: 0,
+          background:
+            'linear-gradient(180deg, var(--world-sky-top) 0%, var(--world-sky) 26%, var(--world-ground-far) 42%, var(--world-ground) 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: 16,
+        }}
+      >
+        <Hud />
+        <Toasts />
 
-      <div style={{ marginTop: 40 }}>
-        <DomeScreen />
-      </div>
+        {/*
+          Мир забирает весь остаток высоты, а низ экрана стоит под ним в
+          потоке. Раньше хаб был приклеен к низу абсолютом, и грядки, стоявшие
+          по центру всего экрана, наезжали на него снизу: на телефоне кнопки
+          ускорения нижних грядок оказывались под хабом и не нажимались. Теперь
+          наехать физически нечему — низ занимает свою высоту, купол получает
+          остальное.
+        */}
+        <div
+          style={{
+            flex: '1 1 auto',
+            minHeight: 0,
+            width: '100%',
+            display: 'grid',
+            placeItems: 'center',
+            overflow: 'auto',
+            paddingTop: 40,
+          }}
+        >
+          <DomeScreen />
+        </div>
 
-      {/*
+        {/*
+        Низ экрана: плашка цели и хаб одним столбцом.
         Хаб растянут по ширине экрана и переносится по строкам.
         Дефект Д-23: без `left/right` и переноса блок вставал по статической
         позиции — по центру и одной строкой, — а шесть кнопок в строке шире
@@ -132,36 +154,59 @@ function GameScreen() {
         кнопки «Купол» и «Склад» оказывались за краем экрана: склад с телефона
         было не открыть вовсе. Проверка `mobile-fit.spec.ts` держит это числами.
       */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 14,
-          left: 0,
-          right: 0,
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          gap: 10,
-          padding: '0 12px',
-        }}
-      >
-        {HUB.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            className="btn btn-secondary"
-            onClick={() => setModal(item.id === 'dome' ? null : item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+        <div
+          style={{
+            flex: '0 0 auto',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 12px 0',
+          }}
+        >
+          {/*
+          Плашка цели стоит НАД хабом и в одном с ним блоке: она указывает на
+          кнопку хаба, и разъехаться им нельзя. Под открытой модалкой плашка не
+          рисуется — там цель уже на экране, и ее ведет кольцо на кнопке.
+        */}
+          {goal !== null && modal === null && (
+            <GoalBar
+              goal={goal}
+              onOpen={(hub: Exclude<GoalHub, 'dome'>) => setModal(hub)}
+              onDismiss={dismiss}
+            />
+          )}
 
-      {modal === 'warehouse' && <WarehousePanel onClose={() => setModal(null)} />}
-      {modal === 'factory' && <FactoryPanel onClose={() => setModal(null)} />}
-      {modal === 'drone' && <DroneBoard onClose={() => setModal(null)} />}
-      {modal === 'shuttle' && <ShuttleStation onClose={() => setModal(null)} />}
-      {modal === 'construction' && <ConstructionPanel onClose={() => setModal(null)} />}
-    </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            {HUB.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                className={`btn btn-secondary${
+                  goal !== null && modal === null && goal.hub === item.id ? ' goal-point' : ''
+                }`}
+                onClick={() => setModal(item.id === 'dome' ? null : item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {modal === 'warehouse' && <WarehousePanel onClose={() => setModal(null)} />}
+        {modal === 'factory' && <FactoryPanel onClose={() => setModal(null)} />}
+        {modal === 'drone' && <DroneBoard onClose={() => setModal(null)} />}
+        {modal === 'shuttle' && <ShuttleStation onClose={() => setModal(null)} />}
+        {modal === 'construction' && <ConstructionPanel onClose={() => setModal(null)} />}
+      </div>
+    </GoalScope>
   );
 }

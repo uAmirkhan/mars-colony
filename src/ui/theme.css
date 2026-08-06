@@ -433,6 +433,113 @@ body {
   .toast-warn {
     animation-duration: 120ms !important;
   }
+  /*
+   * Указатель цели гасит только пульсацию, но остается на экране: кольцо и
+   * стрелка застывают на последнем кадре. Убрать его совсем значило бы отнять
+   * у человека с выключенной анимацией единственное объяснение первого экрана.
+   */
+  .goal-point,
+  .goal-point::after,
+  .goal-bar {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ===========================================================================
+ * Первая цель: указатель вместо абзаца.
+ *
+ * Кольцо рисуется `outline`, а не `box-shadow`. У кнопки собственная тень
+ * («0 4px 0») несет объем, и подсветка тенью гасила бы ее: кнопка становилась
+ * плоской ровно в тот момент, когда на нее показывают. Обводка живет своим
+ * слоем и ничего не отнимает.
+ *
+ * Цвет синий, цвет опыта. Зеленым в игре уже пульсирует созревшая грядка, и
+ * если тем же зеленым звать нажать, «здесь награда» и «сюда нажми» сольются.
+ * =========================================================================== */
+
+.goal-point {
+  position: relative;
+  animation: goal-ring 1.4s ease-in-out infinite;
+}
+
+@keyframes goal-ring {
+  0%,
+  100% {
+    outline: 4px solid rgba(46, 155, 224, 0.95);
+    outline-offset: 2px;
+  }
+  50% {
+    outline: 4px solid rgba(46, 155, 224, 0.3);
+    outline-offset: 7px;
+  }
+}
+
+/* Стрелка сверху: указатель обязан быть виден и без цвета, одной формой. */
+.goal-point::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -21px;
+  width: 0;
+  height: 0;
+  border: 9px solid transparent;
+  border-top-color: var(--xp);
+  transform: translateX(-50%);
+  animation: goal-arrow 1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes goal-arrow {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+/*
+ * Плашка цели. Одна строка текста, таймер и одна кнопка — больше сюда не
+ * поместится, и это ограничение намеренное: абзац правил здесь означал бы,
+ * что интерфейс не объяснился сам.
+ */
+.goal-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+  padding: 8px 10px 8px 16px;
+  background: var(--panel);
+  border: 4px solid var(--xp);
+  border-radius: 999px;
+  box-shadow: 0 5px 0 rgba(122, 83, 48, 0.25);
+  animation: goal-bar-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.goal-bar-text {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--title);
+}
+
+.goal-bar .btn {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.goal-bar-hide {
+  padding: 7px 12px;
+}
+
+@keyframes goal-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
 }
 
 /* --- Подпись показа --- */

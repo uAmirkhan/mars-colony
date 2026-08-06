@@ -25,6 +25,7 @@ import {
 } from '../domain/shuttle';
 import { availableOf } from '../domain/warehouse';
 import { useGame } from '../state/gameStore';
+import { useGoalSpot } from './first-goal';
 import { Button, GoodIcon, ISOTOPE_GLYPH, Panel, Timer } from './kit';
 
 const TIER_COLOR: Record<string, string> = {
@@ -183,6 +184,8 @@ function FlightView({ trip }: { trip: ShuttleTrip }) {
   const { now, isotopes, skipShuttle } = useGame();
   const remaining = Math.max(0, trip.arrives_at - now);
   const price = skipPrice(trip, now);
+  // Первая цель привела сюда: дальше нажимают ускорение, иначе экран — таймер.
+  const point = useGoalSpot('skip');
 
   return (
     <>
@@ -198,7 +201,12 @@ function FlightView({ trip }: { trip: ShuttleTrip }) {
 
       {/* Ниже порога ускорять уже нечего: пол цены съел бы остаток смысла. */}
       {remaining > SKIP_HIDE_BELOW_SEC && (
-        <Button full disabled={price > isotopes} onClick={skipShuttle}>
+        <Button
+          full
+          disabled={price > isotopes}
+          pointer={point && price <= isotopes}
+          onClick={skipShuttle}
+        >
           Ускорить за {price} {ISOTOPE_GLYPH}
         </Button>
       )}
@@ -230,6 +238,8 @@ function SlotStripReadonly({ trip }: { trip: ShuttleTrip }) {
 /** Экран прибытия: ряд контейнеров, каждый вскрывается тапом. */
 function ArrivalView({ trip }: { trip: ShuttleTrip }) {
   const { collectContainerAt, collectAllContainers } = useGame();
+  // Груз прилетел — это и есть первая награда, и указатель стоит на ней.
+  const point = useGoalSpot('containers');
 
   return (
     <>
@@ -278,7 +288,7 @@ function ArrivalView({ trip }: { trip: ShuttleTrip }) {
         })}
       </div>
 
-      <Button full kind="secondary" onClick={collectAllContainers}>
+      <Button full kind="secondary" pointer={point} onClick={collectAllContainers}>
         Собрать все
       </Button>
     </>

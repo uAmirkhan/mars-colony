@@ -19,7 +19,7 @@ import {
   shuttleSkipPrice,
   shuttleSlotExpectedValue,
   TIER_WEIGHTS,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from '../config/economy';
 import {
   ALL_GOOD_IDS,
@@ -59,11 +59,11 @@ describe('И-2: XP фабричных товаров пропорционале�
 
 describe('И-3: XP транспорта', () => {
   it('коэффициенты механик зафиксированы', () => {
-    expect(TRANSPORT_XP_K).toEqual({ drone: 2, shuttle: 8, liner: 8 });
+    expect(XP_MULTIPLIER_K).toEqual({ drone: 2, shuttle: 8, liner: 8 });
   });
 
   it('производство не доминирует доставку', () => {
-    for (const k of Object.values(TRANSPORT_XP_K)) {
+    for (const k of Object.values(XP_MULTIPLIER_K)) {
       expect(k).toBeGreaterThan(PRODUCTION_XP_K);
     }
   });

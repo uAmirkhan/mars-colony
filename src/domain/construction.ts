@@ -209,16 +209,39 @@ export function startBuild(
  *
  * Читается только AVAILABLE: у IN_PROGRESS рецепт уже списан, и считать его
  * потребностью значило бы разгонять pity по модулям, которые уже не нужны.
+ *
+ * **Суммарная, а не максимальная.** [[tz-production-mars]] 3.4: «при нескольких
+ * активных стройках функция возвращает СУММАРНУЮ потребность, а приоритет
+ * отдачи — самой давно ждущей», и там же — «это ТЗ лишь гарантирует, что
+ * `active_construction_need` не врет (обе линии читаются, не только первая)».
+ * Здесь стоял `Math.max`: на живом состоянии показа обе стройки просят герметик
+ * (6 и 7), канон дает 13, максимум возвращал 7. Заниженное число уходило сразу
+ * в три места — порог анти-стокпайла, выбор самого дефицитного при форс-выдаче
+ * и `stockCoversNeed`, который объявлял склад покрывающим и глушил гарантию
+ * И-11 раньше срока.
+ *
+ * Склад вычитается ОДИН раз из суммы рецептов, а не из каждого рецепта
+ * отдельно. Причина — там же, 3.4 п.2: «`ModuleStock` не имеет `reserved`»,
+ * то есть одна и та же единица не может быть засчитана двум линиям. При складе
+ * в 6 герметиков и рецептах 6 и 7 «сумма пофайловых нехваток» дала бы 0 + 1 = 1,
+ * хотя после старта первой стройки на вторую нужно все 7: та же ложь, что и
+ * максимум, только тише.
  */
 export function activeNeed(state: ConstructionState): ModuleCounts {
-  const need: ModuleCounts = {};
+  const required: ModuleCounts = {};
   for (const build of state.builds) {
     if (build.state !== 'AVAILABLE') continue;
-    for (const [id, qty] of Object.entries(missingFor(build.kind, state.stock)) as Array<
+    for (const [id, qty] of Object.entries(recipeFor(build.kind)) as Array<
       [ModuleId, number]
     >) {
-      need[id] = Math.max(need[id] ?? 0, qty);
+      required[id] = (required[id] ?? 0) + qty;
     }
+  }
+
+  const need: ModuleCounts = {};
+  for (const [id, qty] of Object.entries(required) as Array<[ModuleId, number]>) {
+    const short = qty - (state.stock[id] ?? 0);
+    if (short > 0) need[id] = short;
   }
   return need;
 }

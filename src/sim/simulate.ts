@@ -35,7 +35,7 @@ import {
   FACTORY_QUEUE_BASE_SLOTS,
   fieldsAtLevel,
   plantingCost,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from '../domain/config/economy';
 import { ALL_GOOD_IDS, GOODS, slotQuantity } from '../domain/config/goods';
 import {
@@ -371,7 +371,7 @@ export function simulate(config: SimConfig = DEFAULT_SIM): SimResult {
               DRONE_PREMIUM_RANGE.min +
               rng() * (DRONE_PREMIUM_RANGE.max - DRONE_PREMIUM_RANGE.min);
             payout += good.price * w.qty * (1 + premium);
-            xp += good.base_xp * TRANSPORT_XP_K.drone * w.qty;
+            xp += good.base_xp * XP_MULTIPLIER_K.drone * w.qty;
             // Отправка заказа физически убирает товар со склада, но кредиты
             // платит не рынок, а заказ — поэтому consume, а не sell.
             if (!consume(warehouse, w.id, w.qty)) all_shipped = false;

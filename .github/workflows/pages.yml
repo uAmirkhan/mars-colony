@@ -1,0 +1,65 @@
+# Публикация играбельной сборки на GitHub Pages.
+#
+# Уезжает ТОЛЬКО собранная папка `dist`: исходники, заметки цикла и отчеты
+# проверяющих остаются в репозитории и на сайт не попадают.
+#
+# Перед публикацией гоняются те же ворота, что и локально. Смысл простой: на
+# страницу не должно уехать то, что не проходит проверку у нас. Браузерные
+# проверки в публикацию не входят намеренно — они поднимают свой сервер и
+# ставят браузер, это отдельная работа и отдельное время.
+
+name: Публикация игры
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Одна публикация за раз. Отменять уже идущую не надо: половина выложенной
+# сборки хуже, чем предыдущая целая.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ворота — формат, типы, тесты
+        run: npm run check
+
+      - name: Сборка
+        # Префикс адреса: Pages отдает проект по пути с именем репозитория.
+        env:
+          PAGES_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -25,7 +25,7 @@ import {
   PINCH_MAX,
   PINCH_MIN,
   REPEAT_CAP,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
 import {
@@ -508,7 +508,7 @@ export function orderReward(
   );
 
   const xp = positions.reduce(
-    (sum, p) => sum + GOODS[p.good_id].base_xp * TRANSPORT_XP_K.drone * p.qty,
+    (sum, p) => sum + GOODS[p.good_id].base_xp * XP_MULTIPLIER_K.drone * p.qty,
     0,
   );
 

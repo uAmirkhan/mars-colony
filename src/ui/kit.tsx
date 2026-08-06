@@ -45,6 +45,7 @@ export function Button({
   children,
   full,
   title,
+  pointer,
 }: {
   kind?: 'primary' | 'secondary';
   disabled?: boolean;
@@ -53,11 +54,18 @@ export function Button({
   full?: boolean;
   /** Подпись причины, по которой кнопка недоступна: ТЗ требует ее у ряда состояний. */
   title?: string;
+  /**
+   * На кнопке стоит указатель первой цели ([[first-goal]]): кольцо и стрелка.
+   *
+   * Флагом, а не свободным `className`: подсветка «нажми сюда» в игре одна, и
+   * второй способ ее нарисовать сразу же разъехался бы с первым по цвету.
+   */
+  pointer?: boolean;
 }) {
   return (
     <button
       type="button"
-      className={`btn btn-${kind}`}
+      className={`btn btn-${kind}${pointer ? ' goal-point' : ''}`}
       disabled={disabled}
       onClick={onClick}
       title={title}

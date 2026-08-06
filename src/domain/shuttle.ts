@@ -21,16 +21,14 @@ import {
   GEN_MAX_ATTEMPTS,
   MAX_DEFICIT_SLOTS,
   type OrderGenerationDegradedReason,
-  PINCH_MAX,
-  PINCH_MIN,
   REPEAT_CAP,
   SLOT_COUNT_MIN,
   shuttleSkipPrice,
   slotCountFor,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from './config/economy';
 import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS, slotQuantity } from './config/goods';
-import { availableGoodsFor } from './drone';
+import { applyPinch, availableGoodsFor } from './drone';
 import { type DropContext, rollArrival } from './droproller';
 import { buyoutPrice, productionTimeMinutes } from './rushcost';
 import type { GoodId, ModuleId } from './types';
@@ -293,8 +291,15 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
           qty = have;
         } else {
           deficit_used += 1;
-          const pinch = PINCH_MIN + Math.floor(ctx.rng() * (PINCH_MAX - PINCH_MIN + 1));
-          qty = have + pinch;
+          // Канон [[tz-common-systems-mars]] 1.4, `PINCH_MODE = "absolute"` —
+          // строка помечена «дрон, шаттл», то есть правило одно на обе
+          // механики: `stock + clamp(targetQty - stock, PINCH_MIN, PINCH_MAX)`.
+          // Здесь стояло `have + random(PINCH_MIN..PINCH_MAX)`: количество,
+          // посчитанное `slotQuantity` (каркас 3.1), выбрасывалось целиком, и
+          // дефицитный отсек терял `bracket_mult` — на двадцатом уровне просил
+          // бы столько же, сколько на втором. Реализация одна (`applyPinch`
+          // дрона), а не копия: две копии одного правила и разъехались.
+          qty = applyPinch(have, qty);
         }
       }
 
@@ -363,7 +368,7 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
 
 /** И-3: XP за отсек = базовый XP товара x K x количество. K шаттла = 8. */
 export function slotXp(slot: ShuttleSlot): number {
-  return GOODS[slot.good_id].base_xp * TRANSPORT_XP_K.shuttle * slot.qty_required;
+  return GOODS[slot.good_id].base_xp * XP_MULTIPLIER_K.shuttle * slot.qty_required;
 }
 
 export function tripXp(trip: ShuttleTrip): number {

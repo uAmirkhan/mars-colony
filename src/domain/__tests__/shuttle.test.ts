@@ -18,7 +18,7 @@ import {
   SLOT_COUNT_MAX,
   SLOT_COUNT_MIN,
   SPEEDUP_FLOOR_ISOTOPES,
-  TRANSPORT_XP_K,
+  XP_MULTIPLIER_K,
 } from '../config/economy';
 import { GOOD_BASE_QTY, GOODS } from '../config/goods';
 import { availableGoodsFor } from '../drone';
@@ -170,7 +170,7 @@ describe('И-3: XP отсека', () => {
     const trip = generateTrip(genCtx());
     const slot = trip.slots[0]!;
     expect(slotXp(slot)).toBe(
-      GOODS[slot.good_id].base_xp * TRANSPORT_XP_K.shuttle * slot.qty_required,
+      GOODS[slot.good_id].base_xp * XP_MULTIPLIER_K.shuttle * slot.qty_required,
     );
     expect(tripXp(trip)).toBe(trip.slots.reduce((a, s) => a + slotXp(s), 0));
   });

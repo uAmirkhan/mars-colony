@@ -25,14 +25,60 @@
  */
 
 import {
+  fieldsAtLevel,
   PLANT_COST_FLOOR,
   PLANT_COST_PRICE_SHARE,
   plantingCost,
 } from '../domain/config/economy';
 import { GOODS } from '../domain/config/goods';
-import type { GoodId } from '../domain/types';
+import { levelUpReward } from '../domain/config/levels';
+import { CONSTRUCTION_RECIPE } from '../domain/config/modules';
+import { createField } from '../domain/production';
+import type { GoodId, ModuleId } from '../domain/types';
 import { totalQty } from '../domain/warehouse';
-import { createDemoState, DEMO_LEVEL, useGame } from './gameStore';
+import {
+  createInitialState,
+  type GameState,
+  type SaveData,
+  useGame,
+  type VolatileKey,
+} from './gameStore';
+
+/* Определения показа держатся здесь, а не в сторе: стор обещает в своем
+ * заголовке, что не хранит ни одного числа, и это обещание стоит дороже
+ * удобства. Числа показа — параметры витрины, а не правила игры, поэтому им
+ * не место и в `domain/config`. */
+
+/**
+ * Изотопы, выданные состоянию показа.
+ *
+ * Полный скип рейса из трех отсеков стоит 210 (И-6), значит тысячи хватает
+ * примерно на пять полных скипов плюс ускорения стройки.
+ *
+ * Почему не «бесконечно»: цена скипа выведена формулой и стоит на кнопке — это
+ * единственное место, где видно, как устроена монетизация. Безлимит стирает
+ * ровно то, ради чего экран показывают. Почему не «сколько заработал»: к
+ * седьмому уровню экономика дает 145 изотопов, а полный скип стоит 210, то
+ * есть смотрящему пришлось бы ждать половину рейса.
+ *
+ * Число живет здесь, а не в `domain/config`: это параметр показа, а не правило
+ * игры. И не в сторе — стор обещает в своем заголовке, что чисел не держит.
+ */
+export const DEMO_ISOTOPES = 1000;
+
+/** Уровень состояния показа: на нем открыты все четыре механики среза. */
+export const DEMO_LEVEL = 7;
+
+/**
+ * Сколько рейсов колония уже отправила до показа.
+ *
+ * Не украшение. Первый в жизни рейс идет по правилам FTUE: укороченный таймер
+ * и форсированный состав отсеков ([[tz-shuttle-mars]] 2.1). Показ при нуле
+ * прибытий получал именно его — то есть объявлял себя серединой сессии, а
+ * предъявлял обучающий рейс. Четыре — столько рейсов успевает сделать игрок,
+ * дошедший до седьмого уровня.
+ */
+export const DEMO_ARRIVALS = 4;
 
 /** Сколько минут до прибытия рейса видит открывший ссылку. */
 export const DEMO_TRIP_MIN_LEFT = 2;
@@ -45,12 +91,34 @@ export const DEMO_TRIP_MIN_LEFT = 2;
 const DEMO_BUILDINGS = ['food_module', 'mining_site'] as const;
 
 /**
- * Модули стройки. Комплект на расширение склада полный (6/6/6 по рецепту) —
- * это дает открывшему ссылку одно немедленное действие. На жилой блок
- * комплект неполный сознательно: его добирают контейнеры прилетающего рейса,
- * иначе шаттл прилетает в никуда.
+ * Модули стройки.
+ *
+ * Комплект на расширение склада ПОЛНЫЙ — это дает открывшему ссылку одно
+ * немедленное действие. На жилой блок комплект неполный сознательно: его
+ * добирают контейнеры прилетающего рейса, иначе шаттл прилетает в никуда.
+ *
+ * Считается от рецепта, а не выписан числами. Выписанные числа расходятся с
+ * рецептом молча: правка конфига делает «полный комплект» неполным, показ
+ * теряет свое единственное немедленное действие, и никто об этом не узнает.
  */
-const DEMO_MODULES = { filter: 6, cable: 6, sealant: 7, panel: 4, frame: 3 } as const;
+const HABITAT_SHORT_BY = 2;
+
+function demoModules(): Partial<Record<ModuleId, number>> {
+  const out: Partial<Record<ModuleId, number>> = {};
+  for (const [id, need] of Object.entries(
+    CONSTRUCTION_RECIPE.warehouse_upgrade.recipe,
+  ) as Array<[ModuleId, number]>) {
+    out[id] = need;
+  }
+  for (const [id, need] of Object.entries(CONSTRUCTION_RECIPE.habitat_block.recipe) as Array<
+    [ModuleId, number]
+  >) {
+    // Складываем, а не заменяем: герметик входит в оба рецепта, и склад у
+    // модулей общий. Иначе второй проход обнулил бы первый комплект.
+    out[id] = (out[id] ?? 0) + Math.max(0, need - HABITAT_SHORT_BY);
+  }
+  return out;
+}
 
 /** Запас на полках: чтобы доска дрона и очередь фабрики были не пустыми. */
 const DEMO_STOCK = { algae: 12, soy: 10, mushrooms: 8 } as const;
@@ -75,6 +143,40 @@ const DEMO_FIELDS: Array<{ good: GoodId; left_sec: number }> = [
 ];
 
 /**
+ * Основание состояния показа: уровень, кошелек, грядки.
+ *
+ * **Ни одно число здесь не выдумано, кроме изотопов.** Уровень, кредиты и опыт
+ * — ровно то, что начислила бы экономика за семь уровней; число грядок — то,
+ * что дает уровень. Изотопы выданы и подписаны на экране отдельно.
+ */
+export function createDemoState(): SaveData & Pick<GameState, VolatileKey> {
+  const base = createInitialState();
+
+  let credits = base.credits;
+  let isotopes = 0;
+  for (let lvl = 1; lvl < DEMO_LEVEL; lvl++) {
+    const reward = levelUpReward(lvl + 1);
+    credits += reward.credits ?? 0;
+    isotopes += reward.isotopes ?? 0;
+  }
+
+  return {
+    ...base,
+    level: DEMO_LEVEL,
+    credits,
+    // Заработанное складываем с выданным, а не заменяем: так число на экране
+    // остается объяснимым до последней единицы.
+    isotopes: isotopes + DEMO_ISOTOPES,
+    fields: Array.from({ length: fieldsAtLevel(DEMO_LEVEL) }, (_, i) => createField(i)),
+    // Рейсы, уже сделанные колонией. Без этого числа генератор считает рейс
+    // первым в жизни и выдает обучающий: укороченный таймер и форсированный
+    // состав отсеков (ТЗ шаттла 2.1). Показ объявляет себя серединой сессии —
+    // и обязан ею быть.
+    shuttle_arrivals: DEMO_ARRIVALS,
+  };
+}
+
+/**
  * Собрать состояние показа и подставить его в стор.
  *
  * Возвращает `false`, если по дороге что-то не сложилось (рейс не выдался,
@@ -95,7 +197,7 @@ export function applyDemoState(): boolean {
   store.setState({
     construction: {
       ...store.getState().construction,
-      stock: { ...store.getState().construction.stock, ...DEMO_MODULES },
+      stock: { ...store.getState().construction.stock, ...demoModules() },
     },
   });
 
