@@ -1,6 +1,6 @@
 {
   "name": "burovaya-01",
-  "source": "C:\\Users\\Amir\\mars-colony\\design\\models\\burovaya-01.glb",
+  "source": "C:\\Ai\\Jarvis\\mars-colony\\design\\models\\burovaya-01.glb",
   "measured": {
     "ok": true,
     "file": "burovaya-01.glb",
@@ -50,6 +50,10 @@
     {
       "level": "заметка",
       "text": "по Z модель уже своей клетки на 94 см (0.062 при 0.5 клетки). Между ней и соседями останется дыра."
+    },
+    {
+      "level": "стоп",
+      "text": "объект расплющен: наименьший габарит 0.062 против наибольшего 0.974, отношение 0.063. Это блин, а не объемная модель — генерация не удалась, ставить нельзя."
     },
     {
       "level": "заметка",
