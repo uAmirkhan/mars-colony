@@ -38,3 +38,9 @@ shots/
 test-results/
 probe-out.json
 e2e/tmp-*.spec.ts
+
+# Сборочная сцена Blender: 121 МБ, в git не уезжает
+design/scene/
+# Тяжелые побочные файлы конвертации: пересобираются скриптом
+design/models/osmotr/**/*.fbx
+design/models/osmotr/**/*.blender.log
