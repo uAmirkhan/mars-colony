@@ -44,3 +44,10 @@ design/scene/
 # Тяжелые побочные файлы конвертации: пересобираются скриптом
 design/models/osmotr/**/*.fbx
 design/models/osmotr/**/*.blender.log
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
+*.gate.lock*

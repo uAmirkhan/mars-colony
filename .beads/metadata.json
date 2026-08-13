@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "mars_colony",
+  "project_id": "715d5143-1ec9-409d-96bd-dfb67895ff23"
+}
