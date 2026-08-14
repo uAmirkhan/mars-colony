@@ -103,10 +103,12 @@ for img in bpy.data.images:
 # и он не становится текстурой — материал остается без картинки. Расширение
 # в имени датаблока чинит это на входе, а не в Unity. Проверено и поймано в
 # прогоне 7, узел 0.
-for img in bpy.data.images:
+# Имена картинок делаем УНИКАЛЬНЫМИ детерминированно: импортер GLB дает
+# двум картам одно имя (Image_0 / Image_0.001), и при экспорте вторая
+# терялась - дно карьера приезжало без текстуры (замеры 3-5 цикла ours).
+for i, img in enumerate(list(bpy.data.images)):
     img.file_format = 'PNG'
-    if not img.name.lower().endswith('.png'):
-        img.name = img.name + '.png'
+    img.name = f'tex_{i}.png'
 
 for o in meshes():
     o.data.calc_loop_triangles()
