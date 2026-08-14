@@ -82,7 +82,7 @@ mapr.inputs['From Max'].default_value = 1.0
 ramp.color_ramp.elements[0].position = 0.0
 ramp.color_ramp.elements[0].color = (0.23, 0.09, 0.06, 1)   # дно ям, темный
 ramp.color_ramp.elements[1].position = 1.0
-ramp.color_ramp.elements[1].color = (0.58, 0.27, 0.15, 1)   # верх, светлый
+ramp.color_ramp.elements[1].color = (0.52, 0.23, 0.12, 1)   # верх, светлый
 e = ramp.color_ramp.elements.new(0.55)
 e.color = (0.45, 0.19, 0.11, 1)
 nt.links.new(geo.outputs['Position'], sep.inputs['Vector'])
@@ -90,7 +90,7 @@ nt.links.new(sep.outputs['Z'], mapr.inputs['Value'])
 nt.links.new(mapr.outputs['Result'], ramp.inputs['Fac'])
 nt.links.new(ramp.outputs['Color'], mix.inputs['A'])
 nt.links.new(nz.outputs['Color'], mix.inputs['B'])
-mix.inputs['Factor'].default_value = 0.18
+mix.inputs['Factor'].default_value = 0.24
 nt.links.new(mix.outputs['Result'], bsdf.inputs['Base Color'])
 ground.data.materials.append(m)
 
@@ -179,9 +179,9 @@ put('burovaya-05', 6.6, 3.4, 2.4, 250)
 put('dekor-09', 8.2, 1.2, 1.9, 130)          # скальный выход у добычи
 
 # лед: кластер из трех на севере (один меш, три поворота - дешевая вариативность)
-put('grunt-led-1', -1.5, 6.5, 2.0, 0, sink_frac=0.35)
-put('grunt-led-3', 0.6, 7.3, 1.7, 140, sink_frac=0.35)
-put('grunt-led-1', 1.9, 5.9, 1.3, 260, sink_frac=0.40)
+put('grunt-led-1', -1.5, 6.5, 2.0, 0, sink_frac=0.45)
+put('grunt-led-3', 0.6, 7.3, 1.7, 140, sink_frac=0.45)
+put('grunt-led-1', 1.9, 5.9, 1.3, 260, sink_frac=0.50)
 
 # камни-декор двумя кластерами по краям
 put('dekor-07', -8.5, -4.5, 1.8, 0)
