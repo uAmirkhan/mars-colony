@@ -24,6 +24,17 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 const GRID = 2.0;
 
 /**
+ * Сетка и уровень среза для метрики "доля пятна застройки" — детектор дефекта
+ * "плита" (объект слит с плоской подложкой-основанием, run-7, см. verdict()).
+ * Числа не подобраны заново: это те же 48 и 0.25, что в независимом замере
+ * `design/tools/plita.py` (Blender) и его перепроверке без Blender
+ * (`src/design-tools/__tests__/glb-footprint.ts`) — на `zhiloy-bashnya` оба
+ * метода сошлись до третьего знака (тонкость 0.692, доля 0.06/0.0551).
+ */
+const FOOTPRINT_GRID = 48;
+const FOOTPRINT_LEVEL = 0.25;
+
+/**
  * Чем покрашена сцена сейчас.
  *
  * В кадре живут два набора и ровно два способа покраски: KayKit сидит на одном
@@ -169,6 +180,31 @@ function bufferBytes(json, bin, dir, buffer_idx) {
   return existsSync(path) ? readFileSync(path) : null;
 }
 
+/**
+ * Все вершины позиции примитива в локальных координатах меша.
+ *
+ * `positionBox()` довольствуется заголовком аксессора (min/max) — этого
+ * хватает для габарита, но не для доли пятна застройки: та считает клетки
+ * XZ-сетки, а не коробку, и без реальных точек ее не построить.
+ */
+function readPositions(json, bin, dir, accessor_idx) {
+  const acc = json.accessors?.[accessor_idx];
+  if (!acc || acc.componentType !== 5126 || acc.type !== 'VEC3') return null;
+  const view = json.bufferViews?.[acc.bufferView];
+  if (!view) return null;
+  const raw = bufferBytes(json, bin, dir, view.buffer);
+  if (raw === null) return null;
+
+  const stride = view.byteStride ?? 12;
+  const start = (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+  const out = new Array(acc.count);
+  for (let i = 0; i < acc.count; i++) {
+    const at = start + i * stride;
+    out[i] = [raw.readFloatLE(at), raw.readFloatLE(at + 4), raw.readFloatLE(at + 8)];
+  }
+  return out;
+}
+
 function measureGltf(path) {
   const { json, bin, dir } = loadGltf(path);
   const nodes = json.nodes ?? [];
@@ -187,6 +223,9 @@ function measureGltf(path) {
   let submeshes = 0;
   let unmeasured = 0;
   const materials = [];
+  // Точки для метрики "доля пятна застройки" (детектор "плита") — в мировых
+  // координатах, накапливаются попутно с обходом узлов, отдельно от габарита.
+  const footprintPoints = [];
 
   const walk = (idx, parent) => {
     const node = nodes[idx];
@@ -210,6 +249,11 @@ function measureGltf(path) {
           if (prim.material !== undefined) {
             const mat = json.materials?.[prim.material]?.name ?? `материал_${prim.material}`;
             if (!materials.includes(mat)) materials.push(mat);
+          }
+
+          const positions = readPositions(json, bin, dir, prim.attributes?.POSITION);
+          if (positions !== null) {
+            for (const p of positions) footprintPoints.push(applyMat(world, p));
           }
 
           const box = positionBox(json, bin, dir, prim.attributes?.POSITION);
@@ -249,6 +293,25 @@ function measureGltf(path) {
   const size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
   const center = [(max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2];
 
+  // Доля пятна застройки: доля клеток XZ-сетки, где есть геометрия выше
+  // FOOTPRINT_LEVEL высоты от низа. Ловит "плиту" — объект слит с плоским
+  // постаментом, тонкость которого выглядит объемной, а настоящее здание
+  // занимает малую долю его следа на грунте (см. verdict()).
+  let dolya = null;
+  if (footprintPoints.length > 0 && size[0] > 0 && size[2] > 0) {
+    const cut = min[1] + size[1] * FOOTPRINT_LEVEL;
+    const low = new Set();
+    const high = new Set();
+    for (const p of footprintPoints) {
+      const cx = Math.min(FOOTPRINT_GRID - 1, Math.floor(((p[0] - min[0]) / size[0]) * FOOTPRINT_GRID));
+      const cz = Math.min(FOOTPRINT_GRID - 1, Math.floor(((p[2] - min[2]) / size[2]) * FOOTPRINT_GRID));
+      const key = cx * FOOTPRINT_GRID + cz;
+      low.add(key);
+      if (p[1] >= cut) high.add(key);
+    }
+    dolya = low.size > 0 ? high.size / low.size : null;
+  }
+
   const textures = (json.images ?? []).map((i) => i.uri ?? '(встроенная)');
 
   return {
@@ -261,6 +324,7 @@ function measureGltf(path) {
     // Пивот в glTF — начало координат сцены: узлы уже приведены к нему обходом.
     pivot_offset: center,
     cells: [size[0] / GRID, size[2] / GRID],
+    dolya,
     tris,
     meshes,
     submeshes,
@@ -361,8 +425,40 @@ function verdict(m) {
     say('стоп', `объект расплющен: наименьший габарит ${fmt(Math.min(sx, sy, sz))} против наибольшего ${fmt(biggest)}, отношение ${thinness.toFixed(3)}. Это блин, а не объемная модель — генерация не удалась, ставить нельзя.`);
   }
 
-  if (m.tris > 12000) {
-    say('стоп', `${m.tris} треугольников. Набор держится на низкополигональных моделях в двести-две тысячи, и веб-плеер платит за каждую. Упрости.`);
+  // Вырождение другого рода: объект слит с плоской подложкой-основанием.
+  // Генератор восстановил из фотографии плоский постамент, и настоящее здание
+  // занимает малую долю пятна застройки — а сам постамент дает габариту
+  // достаточную высоту, чтобы тонкость выглядела здоровой. Тонкость меряет
+  // форму коробки, а не то, чем коробка заполнена: `zhiloy-bashnya` дает
+  // тонкость 0.692 (лучшее число в списке "годны") при доле 0.06 — здание
+  // занимает 6% своего пятна застройки, остальное подложка (run-7, доказано
+  // `src/design-tools/__tests__/defects-run7-plita.test.ts`, независимо
+  // перепроверено `design/tools/plita.py` и без Blender). Пороги 0.35/0.55 —
+  // те же, что в `plita.py`, проверены на всей партии run-7 (14 моделей
+  // "плита" из 33). Не считаем, если объект уже отклонен как "блин" выше —
+  // это два разных дефекта с разными числами, не один и тот же случай.
+  if (biggest > 0 && thinness >= 0.15 && m.dolya !== null) {
+    const pct = Math.round(m.dolya * 100);
+    if (m.dolya < 0.35) {
+      say('стоп', `объект на подложке (плита): геометрия выше четверти высоты занимает только ${pct}% пятна застройки. Похоже, генератор восстановил из фото плоский постамент, а настоящий объект — малая доля объема поверх него. Правкой не чинится, нужна перегенерация.`);
+    } else if (m.dolya < 0.55) {
+      say('заметка', `подложка заметна: геометрия выше четверти высоты занимает ${pct}% пятна застройки. Возможно, часть объема — плоское основание, а не сам объект, посмотри глазами.`);
+    }
+  }
+
+  // Бюджет треугольников — два контракта по происхождению модели (2026-08-14).
+  // Кит и мелкий реквизит живут в 200-2000, для них 12000 — потолок с запасом.
+  // Сгенерированные модели несут форму плотной сеткой: пробы grunt-regolit-2
+  // (loop/run-7/razvilka-polikaunt-otvet.md) показали, что на 20000 форма
+  // рвется лоскутами, чисто только около 45000. Резать такую сетку до 12000 —
+  // ломать форму, поэтому жесткий стоп поднят на 45000, а диапазон
+  // 12000-45000 — правка: норма для сгенерированной модели, перебор для кита.
+  // Вес сборки на этих бюджетах меряется пересборкой, а не оценкой: геометрия
+  // растет, текстура нет (замер: около 684 КБ на модель при 12000/1024).
+  if (m.tris > 45000) {
+    say('стоп', `${m.tris} треугольников — выше бюджета сгенерированных моделей (45000, измерен пробами run-7). Ниже этого числа форма уже не выигрывает, а веб-плеер платит за каждый. Упрости.`);
+  } else if (m.tris > 12000) {
+    say('правка', `${m.tris} треугольников — норма только для сгенерированной модели сцены (ее бюджет 45000), кит и реквизит держат 12000. Если модель из кита — упрости; если сгенерированная — провериться пересборкой, вес считается фактической сборкой.`);
   } else if (m.tris > 4000) {
     say('правка', `${m.tris} треугольников — втрое тяжелее самой сложной модели набора. Проверь, не осталось ли фаски и подразделения от моделирования.`);
   }
