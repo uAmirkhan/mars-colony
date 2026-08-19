@@ -1,0 +1,27 @@
+Gemini_Generated_Image_1y5hh1y5hh1y5hh1|led-glyba-kolotaya|3500|1.15
+Gemini_Generated_Image_33wy1233wy1233wy|led-greben|4000|1.15
+Gemini_Generated_Image_71jvgl71jvgl71jv|led-polynya|3000|1.6
+Gemini_Generated_Image_hwl6qhwl6qhwl6qh|led-glyba-granenaya|3500|1.15
+Gemini_Generated_Image_l69jk4l69jk4l69j|led-valun-v-shube|3000|1.15
+Gemini_Generated_Image_pj2fatpj2fatpj2f|led-skvazhina|4000|1.15
+Gemini_Generated_Image_qio01sqio01sqio0|led-paryashchiy-vykhod|3500|1.15
+Gemini_Generated_Image_rv0tilrv0tilrv0t|led-glyba-kristallicheskaya|3500|1.15
+Gemini_Generated_Image_xdmp4ixdmp4ixdmp|led-kristally|3500|1.15
+Gemini_Generated_Image_xr0atmxr0atmxr0a|led-kristally-variant|3500|1.15
+Gemini_Generated_Image_i91sxai91sxai91s|modul-tonnelnyy|3000|1.15
+Gemini_Generated_Image_k9m75jk9m75jk9m7|kamen-gladkiy|2500|1.15
+Gemini_Generated_Image_t3kl16t3kl16t3kl|kamen-granenyy|2500|1.15
+Gemini_Generated_Image_uta1mputa1mputa1|kamni-para|3000|1.15
+Gemini_Generated_Image_cibvz7cibvz7cibv|tsisterna|3500|1.15
+Gemini_Generated_Image_7hy7he7hy7he7hy7|figura-neset|4000|1.15
+Gemini_Generated_Image_hs0lnphs0lnphs0l|figura-osmatrivaetsya|4000|1.15
+Gemini_Generated_Image_yuxnowyuxnowyuxn|figura-ukazyvaet|4000|1.15
+Gemini_Generated_Image_yuxnowyuxnowyuxn (1)|figura-ukazyvaet-variant|4000|1.15
+Gemini_Generated_Image_5cmtg15cmtg15cmt|angar-s-panelyami|12000|1.15
+Gemini_Generated_Image_i97cbji97cbji97c|kupol-grib|10000|1.15
+Gemini_Generated_Image_5fufag5fufag5fuf|ballony-na-poddone|3000|1.15
+Gemini_Generated_Image_85bzmp85bzmp85bz|yashchiki-shtabel|3500|1.15
+Gemini_Generated_Image_8j0jus8j0jus8j0j|kadka-s-zelenyu|2500|1.15
+Gemini_Generated_Image_gnaywegnaywegnay|antenna-tarelka|3500|1.15
+Gemini_Generated_Image_oyaif6oyaif6oyai|solnechnaya-batareya|3000|1.6
+Gemini_Generated_Image_re8c2dre8c2dre8c|truba-na-kozlakh|3000|1.15
