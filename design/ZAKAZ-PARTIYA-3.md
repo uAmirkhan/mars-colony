@@ -109,8 +109,36 @@ seed                фиксированный
 |---|---|---|
 | **колёсный марсоход** | заменяет удалённый `dekor-08`, был самым массовым декором | 4-6 |
 | **флажок на постаменте** | мелкий декор в промежутках ядра | 6-8 |
+| **колено трубы 90°** | без него сеть труб собирается только прямой змейкой | 4-6 |
+| **тройник трубы** | нужен там, где ветка отходит вбок | 2-3 |
 
 Дрона, купола-героя и склада в заказе больше нет: см. выше.
+
+### Почему колено и тройник важнее, чем кажутся
+
+Владелец записал претензию так: «трубы раскинуты по карте вообще непонятно
+как». Закон §6 свода отвечает, почему это читается мусором: **труба осмысленна,
+только если ОБА её конца физически входят в объект.** Конец, обрывающийся в
+воздухе, превращает самый заметный материал сцены в шум.
+
+Выполнить этот закон нечем. В библиотеке есть **только прямой сегмент**
+`truba-na-kozlakh`. Из одних прямых кусков сеть собирается змейкой вдоль одной
+оси и никуда не приходит: на любом повороте конец повисает.
+
+Колено и тройник закрывают это: с набором из трёх сеть можно провести от
+здания до здания по осям сетки, с прямыми углами, и оба конца сядут на объекты.
+
+**Стилистику держать по прямому сегменту**, он уже принят: песочное тело с
+поперечными поясами, тёмно-красный фланцевый воротник в стыке, красные торцевые
+раструбы с открытым жерлом, жёлтые скобы-хомуты, красные А-образные козлы.
+
+Три признака обязательны, иначе куски не сядут в одну систему:
+- **все концы открыты и показывают жерло** — это и делает трубу соединителем;
+- **фланец стоит в точке стыка**: у прямого в середине, у колена в самом углу
+  поворота, у тройника там, где ветка отходит. По этому признаку глаз читает
+  сеть собранной из кусков, а не гнутой;
+- **козлы под каждой ветвью** — иначе куски сядут на разной высоте и не
+  состыкуются.
 
 ## 5. Приёмка
 
@@ -162,6 +190,18 @@ Stylised 3D game asset, single object floating in empty white space, product pho
 
 ```
 Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A colony marker post: a short thick mast on a chunky hexagonal base plinth, a stiff triangular pennant near the top, a small solar panel and a signal lamp on the mast. Cream and warm grey with an orange pennant and a teal lamp. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
+```
+
+### Колено трубы 90°
+
+```
+Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A ninety degree pipe elbow on trestles: a thick sand-coloured pipe running in from one side, turning a right angle, and running out to the other, with a deep red flange collar clamped at the corner of the bend. Deep red flared end caps at both open ends showing the bore, yellow bracket clamps holding the pipe down, and red A-frame trestle legs under each arm. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
+```
+
+### Тройник трубы
+
+```
+Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A T-junction pipe on trestles: a thick sand-coloured pipe running straight through, with a third branch of the same pipe leaving it at a right angle from the middle, and a deep red flange collar clamped where the branch meets the main run. Deep red flared end caps at all three open ends showing the bore, yellow bracket clamps, and red A-frame trestle legs under each arm. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
 ```
 
 **Обязательно** держать в каждом промпте `floating in empty white space` и
