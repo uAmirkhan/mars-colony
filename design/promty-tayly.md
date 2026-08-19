@@ -85,6 +85,32 @@ A patch of pale glacial ice seen from above: a cracked frozen surface of flat cr
 ## 3. Камень — дно карьера
 
 ```
+Seamless top-down game texture for a stylised Mars city builder: crushed rock rubble. Small angular chips of one even size, tightly packed, each chip clearly separated from its neighbours by a distinct dark shadow line so the individual pieces read separately even from far away. Warm rust-orange stone, dusty and matte. Flat overcast light, square 1:1.
+```
+
+Принят с этим промптом, исходник `design/etalons/tile-rock-istochnik.jpg`.
+Замер после запекания: пятна 0.162, контраст 0.0712, зерно 0.0037 — против
+0.018 контраста у песка, то есть вчетверо жёстче, как и требует дно карьера.
+
+> **Решает не цвет, а тень между кусками.** Через это прошли семь попыток, и
+> вот их итог одной строкой каждая:
+>
+> | просили | получили | почему |
+> |---|---|---|
+> | `mixed small fragments` | разнокалиберность, полоса крошки | «вперемешку» понято буквально |
+> | `freshly broken stone, no dust` | `#986940`, темнее цели на 0.1 | свежий скол и есть тёмный |
+> | `sun-bleached, chalky` | `#BDB3A5`, известняк | выбелило вместе с теплом |
+> | `rusty ochre` | `#8B5231`, темно и перенасыщено | густой цвет тянет вниз по яркости |
+> | `light, never dark` | зерно упало вдвое | убрало тени между кусками заодно |
+> | `dry adobe tan` | тон 31° против 21° у песка | саман это жёлтое слово |
+> | **`distinct dark shadow line between chips`** | **принято** | тень и делает крошку крошкой |
+>
+> Мораль: у мелкого зерна материал несёт **разделение**, а не оттенок. Яркость
+> и тон запекатель приведёт сам, а разделение он создать не может.
+
+Старый промпт, для истории:
+
+```
 A patch of dry crushed rock: uniformly sized angular chips of pale stone packed edge to edge, every fragment roughly the same size as every other one. The stone is sun-bleached warm grey-tan, chalky and matte, and the whole field is coated in fine pale dust that also fills the gaps between the fragments.
 
 VALUE. The whole field is light. It sits closer in brightness to dry pale sand than to dark wet stone. No fragment is near-black, no deep shadow pockets between fragments, no dark patches anywhere. The gaps between chips are filled with pale dust, not with darkness.
