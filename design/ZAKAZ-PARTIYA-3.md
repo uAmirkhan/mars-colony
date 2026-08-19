@@ -93,23 +93,24 @@ seed                фиксированный
 
 ---
 
-## 4. Список В: новые объекты, которых не было
+## 4. Список В: новые объекты, которых нет ни в одной библиотеке
 
-Картинок для них нет. **Их сделает владелец в Gemini** и положит туда же, в
-`design/etalons/to generate/`. Промпты — в разделе 6 ниже.
+**Список сокращён.** Проверка библиотеки fal.ai показала, что из двадцати
+девяти купленных моделей в сцене стоят только десять, а девятнадцать
+простаивают. Среди простаивающих нашлись готовые дрон-курьер (три уровня),
+жилой купол с вентиляционной решёткой, круглая жилая башня, ангар и склад.
+
+**Заказывать их незачем — они уже есть.** Осталось два объекта.
+
+Картинок для них нет, их сделает владелец в Gemini и положит в
+`design/etalons/to generate/`. Промпты в разделе 7.
 
 | объект | зачем | сколько нужно в сцене |
 |---|---|---|
-| **колёсный марсоход** | заменяет удалённый `dekor-08`, был самым массовым | 4-6 |
-| **дрон-курьер** | движение в кадре, признак жизни | 2-3 |
+| **колёсный марсоход** | заменяет удалённый `dekor-08`, был самым массовым декором | 4-6 |
 | **флажок на постаменте** | мелкий декор в промежутках ядра | 6-8 |
-| **жилой купол, 2-3 разных** | **самый важный.** В центре кадра сейчас нет объекта-героя | 1 крупный + 2 поменьше |
 
-Купол-герой — приоритет номер один во всём заказе. Замер по кольцам показал,
-что у сцены нет середины: плотность растёт наружу, а самый крупный силуэт
-стоит в двадцати семи метрах от центра.
-
----
+Дрона, купола-героя и склада в заказе больше нет: см. выше.
 
 ## 5. Приёмка
 
@@ -157,29 +158,11 @@ design/vygruzka-trellis-3/
 Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A six-wheeled Mars rover: chunky ribbed wheels on visible suspension arms, a boxy instrument body with a hinged lid, a small mast with a camera head, and a folded robotic arm along one side. Cream and warm grey painted panels with orange accent stripes, teal glass on the camera head. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
 ```
 
-### Дрон-курьер
-
-```
-Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A small delivery drone: a smooth rounded hull with four ducted rotor rings on short arms, a teal camera lens at the front, a cargo box clamped underneath, and stubby landing skids. Cream body with orange accent bands and a charcoal underside. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
-```
-
 ### Флажок на постаменте
 
 ```
 Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A colony marker post: a short thick mast on a chunky hexagonal base plinth, a stiff triangular pennant near the top, a small solar panel and a signal lamp on the mast. Cream and warm grey with an orange pennant and a teal lamp. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
 ```
-
-### Жилой купол-герой
-
-Самый важный. Нужен крупный, чтобы держать центр кадра.
-
-```
-Stylised 3D game asset, single object floating in empty white space, product photography, no ground and no shadow beneath. A large habitation dome: a ribbed hemispherical shell on a low cylindrical base, a prominent airlock entrance with a rounded door and a lamp above it, a row of round porthole windows around the base, and two small service tanks against one side. Cream ribs over a warm grey shell, teal glass in the portholes, orange trim on the airlock. Chunky rounded forms, thick parts, nothing thinner than a finger. Soft even studio light. Square 1:1.
-```
-
-И два поменьше, вариациями той же строки: заменить `A large habitation dome`
-на `A medium habitation dome with a single porthole row and no service tanks` и
-на `A small habitation pod, one airlock and two portholes, no base ring`.
 
 **Обязательно** держать в каждом промпте `floating in empty white space` и
 `no ground and no shadow beneath`: без этих слов генератор подкладывает под
