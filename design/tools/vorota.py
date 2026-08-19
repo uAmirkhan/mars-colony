@@ -60,24 +60,47 @@ def footprint(mask):
 
 
 niz = footprint(verts[:, 1] <= low + 0.08 * height)
-telo = footprint((verts[:, 1] >= low + 0.25 * height) & (verts[:, 1] <= low + 0.35 * height))
-plita = niz / telo if telo > 0 else 0.0
+# Максимальное сечение по всей высоте, а не на фиксированных 25-35%: у объекта
+# на ножках, треноге или ступнях тело там тонкое по устройству, и отношение
+# росло само, без всякого блина. Восемь ложных срабатываний из восьми в первой
+# партии — ровно этот случай.
+sechenia = []
+for i in range(10):
+    lo = low + height * i / 10
+    sechenia.append(footprint((verts[:, 1] >= lo) & (verts[:, 1] <= lo + height / 10)))
+maks = max(sechenia) if sechenia else 0.0
+plita = niz / maks if maks > 0 else 0.0
+
+# У полусферы, конуса и кучи максимальное сечение и есть низ: отношение всегда
+# около 1.0, и тонкий блин подвинет его лишь на десятые — гейт его пропустит.
+# Для таких форм число неинформативно, и честнее сказать это вслух, чем
+# печатать успокоительную единицу. Триггер: максимальное сечение лежит ниже
+# 15% полной высоты.
+vysota_maks = sechenia.index(maks) / 10
+chislo_ne_rabotaet = vysota_maks < 0.15
 
 size = verts.max(axis=0) - verts.min(axis=0)
 
+# Контракт раздела 6 задания: полоса 15 000 - 28 000, снята с моделей,
+# принятых в сцену. Потолок из аргумента больше не потолок, а верх полосы.
 gates = [
     (f"1 треугольников <= {ceiling}", tris <= ceiling, tris),
-    (f"2 треугольников >= {int(0.4 * ceiling)}", tris >= 0.4 * ceiling, tris),
+    ("2 треугольников >= 15000", tris >= 15000, tris),
     ("3 мешей ровно 1", len(meshes) == 1, len(meshes)),
     ("4 материалов ровно 1", len(materials) == 1, len(materials)),
     ("5 текстур ровно 1", textures == 1, textures),
-    ("6 текстура 1024-2048", tex_size != "нет" and 1024 <= int(tex_size.split("x")[0]) <= 2048, tex_size),
-    (f"7 плиты нет (<= {plita_limit})", plita <= plita_limit, round(plita, 3)),
+    ("6 текстура 2048", tex_size != "нет" and int(tex_size.split("x")[0]) == 2048, tex_size),
+    (f"7 плиты нет (<= {plita_limit})", plita <= plita_limit or chislo_ne_rabotaet, round(plita, 3)),
 ]
 
 print(f"{src.split('/')[-1]}: треугольников {tris}, мешей {len(meshes)}, "
       f"материалов {len(materials)}, текстур {textures}, текстура {tex_size}, "
       f"габарит {size[0]:.2f} x {size[1]:.2f} x {size[2]:.2f}, плита {plita:.2f}")
+
+if chislo_ne_rabotaet:
+    print(f"  плита {plita:.2f} НЕ ИНФОРМАТИВНА: максимальное сечение на высоте"
+          f" {vysota_maks:.0%} — форма расширяется книзу (полусфера, конус, куча)."
+          f" Решать по нижнему рендеру.")
 
 failed = [f"{name} (сейчас {value})" for name, ok, value in gates if not ok]
 if failed:
