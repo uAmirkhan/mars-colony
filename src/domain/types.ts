@@ -13,7 +13,10 @@ export type BuildingType =
   | 'atmospheric_module'
   | 'textile_module'
   | 'warehouse'
-  | 'construction';
+  | 'construction'
+  // Водная станция: топит добытый лед в воду. Единственное здание, чей вход —
+  // добытое сырье, а не культура.
+  | 'water_plant';
 
 export type Mechanic = 'drone' | 'shuttle' | 'liner';
 
@@ -48,7 +51,11 @@ export type GoodId =
   | 'oxygen_tank'
   // Добываемые: у них нет входов, их не выращивают и не перерабатывают.
   | 'regolith'
-  | 'water_ice';
+  | 'water_ice'
+  | 'iron_ore'
+  | 'methane'
+  // Переработка добытого: вода топится изо льда на водной станции.
+  | 'water';
 
 export interface Good {
   id: GoodId;

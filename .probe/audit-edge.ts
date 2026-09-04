@@ -1,0 +1,18 @@
+import { slotsAtLevel } from '../src/domain/drone';
+import { flightTimerMin, slotCountFor, FACTORY_QUEUE_BASE_SLOTS } from '../src/domain/config/economy';
+import { GOODS, harvestQty } from '../src/domain/config/goods';
+import { xpToNext } from '../src/domain/config/levels';
+console.log('slotsAtLevel(1) =', slotsAtLevel(1), ' <- ниже брекета дрона; ожидалось 0');
+console.log('slotsAtLevel(0) =', slotsAtLevel(0));
+console.log('flightTimerMin(4) =', flightTimerMin(4), '(шаттл ниже ур.5)');
+console.log('slotCountFor(4, 0.5) =', slotCountFor(4, 0.5));
+console.log('');
+console.log('FTUE ур.1: xp до ур.2 =', xpToNext(1), '; водоросли дают', GOODS.algae.base_xp * harvestQty('algae'), 'xp за сбор,', GOODS.algae.prod_time_sec, 'с цикл, 4 грядки');
+const perCollect = GOODS.algae.base_xp * harvestQty('algae');
+console.log('  сборов до ур.2:', Math.ceil(xpToNext(1) / perCollect), '=', (Math.ceil(xpToNext(1) / perCollect) / 4 * GOODS.algae.prod_time_sec / 60).toFixed(0), 'минут при 4 грядках, единственный доступный глагол');
+console.log('');
+console.log('слотов очереди у здания:', FACTORY_QUEUE_BASE_SLOTS);
+const mining = Object.values(GOODS).filter((g) => g.required_building === 'mining_site');
+console.log('рецептов у mining_site:', mining.length, '->', mining.map((g) => g.id + '(ур.' + g.unlock_level + ')').join(', '));
+const food = Object.values(GOODS).filter((g) => g.required_building === 'food_module');
+console.log('рецептов у food_module:', food.length, '->', food.map((g) => g.id).join(', '));
