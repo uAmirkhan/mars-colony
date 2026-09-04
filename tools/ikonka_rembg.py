@@ -1,9 +1,11 @@
-"""Вырезка предмета из генерации нейросетью (rembg, BiRefNet-lite), а не по цвету.
+"""Вырезка предмета из генерации нейросетью (rembg), а не по цвету.
 
 Эвристики по цвету/оттенку/мягкости (ikonka_vyrezka.py, element_narezka.py)
 брали вместе с предметом его тень-подставку или отрезали серые детали.
 Сеть видит предмет как предмет: подставка уходит, контур целый (проверено на
-монете, баллоне, супе, реголите 2026-09-05, три модели, BiRefNet чище всех).
+монете, баллоне, супе, реголите 2026-09-05). Модель по умолчанию u2net: BiRefNet
+и isnet отрезают белые коробочки хлопка как фон; для элементов интерфейса на
+сплошном фоне BiRefNet чище по кромке (--model birefnet-general-lite).
 
     python ikonka_rembg.py <папка|файл> --out <папка> [--razmer 512] [--cvet FBEBBA] [--tolshchina 0.021]
                           [--bez-obvodki] [--model birefnet-general-lite] [--pole 0.08]
@@ -19,8 +21,10 @@ from rembg import remove, new_session
 
 def obrabotat(put, out, sess, razmer, cvet, dolya, obvodka, pole_dolya, kvadrat):
     im = Image.open(put).convert("RGB")
-    rgba = remove(im, session=sess)
-    a = np.asarray(rgba.getchannel("A"))
+    # у сети берём только маску: под альфой 0 она обнуляет и цвет, а полости
+    # силуэта нужно возвращать исходным цветом
+    maska = remove(im, session=sess, only_mask=True).convert("L")
+    rgba = im.convert("RGBA"); rgba.putalpha(maska)
     # мусор: крохи вне главного объекта — отбросить компоненты меньше 0.2% площади
     bb = rgba.getbbox()
     if bb is None:
@@ -51,7 +55,7 @@ if __name__ == "__main__":
     ap.add_argument("--razmer", type=int, default=512); ap.add_argument("--cvet", default="FBEBBA")
     ap.add_argument("--tolshchina", type=float, default=0.021)
     ap.add_argument("--bez-obvodki", action="store_true"); ap.add_argument("--ne-kvadrat", action="store_true")
-    ap.add_argument("--pole", type=float, default=0.08); ap.add_argument("--model", default="birefnet-general-lite")
+    ap.add_argument("--pole", type=float, default=0.08); ap.add_argument("--model", default="u2net", help="u2net держит белые части предметов (хлопок), birefnet-general-lite чище по кромке для элементов интерфейса")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     sess = new_session(a.model)
