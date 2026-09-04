@@ -1,0 +1,356 @@
+{
+  "ikonki": [
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-burger.png",
+      "size": [
+        75,
+        65
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 3.5294113159179688,
+      "fon_razbros_cvet": 252.0,
+      "fon_priboden": false,
+      "sat_median": 12.757201194763184,
+      "v_min": 27.05882453918457,
+      "v_max": 100.0,
+      "blik_share": 44.225641025641025,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-eskimo.png",
+      "size": [
+        100,
+        125
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 95.29412078857422,
+      "fon_razbros_cvet": 675.0,
+      "fon_priboden": false,
+      "sat_median": 66.66667175292969,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 6.209992518081304,
+      "ploshchad_share": 96.232,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-kirpichi.png",
+      "size": [
+        90,
+        90
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 68.23529052734375,
+      "fon_razbros_cvet": 505.0,
+      "fon_priboden": false,
+      "sat_median": 60.000003814697266,
+      "v_min": 28.627452850341797,
+      "v_max": 100.0,
+      "blik_share": 35.53086419753087,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-klubnika.png",
+      "size": [
+        60,
+        55
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 8.23529052734375,
+      "fon_razbros_cvet": 484.0,
+      "fon_priboden": false,
+      "sat_median": 34.131996154785156,
+      "v_min": 21.960784912109375,
+      "v_max": 100.0,
+      "blik_share": 56.333333333333336,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-kukuruza.png",
+      "size": [
+        85,
+        90
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 61.568626403808594,
+      "fon_razbros_cvet": 471.0,
+      "fon_priboden": false,
+      "sat_median": 76.07843017578125,
+      "v_min": 23.921567916870117,
+      "v_max": 100.0,
+      "blik_share": 20.535947712418302,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-maslo.png",
+      "size": [
+        90,
+        125
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 91.76470184326172,
+      "fon_razbros_cvet": 422.0,
+      "fon_priboden": false,
+      "sat_median": 53.33332824707031,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 19.498881431767337,
+      "ploshchad_share": 99.33333333333333,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-moloko.png",
+      "size": [
+        65,
+        60
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 6.274505615234375,
+      "fon_razbros_cvet": 70.0,
+      "fon_priboden": true,
+      "sat_median": 7.480314254760742,
+      "v_min": 51.37255096435547,
+      "v_max": 100.0,
+      "blik_share": 77.75196049956433,
+      "ploshchad_share": 88.28205128205127,
+      "chitaemost_96": null,
+      "provaleno_porogov": 1
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-molotok.png",
+      "size": [
+        85,
+        90
+      ],
+      "klass": "vne-domena",
+      "fon_razbros_v": 9.803924560546875,
+      "fon_razbros_cvet": 345.0,
+      "fon_priboden": false,
+      "sat_median": 41.550437927246094,
+      "v_min": 14.901961326599121,
+      "v_max": 100.0,
+      "blik_share": 50.9281045751634,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-morozhenoe.png",
+      "size": [
+        90,
+        125
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 80.0,
+      "fon_razbros_cvet": 557.0,
+      "fon_priboden": false,
+      "sat_median": 18.918922424316406,
+      "v_min": 0.7843137979507446,
+      "v_max": 100.0,
+      "blik_share": 21.184166387118417,
+      "ploshchad_share": 52.995555555555555,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-sakhar-malaya.png",
+      "size": [
+        65,
+        55
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 12.549018859863281,
+      "fon_razbros_cvet": 110.0,
+      "fon_priboden": false,
+      "sat_median": 8.771928787231445,
+      "v_min": 36.47058868408203,
+      "v_max": 100.0,
+      "blik_share": 50.12451085023123,
+      "ploshchad_share": 78.62937062937063,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-sakhar.png",
+      "size": [
+        105,
+        120
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 83.13725280761719,
+      "fon_razbros_cvet": 640.0,
+      "fon_priboden": false,
+      "sat_median": 63.15789794921875,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 2.628232301822806,
+      "ploshchad_share": 93.61111111111111,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-sherst.png",
+      "size": [
+        90,
+        95
+      ],
+      "klass": "vne-domena",
+      "fon_razbros_v": 54.117645263671875,
+      "fon_razbros_cvet": 452.0,
+      "fon_priboden": false,
+      "sat_median": 14.693877220153809,
+      "v_min": 18.823530197143555,
+      "v_max": 100.0,
+      "blik_share": 18.68054743244824,
+      "ploshchad_share": 99.98830409356725,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-sirop.png",
+      "size": [
+        100,
+        130
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 79.21568298339844,
+      "fon_razbros_cvet": 583.0,
+      "fon_priboden": false,
+      "sat_median": 56.0,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 3.8384615384615386,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-smetana.png",
+      "size": [
+        95,
+        110
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 88.62745666503906,
+      "fon_razbros_cvet": 600.0,
+      "fon_priboden": false,
+      "sat_median": 56.846473693847656,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 21.419624217118997,
+      "ploshchad_share": 68.75598086124401,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-steklo.png",
+      "size": [
+        80,
+        95
+      ],
+      "klass": "vne-domena",
+      "fon_razbros_v": 62.35293960571289,
+      "fon_razbros_cvet": 439.0,
+      "fon_priboden": false,
+      "sat_median": 62.352943420410156,
+      "v_min": 27.45098114013672,
+      "v_max": 100.0,
+      "blik_share": 44.48543945183819,
+      "ploshchad_share": 99.85526315789474,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-syr.png",
+      "size": [
+        90,
+        125
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 91.76470184326172,
+      "fon_razbros_cvet": 454.0,
+      "fon_priboden": false,
+      "sat_median": 71.92076110839844,
+      "v_min": 0.3921568989753723,
+      "v_max": 100.0,
+      "blik_share": 24.152004353346634,
+      "ploshchad_share": 98.00888888888889,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-trostnik.png",
+      "size": [
+        80,
+        90
+      ],
+      "klass": "sochny",
+      "fon_razbros_v": 6.274505615234375,
+      "fon_razbros_cvet": 53.0,
+      "fon_priboden": true,
+      "sat_median": 68.14815521240234,
+      "v_min": 21.960784912109375,
+      "v_max": 100.0,
+      "blik_share": 8.938271604938272,
+      "ploshchad_share": 28.125,
+      "chitaemost_96": null,
+      "provaleno_porogov": 1
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-yaytso.png",
+      "size": [
+        105,
+        135
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 21.960784912109375,
+      "fon_razbros_cvet": 242.0,
+      "fon_priboden": false,
+      "sat_median": 10.67193603515625,
+      "v_min": 38.82352828979492,
+      "v_max": 100.0,
+      "blik_share": 81.02564102564102,
+      "ploshchad_share": 97.67195767195767,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    },
+    {
+      "file": "..\\loop\\promty\\etalon\\znachok-yogurt.png",
+      "size": [
+        85,
+        130
+      ],
+      "klass": "blednyy",
+      "fon_razbros_v": 80.39215850830078,
+      "fon_razbros_cvet": 608.0,
+      "fon_priboden": false,
+      "sat_median": 31.503421783447266,
+      "v_min": 0.0,
+      "v_max": 100.0,
+      "blik_share": 12.389140271493213,
+      "ploshchad_share": 100.0,
+      "chitaemost_96": null,
+      "provaleno_porogov": 0
+    }
+  ],
+  "nabor": {
+    "razbros_porog": 20.0,
+    "po_klassam": {
+      "sochny": {
+        "razbros": null,
+        "ok": null,
+        "n": 1
+      }
+    }
+  }
+}

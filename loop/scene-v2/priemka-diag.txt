@@ -1,0 +1,246 @@
+=== КАМЕРА ===
+поз      (39.00, 43.10, 39.00)
+поворот  (38.00, 225.00, 0.00)
+орто     True  размер 28,00
+клип     near 0,10  far 1000,0
+
+=== ОБЪЕКТЫ ===
+имя                            метры XxYxZ            центр                    пиксели ВхШ    доляH   зазор  
+zhiloy-bashnya                   7,13x13,00x 8,36     (-17.0, 6.5, 4.2)        303x235        0.303    0,000
+sklad-bunkery                   22,79x 9,60x23,84     (-31.0, 4.8, 68.6)       498x706        0.498    0,000
+sklad-angar                     17,99x 9,20x19,50     (-6.7, 4.6, 50.9)        421x568        0.421    0,000
+zavod-pishchevoy                16,06x 9,00x16,84     (-4.9, 4.5, 29.0)        382x499        0.382    0,000
+angar-s-panelyami               21,96x 8,80x24,58     (-28.7, 4.4, 27.9)       486x705        0.486    0,000
+burovaya-03                      7,05x 8,40x 4,15     (-35.5, 4.2, 7.0)        205x170        0.205    0,000
+angar-s-panelyami               20,97x 8,40x23,46     (15.6, 4.2, 45.4)        464x673        0.464    0,000
+burovaya-04                      7,45x 7,80x 8,73     (-43.8, 3.9, 2.8)        236x245        0.236    0,000
+kupol-geodezicheskiy            14,21x 7,60x13,03     (11.7, 3.8, -31.1)       319x413        0.319    0,000
+ploshchadka-shattla             14,57x 7,31x 2,87     (48.8, 3.7, 12.6)        238x264        0.238    0,000
+burovaya-02                      5,66x 7,20x 5,66     (-3.7, 3.6, -49.3)       189x172        0.189    0,000
+zhiloy-kupol                    13,17x 7,20x13,28     (3.5, 3.6, -2.1)         307x401        0.307    0,000
+burovaya-05                      6,12x 6,80x 6,55     (-21.9, 3.4, -30.4)      194x192        0.194    0,000
+kupol-geodezicheskiy            11,97x 6,40x10,97     (-5.2, 3.2, -37.6)       268x348        0.268    0,000
+shattl-zakrytyy                  8,00x 6,20x 8,94     (37.9, 3.1, 5.2)         219x257        0.219    0,000
+shattl-otkrytyy                  7,00x 5,80x 8,49     (29.4, 2.9, 7.9)         202x235        0.202    0,000
+kupol-geodezicheskiy             9,25x 5,40x10,10     (8.4, 2.7, -44.3)        226x293        0.226    0,000
+tsisterna                        4,30x 5,40x 7,96     (9.9, 2.7, 24.9)         171x186        0.171    0,000
+kupol-grib                       7,81x 5,40x 7,80     (2.7, 2.7, 13.6)         197x237        0.197    0,000
+tsisterna                        3,98x 5,00x 7,37     (-32.5, 2.5, -4.2)       159x172        0.159    0,000
+tsisterna                        3,82x 4,80x 7,07     (36.6, 2.4, 36.9)        152x165        0.152    0,000
+kupol-grib                       6,65x 4,60x 6,65     (-9.9, 2.3, 13.6)        168x202        0.168    0,000
+kupol-tunnel                     1,46x 4,40x 3,47     (5.7, 2.2, -12.7)        100x75         0.100    0,000
+modul-tonnelnyy                  3,49x 4,40x 8,83     (12.1, 2.2, -17.8)       158x187        0.158    0,000
+modul-tonnelnyy                  8,63x 4,30x 3,41     (-11.7, 2.2, -8.6)       154x182        0.154    0,000
+modul-tonnelnyy                  3,33x 4,20x 8,43     (-2.7, 2.1, -21.3)       151x178        0.151    0,000
+modul-tonnelnyy                  8,23x 4,10x 3,25     (-26.4, 2.1, 9.1)        147x174        0.147    0,000
+led-skvazhina                    2,86x 3,40x 3,06     (-13.1, 1.7, -26.5)      94x90          0.094    0,000
+led-skvazhina                    2,52x 3,00x 2,70     (-29.9, 1.5, -26.3)      83x79          0.083    0,000
+figura-osmatrivaetsya            0,98x 1,80x 0,88     (-42.6, 0.9, 6.4)        40x28          0.040    0,000
+figura-osmatrivaetsya            0,88x 1,80x 0,98     (37.5, 0.9, 0.7)         40x28          0.040    0,000
+figura-osmatrivaetsya            0,88x 1,80x 0,98     (-9.1, 0.9, 29.0)        40x28          0.040    0,000
+figura-ukazyvaet                 1,05x 1,80x 0,97     (31.8, 0.9, 9.2)         41x31          0.041    0,000
+figura-ukazyvaet                 0,97x 1,80x 1,05     (-11.3, 0.9, 5.7)        41x31          0.041    0,000
+KALIBR-figura-1m80               0,97x 1,80x 1,05     (32.6, 0.9, 1.8)         41x31          0.041    0,000
+figura-neset                     0,95x 1,80x 1,15     (-15.3, 0.9, -26.2)      42x32          0.042    0,000
+figura-ukazyvaet-variant         1,05x 1,80x 0,97     (11.7, 0.9, -31.7)       41x31          0.041    0,000
+figura-neset                     1,15x 1,80x 0,95     (9.9, 0.9, 4.5)          42x32          0.042    0,000
+
+парит над землей: 0, утоплено: 0
+
+=== ОРИЕНТАЦИЯ И ЕДИНИЧНОСТЬ ===
+Шаг 5 спеки расстановки: у всего, что имеет опознающую
+грань, поворот строго кратен 90 градусам. Свободный угол
+только у камня, льда, грунта и пыли.
+
+  объектов с опознающей гранью: 433, нарушений ориентации: 0
+    sklad: 2 штук при пределе 1
+  нарушений единичности: 1
+
+=== СОСТАВ НАБОРА ===
+Требование владельца: на сцене должны стоять ВСЕ модели
+из VseAssety и ни одной сверх. Список берется из файла,
+полученного разбором той сцены по ссылкам GUID.
+
+  в списке 40, на сцене 40
+  все модели набора на сцене
+
+=== СВЯЗКИ АССЕТОВ ===
+Таблица назначений требует, чтобы часть моделей не стояла
+сама по себе: шаттл на своей площадке, груз вплотную к
+владельцу, фигура у конкретного здания. Одиночный груз
+посреди пустоши - нарушение, а не декор.
+
+    shattl-otkrytyy: до ближайшего 12,6 м при пределе 12,0
+  шаттлы на площадке: 2 шт, нарушений 1. шаттл без своей площадки не ставится
+  груз у владельца: 6 шт, нарушений 0. груз обязан лежать вплотную к тому, что его возит
+  фигуры у здания: 9 шт, нарушений 0. признак жизни принадлежит конкретному зданию
+  труба у трубопровода: 1 шт, нарушений 0. сегмент существует, чтобы закрыть разрыв
+нарушений связок всего: 1
+
+=== ВЫЗОВЫ ОТРИСОВКИ, ОЦЕНКА ПО СЦЕНЕ ===
+ЭТО ОЦЕНКА, А НЕ ЗАМЕР. Настоящий счет вызовов дает только
+запущенная сборка через UnityStats.batches; из batchmode
+режим игры не поднять. Оценка считает нижнюю границу:
+сколько групп по материалу есть в сцене. Реальное число
+будет НЕ МЕНЬШЕ, потому что пакетирование срывается на
+разных мешах, тенях и прозрачности.
+
+рендереров всего            : 535
+уникальных материалов       : 85
+отбрасывают тень            : 535  (тень идет отдельным проходом, вызовы примерно удваиваются)
+нижняя граница вызовов      : 85  плюс проход теней ~85 = ~170
+
+Самые частые материалы:
+  rekv-krem                            95 рендереров
+  rekv-grafit                          78 рендереров
+  rekv-zheltyy                         54 рендереров
+  rekv-rzhavyy                         41 рендереров
+  rekv-siniy                           40 рендереров
+  rekv-goluboy                         38 рендереров
+  rekv-zelenyy                         35 рендереров
+  model-kamni-para                     20 рендереров
+материалов ровно с одним рендерером: 59  (каждый такой это гарантированный отдельный вызов)
+
+=== ПЕРЕСЕЧЕНИЯ ===
+Постройка внутри постройки или заметное взаимное
+проникновение габаритов. Легкое касание не считается:
+порог - перекрытие больше 25% объема меньшего из двух.
+пересечений построек: 0
+
+=== ИЕРАРХИЯ РАЗМЕРОВ, ВТОРОЙ КАНАЛ ===
+Метры из кода против пикселей на кадре. Пиксели считаются
+по ВЕРТИКАЛИ объекта (низ центра к верху центра), а не по
+габариту целиком: габарит включает глубину, и широкий
+низкий объект по нему выходит крупнее узкого высокого.
+
+имя                              метры    пиксели   пикс/м  
+zhiloy-bashnya                   13,00    183       14,1    
+sklad-bunkery                    9,60     135       14,1    
+sklad-angar                      9,20     129       14,1    
+zavod-pishchevoy                 9,00     127       14,1    
+angar-s-panelyami                8,80     124       14,1    
+burovaya-03                      8,40     118       14,1    
+angar-s-panelyami                8,40     118       14,1    
+burovaya-04                      7,80     110       14,1    
+kupol-geodezicheskiy             7,60     107       14,1    
+ploshchadka-shattla              7,31     103       14,1    
+burovaya-02                      7,20     101       14,1    
+zhiloy-kupol                     7,20     101       14,1    
+burovaya-05                      6,80     96        14,1    
+kupol-geodezicheskiy             6,40     90        14,1    
+shattl-zakrytyy                  6,20     87        14,1    
+shattl-otkrytyy                  5,80     82        14,1    
+kupol-geodezicheskiy             5,40     76        14,1    
+tsisterna                        5,40     76        14,1    
+kupol-grib                       5,40     76        14,1    
+tsisterna                        5,00     70        14,1    
+tsisterna                        4,80     68        14,1    
+kupol-grib                       4,60     65        14,1    
+kupol-tunnel                     4,40     62        14,1    
+modul-tonnelnyy                  4,40     62        14,1    
+modul-tonnelnyy                  4,30     61        14,1    
+modul-tonnelnyy                  4,20     59        14,1    
+modul-tonnelnyy                  4,10     58        14,1    
+led-skvazhina                    3,40     48        14,1    
+led-skvazhina                    3,00     42        14,1    
+figura-osmatrivaetsya            1,80     25        14,1    
+figura-osmatrivaetsya            1,80     25        14,1    
+figura-osmatrivaetsya            1,80     25        14,1    
+figura-ukazyvaet                 1,80     25        14,1    
+figura-ukazyvaet                 1,80     25        14,1    
+KALIBR-figura-1m80               1,80     25        14,1    
+figura-neset                     1,80     25        14,1    
+figura-ukazyvaet-variant         1,80     25        14,1    
+figura-neset                     1,80     25        14,1    
+нарушений порядка: 0
+пикселей на метр: мин 14,07, макс 14,07, разброс 0,0%
+
+=== МАТЕРИАЛЫ ===
+объект                     шейдер                             _BaseMap         _BaseColor            
+zhiloy-bashnya             Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+sklad-bunkery              Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+sklad-angar                Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+zavod-pishchevoy           Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+angar-s-panelyami          Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+burovaya-03                Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+angar-s-panelyami          Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+burovaya-04                Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-geodezicheskiy       Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+ploshchadka-shattla        Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+burovaya-02                Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+zhiloy-kupol               Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+burovaya-05                Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-geodezicheskiy       Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+shattl-zakrytyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+shattl-otkrytyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-geodezicheskiy       Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+tsisterna                  Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-grib                 Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+tsisterna                  Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+tsisterna                  Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-grib                 Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-tunnel               Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+modul-tonnelnyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+modul-tonnelnyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+modul-tonnelnyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+modul-tonnelnyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+led-skvazhina              Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+led-skvazhina              Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-osmatrivaetsya      Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-osmatrivaetsya      Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-osmatrivaetsya      Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-ukazyvaet           Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-ukazyvaet           Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+KALIBR-figura-1m80         Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-neset               Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-ukazyvaet-variant   Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+figura-neset               Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+
+=== UV ===
+объект                     вершин    uv        uv диапазон                   
+zhiloy-bashnya             55948     55948     x[0,000..1,000] y[0,000..1,000]
+sklad-bunkery              59443     59443     x[0,000..1,000] y[0,000..1,000]
+sklad-angar                28615     28615     x[0,000..1,000] y[0,000..1,000]
+zavod-pishchevoy           59443     59443     x[0,000..1,000] y[0,000..1,000]
+angar-s-panelyami          55948     55948     x[0,000..1,000] y[0,000..1,000]
+burovaya-03                53187     53187     x[0,000..1,000] y[0,000..1,000]
+angar-s-panelyami          55948     55948     x[0,000..1,000] y[0,000..1,000]
+burovaya-04                53187     53187     x[0,000..1,000] y[0,000..1,000]
+kupol-geodezicheskiy       52101     52101     x[0,000..1,000] y[0,000..1,000]
+ploshchadka-shattla        28615     28615     x[0,000..1,000] y[0,000..1,000]
+burovaya-02                52967     52967     x[0,000..1,000] y[0,000..1,000]
+zhiloy-kupol               59443     59443     x[0,000..1,000] y[0,000..1,000]
+burovaya-05                52404     52404     x[0,000..1,000] y[0,000..1,000]
+kupol-geodezicheskiy       52101     52101     x[0,000..1,000] y[0,000..1,000]
+shattl-zakrytyy            42401     42401     x[0,000..1,000] y[0,000..1,000]
+shattl-otkrytyy            52967     52967     x[0,000..1,000] y[0,000..1,000]
+kupol-geodezicheskiy       52101     52101     x[0,000..1,000] y[0,000..1,000]
+tsisterna                  55621     55621     x[0,000..1,000] y[0,000..1,000]
+kupol-grib                 52404     52404     x[0,000..1,000] y[0,000..1,000]
+tsisterna                  55621     55621     x[0,000..1,000] y[0,000..1,000]
+tsisterna                  59443     59443     x[0,000..1,000] y[0,000..1,000]
+kupol-grib                 52404     52404     x[0,000..1,000] y[0,000..1,000]
+kupol-tunnel               53187     53187     x[0,000..1,000] y[0,000..1,000]
+modul-tonnelnyy            55293     55293     x[0,000..1,000] y[0,000..1,000]
+modul-tonnelnyy            55293     55293     x[0,000..1,000] y[0,000..1,000]
+modul-tonnelnyy            55293     55293     x[0,000..1,000] y[0,000..1,000]
+modul-tonnelnyy            52967     52967     x[0,000..1,000] y[0,000..1,000]
+led-skvazhina              55621     55621     x[0,000..1,000] y[0,000..1,000]
+led-skvazhina              42401     42401     x[0,000..1,000] y[0,000..1,000]
+figura-osmatrivaetsya      63842     63842     x[0,000..1,000] y[0,000..1,000]
+figura-osmatrivaetsya      32748     32748     x[0,000..1,000] y[0,000..1,000]
+figura-osmatrivaetsya      32748     32748     x[0,000..1,000] y[0,000..1,000]
+figura-ukazyvaet           63842     63842     x[0,000..1,000] y[0,000..1,000]
+figura-ukazyvaet           51960     51960     x[0,000..1,000] y[0,000..1,000]
+KALIBR-figura-1m80         63842     63842     x[0,000..1,000] y[0,000..1,000]
+figura-neset               51960     51960     x[0,000..1,000] y[0,000..1,000]
+figura-ukazyvaet-variant   63842     63842     x[0,000..1,000] y[0,000..1,000]
+figura-neset               51960     51960     x[0,000..1,000] y[0,000..1,000]
+
+=== БЮДЖЕТЫ ===
+треугольников в сцене : 2071245  (потолок 500000)
+вершин                : 1557610
+рендереров            : 535  (потолок вызовов 200)
+уникальных мешей      : 49
+текстур               : 56
+текстурная память     : 40 МБ  (потолок 256)

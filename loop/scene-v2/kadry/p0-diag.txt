@@ -1,0 +1,60 @@
+=== КАМЕРА ===
+поз      (83.58, 92.35, 83.58)
+поворот  (38.00, 225.00, 0.00)
+орто     True  размер 30,00
+клип     near 0,10  far 1000,0
+
+=== ОБЪЕКТЫ ===
+имя                            метры XxYxZ            центр                    пиксели ВхШ    доляH   зазор  
+angar-s-panelyami               23,11x 7,00x24,35     (-12.0, 3.5, -4.0)       436x671        0.436    0,000
+ballony-na-poddone               2,05x 1,60x 2,05     (-6.0, 0.8, 2.0)         51x58          0.051    0,000
+kadka-s-zelenyu                  1,92x 1,40x 1,26     (6.0, 0.7, -8.0)         41x45          0.041    0,000
+KALIBR-figura-1m80               1,36x 1,80x 1,40     (0.0, 0.9, 0.0)          44x39          0.044    0,000
+kamen-granenyy                   4,39x 2,40x 4,41     (-20.0, 1.2, 10.0)       95x124         0.095    0,000
+kupol-grib                       8,68x 6,00x 8,67     (2.0, 3.0, 6.0)          205x245        0.205    0,000
+led-glyba-granenaya              4,93x 3,20x 5,14     (22.0, 1.6, -14.0)       115x142        0.115    0,000
+modul-tonnelnyy                  5,08x 4,50x 9,51     (12.0, 2.3, -2.0)        165x206        0.165    0,000
+shattl-zakrytyy                 10,11x 6,00x 8,25     (-24.0, 3.0, -18.0)      212x260        0.212    0,000
+truba-na-kozlakh                 5,44x 3,00x 5,44     (18.0, 1.5, 8.0)         118x154        0.118    0,000
+tsisterna                        4,38x 5,50x 8,11     (-2.0, 2.8, -12.0)       163x177        0.163    0,000
+Zemlya                         240,00x 0,00x240,00     (0.0, 0.0, 0.0)          3483x6788      3.483    0,000
+
+парит над землей: 0, утоплено: 0
+
+=== МАТЕРИАЛЫ ===
+объект                     шейдер                             _BaseMap         _BaseColor            
+angar-s-panelyami          Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+ballony-na-poddone         Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kadka-s-zelenyu            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+KALIBR-figura-1m80         Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kamen-granenyy             Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+kupol-grib                 Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+led-glyba-granenaya        Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+modul-tonnelnyy            Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+shattl-zakrytyy            Universal Render Pipeline/Lit      НЕТ              RGBA(0.91, 0.91, 0.91, 1.00)
+truba-na-kozlakh           Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+tsisterna                  Universal Render Pipeline/Lit      tex_0            RGBA(1.00, 1.00, 1.00, 1.00)
+Zemlya                     Universal Render Pipeline/Lit      НЕТ              RGBA(0.72, 0.34, 0.20, 1.00)
+
+=== UV ===
+объект                     вершин    uv        uv диапазон                   
+angar-s-panelyami          21019     21019     x[0,000..1,000] y[0,000..1,000]
+ballony-na-poddone         3584      3584      x[0,000..1,000] y[0,000..1,000]
+kadka-s-zelenyu            4182      4182      x[0,000..1,000] y[0,000..1,000]
+KALIBR-figura-1m80         15918     15918     x[0,000..1,000] y[0,000..1,000]
+kamen-granenyy             10760     10760     x[0,000..1,000] y[0,000..1,000]
+kupol-grib                 18283     18283     x[0,000..1,000] y[0,000..1,000]
+led-glyba-granenaya        15172     15172     x[0,000..1,000] y[0,000..1,000]
+modul-tonnelnyy            18431     18431     x[0,000..1,000] y[0,000..1,000]
+shattl-zakrytyy            16976     16976     x[0,000..1,000] y[0,000..1,000]
+truba-na-kozlakh           3323      3323      x[0,000..1,000] y[0,000..1,000]
+tsisterna                  15098     15098     x[0,000..1,000] y[0,000..1,000]
+Zemlya                     121       121       x[0,000..1,000] y[0,000..1,000]
+
+=== БЮДЖЕТЫ ===
+треугольников в сцене : 170940  (потолок 500000)
+вершин                : 142867
+рендереров            : 12  (потолок вызовов 200)
+уникальных мешей      : 12
+текстур               : 10
+текстурная память     : 106 МБ  (потолок 256)

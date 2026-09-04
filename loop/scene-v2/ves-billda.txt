@@ -1,0 +1,12 @@
+=== ВЕС БИЛДА, WebGL ===
+файлов        : 5
+вес на диске  : 91 МБ  (потолок 100)
+по отчету     : 91 МБ
+время сборки  : 8,7 мин
+
+Самые тяжелые файлы:
+  webgl.data.unityweb                               88046 КБ
+  webgl.wasm.unityweb                                5819 КБ
+  webgl.loader.js                                     114 КБ
+  webgl.framework.js.unityweb                          68 КБ
+  index.html                                            4 КБ

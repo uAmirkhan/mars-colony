@@ -1,0 +1,15 @@
+import { DEFAULT_SIM, simulate } from '../src/sim/simulate';
+import { FACTORY_PRICES } from '../src/domain/config/economy';
+const cfg = { ...DEFAULT_SIM, session_starts_min: [8*60, 12*60, 17*60, 21*60], session_length_min: 20, days: 60 };
+const r: any = simulate(cfg as any);
+console.log('=== ЦЕЛЕВОЙ ПРОФИЛЬ КАРКАСА (9.3 ч/нед), 60 ДНЕЙ ===');
+console.log('вехи по уровням:', JSON.stringify(r.milestones));
+console.log('финальный уровень:', r.final_level, 'часов игры:', r.total_hours?.toFixed?.(0) ?? r.total_hours);
+console.log('блокировок склада (сбор отклонен переполнением):', r.warehouse_blocks);
+console.log('срабатываний анти-софтлока И-15:', r.softlock_rescues);
+for (const k of Object.keys(r)) if (!['rows','milestones'].includes(k)) console.log('  ' + k + ':', r[k]);
+console.log('');
+console.log('цены зданий:', Object.entries(FACTORY_PRICES).map(([k,v]:any) => k + ' ур.' + v.unlock_level + '/' + v.first + 'кр').join(', '));
+console.log('');
+console.log('день | ур | xp | кредиты | изотопы | заказов');
+for (const row of r.rows) if (row.day % 5 === 0 || row.day === 1) console.log(String(row.day).padStart(4) + ' | ' + String(row.level).padStart(2) + ' | ' + String(row.xp_total).padStart(6) + ' | ' + String(row.credits).padStart(7) + ' | ' + String(row.isotopes).padStart(7) + ' | ' + row.orders_done);

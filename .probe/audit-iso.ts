@@ -1,0 +1,18 @@
+import { freeIsotopeBudget, levelUpReward } from '../src/domain/config/levels';
+import { MODULE_PRICE_ISOTOPES, FIELD_SLOT_PURCHASE_PRICE_ISO, FACTORY_QUEUE_SLOT3_PRICE_ISO, FACTORY_QUEUE_SLOT4_PRICE_ISO, CONSTRUCTION_SECOND_LINE_PRICE_ISO, SPEEDUP_RATE_ISOTOPES_PER_MIN, productionSpeedupCost, constructionSpeedupCost } from '../src/domain/config/economy';
+import { CONSTRUCTION_RECIPE, MODULES } from '../src/domain/config/modules';
+console.log('бюджет изотопов бесплатного игрока за все 21 уровень:', freeIsotopeBudget());
+let b = 0; for (let n = 2; n <= 12; n++) b += levelUpReward(n).isotopes;
+console.log('к моменту ур.12 (открытие лайнера):', b);
+console.log('');
+console.log('стоки изотопов в конфиге:');
+console.log('  грядка +1:', FIELD_SLOT_PURCHASE_PRICE_ISO, '(в сторе НЕТ)');
+console.log('  3-й слот фабрики:', FACTORY_QUEUE_SLOT3_PRICE_ISO, '(в сторе НЕТ)');
+console.log('  4-й слот фабрики:', FACTORY_QUEUE_SLOT4_PRICE_ISO, '(в сторе НЕТ)');
+console.log('  2-я линия стройки:', CONSTRUCTION_SECOND_LINE_PRICE_ISO, '(в сторе НЕТ)');
+console.log('  докупка редкого модуля:', MODULE_PRICE_ISOTOPES.rare, 'x18 за тир склада =', MODULE_PRICE_ISOTOPES.rare * 18);
+console.log('  ускорение стройки склада целиком (120 мин):', constructionSpeedupCost(120 * 60));
+console.log('  ускорение фабрики на 15 мин:', productionSpeedupCost(900, 'factory'));
+console.log('');
+console.log('то есть весь пожизненный бюджет 550 изо = ' + (550 / MODULE_PRICE_ISOTOPES.rare).toFixed(1) + ' редких модуля при рецепте 18 на тир,');
+console.log('или ' + (550 / constructionSpeedupCost(120 * 60)).toFixed(1) + ' полных ускорения стройки склада.');
