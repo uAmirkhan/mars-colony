@@ -89,3 +89,15 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 - Do not commit or push without clear authority from the active profile or the current user request.
 - If a required sync or push is blocked, stop and report the exact command and error.
 <!-- END BEADS INTEGRATION -->
+
+## Память разработки (dev-memory)
+
+
+
+- Старт сессии: прочитай BRIEF.md, затем `bd ready`.
+
+- Работай через Beads: берёшь задачу — `bd update <id> --claim`, закончил — закрой; новое всплыло — заведи.
+
+- Конец сессии и перед рискованными шагами — чекпоинт МОЛЧА: обновить BRIEF.md, привести задачи Beads в соответствие с реальностью, `bd export -o .beads/issues.jsonl`, строка в memory/log.md, git commit.
+
+- НЕ сохранять: секреты и ключи API. Remote к git не добавлять никогда.
