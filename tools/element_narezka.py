@@ -96,6 +96,7 @@ def main():
     p.add_argument("--dopusk", type=int, default=60, help="не используется в маске по оттенку, оставлен для совместимости")
     p.add_argument("--erozia", type=int, default=2, help="на сколько px съесть кромку")
     p.add_argument("--imya", default=None)
+    p.add_argument("--dyrki", action="store_true", help="фон и внутри замкнутых полостей (кружок капсулы)")
     a = p.parse_args()
     im = Image.open(a.vhod).convert("RGB"); arr = np.asarray(im)
     if a.fon:
@@ -103,7 +104,7 @@ def main():
     else:
         ugly = np.array([arr[0, 0], arr[0, -1], arr[-1, 0], arr[-1, -1]]); fon = tuple(int(v) for v in np.median(ugly, 0))
     fon_m = maska_po_ottenku(arr, fon)
-    fon_dost = zalivka_ot_kraev(fon_m)
+    fon_dost = fon_m if a.dyrki else zalivka_ot_kraev(fon_m)
     elem = erozia(~fon_dost, a.erozia)
     ys, xs = np.where(elem)
     if len(ys) == 0:
