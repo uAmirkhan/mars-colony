@@ -19,7 +19,7 @@ from PIL import Image, ImageFilter
 from rembg import remove, new_session
 
 
-def obrabotat(put, out, sess, razmer, cvet, dolya, obvodka, pole_dolya, kvadrat):
+def obrabotat(put, out, sess, razmer, cvet, dolya, obvodka, pole_dolya, kvadrat, erozia=0):
     im = Image.open(put).convert("RGB")
     # у сети берём только маску: под альфой 0 она обнуляет и цвет, а полости
     # силуэта нужно возвращать исходным цветом
@@ -37,6 +37,11 @@ def obrabotat(put, out, sess, razmer, cvet, dolya, obvodka, pole_dolya, kvadrat)
         holst = holst.resize((razmer, razmer), Image.LANCZOS)
     else:
         holst = rgba
+    if erozia > 0:
+        # сжать альфу на N px: убирает розовый/зелёный ореол JPEG-кромки от фона
+        # генерации (у элементов интерфейса на сплошном фоне заметен как линия)
+        alpha_e = holst.getchannel("A").filter(ImageFilter.MinFilter(erozia * 2 + 1))
+        holst.putalpha(alpha_e)
     if obvodka:
         t = max(1, int(round(holst.width * dolya)))
         alpha = holst.getchannel("A")
@@ -55,6 +60,7 @@ if __name__ == "__main__":
     ap.add_argument("--razmer", type=int, default=512); ap.add_argument("--cvet", default="FBEBBA")
     ap.add_argument("--tolshchina", type=float, default=0.021)
     ap.add_argument("--bez-obvodki", action="store_true"); ap.add_argument("--ne-kvadrat", action="store_true")
+    ap.add_argument("--erozia", type=int, default=0, help="сжать альфу на N px (ореол кромки у элементов интерфейса)")
     ap.add_argument("--pole", type=float, default=0.08); ap.add_argument("--model", default="u2net", help="u2net держит белые части предметов (хлопок), birefnet-general-lite чище по кромке для элементов интерфейса")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
@@ -63,4 +69,4 @@ if __name__ == "__main__":
           if f.lower().endswith((".png", ".jpg", ".jpeg"))]
     for f in fs:
         obrabotat(f, os.path.join(a.out, os.path.splitext(os.path.basename(f))[0] + ".png"), sess,
-                  a.razmer, a.cvet, a.tolshchina, not a.bez_obvodki, a.pole, not a.ne_kvadrat)
+                  a.razmer, a.cvet, a.tolshchina, not a.bez_obvodki, a.pole, not a.ne_kvadrat, a.erozia)
