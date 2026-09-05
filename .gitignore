@@ -51,3 +51,5 @@ design/models/osmotr/**/*.blender.log
 .beads-credential-key
 .beads/proxieddb/
 *.gate.lock*
+# серии кадров изнутри Play: десятки МБ на серию, монтажи описаны в OTCHET
+loop/ui/anim/
