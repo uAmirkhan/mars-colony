@@ -1,0 +1,1 @@
+ИТОГ: passed=64 failed=0 status=Passed duration=1,3s

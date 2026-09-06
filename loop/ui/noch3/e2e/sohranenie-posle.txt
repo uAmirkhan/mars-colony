@@ -1,0 +1,19 @@
+now=1788683911,1 credits=133 xp=228 izotopy=32 sklad=47
+field 0 READY soy ends_at=1788683455,1 ostalos=-456,1
+field 1 READY soy ends_at=1788683427,5 ostalos=-483,6
+field 2 READY soy ends_at=1788683427,6 ostalos=-483,6
+field 3 READY soy ends_at=1788683455,1 ostalos=-456,1
+factory zavod-pishchevoy 0 READY protein_bar ends_at=1788683534,4 ostalos=-376,8
+factory zavod-pishchevoy 1 EMPTY  ends_at=0,0 ostalos=-1788683911,1
+factory stantsiya-plavilnya-lda 0 READY water ends_at=1788683544,4 ostalos=-366,8
+factory stantsiya-plavilnya-lda 1 EMPTY  ends_at=0,0 ostalos=-1788683911,1
+factory o2-skvazhina 0 EMPTY  ends_at=0,0 ostalos=-1788683911,1
+factory o2-skvazhina 1 EMPTY  ends_at=0,0 ostalos=-1788683911,1
+mining water_ice READY ends_at=1788683524,4 ostalos=-386,8
+mining regolith READY ends_at=1788683528,4 ostalos=-382,8
+shuttle ORDER departed=0,0 slots=4
+drone 0 active Ирина, гидропоника
+drone 1 active Марк, столовая
+drone 2 active Лу, мастерская
+drone 3 active Дана, медблок
+drone 4 active Петр, склад
