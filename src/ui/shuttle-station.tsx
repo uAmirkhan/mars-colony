@@ -391,7 +391,7 @@ function ArrivalView({ trip }: { trip: ShuttleTrip }) {
 }
 
 export function ShuttleStation({ onClose }: { onClose: () => void }) {
-  const { shuttle, now, level } = useGame();
+  const { shuttle, level } = useGame();
   const [open_idx, setOpenIdx] = useState<number | null>(null);
   const open = open_idx === null ? null : (shuttle?.slots[open_idx] ?? null);
 
@@ -412,16 +412,6 @@ export function ShuttleStation({ onClose }: { onClose: () => void }) {
               <FlightView trip={shuttle} />
             ) : shuttle.state === 'ARRIVED' ? (
               <ArrivalView trip={shuttle} />
-            ) : shuttle.state === 'COOLDOWN' ? (
-              <>
-                <Pad docked={false} />
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                    Новый рейс через
-                  </div>
-                  <Timer remaining_sec={Math.max(0, shuttle.cooldown_until - now)} />
-                </div>
-              </>
             ) : (
               <>
                 <Pad docked />

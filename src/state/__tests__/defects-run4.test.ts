@@ -253,7 +253,6 @@ describe('Д-28: сейв старого формата запирает рез�
           trip_min: 60,
           departed_at: 0,
           arrives_at: 0,
-          cooldown_until: 0,
           is_first_trip: false,
           arrival_no: 5,
           slots: [
