@@ -42,6 +42,7 @@ export type GoodId =
   | 'mushrooms'
   | 'tomatoes'
   | 'cotton'
+  | 'potato'
   | 'coffee_beans'
   | 'protein_bar'
   | 'mushroom_soup'

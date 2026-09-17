@@ -170,7 +170,7 @@ describe('Шаттл: форма рейса на всей достижимой �
     );
   });
 
-  it('крайний случай 1.6: пустой пул дает ровно один отсек минимального объема', () => {
+  it('крайний случай 1.6: пустой пул дает SLOT_COUNT_MIN отсеков минимального объема', () => {
     for (let level = 1; level <= 21; level++) {
       const trip = generateTrip({
         level,
@@ -182,9 +182,11 @@ describe('Шаттл: форма рейса на всей достижимой �
         rng: makeRng(level + 1),
       });
 
-      expect(trip.slots).toHaveLength(1);
+      expect(trip.slots).toHaveLength(SLOT_COUNT_MIN);
+      expect(new Set(trip.slots.map((s) => s.good_id)).size).toBe(SLOT_COUNT_MIN);
+      for (const slot of trip.slots)
+        expect(slot.qty_required).toBe(GOOD_BASE_QTY[slot.good_id].min);
       const slot = trip.slots[0]!;
-      expect(slot.qty_required).toBe(GOOD_BASE_QTY[slot.good_id].min);
       expect(slot.filled_by).toBeNull();
       expect(slot.reward).toBeNull();
       expect(slot.collected).toBe(false);

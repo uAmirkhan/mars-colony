@@ -22,6 +22,7 @@ import {
   applyPinch,
   availableGoodsFor,
   buyoutPosition,
+  cancelLoading,
   canFulfillNow,
   discardImpact,
   discardOrder,
@@ -537,6 +538,31 @@ describe('Погрузка и отправка', () => {
     expect(result.credits).toBe(250);
     expect(qtyOf(w, 'soy')).toBe(6);
     expect(totalQty(w)).toBe(6); // место освободилось
+  });
+
+  it('сорвавшаяся отправка возвращает заказ в active, а не оставляет in_progress', () => {
+    // Иначе заказ залипал навсегда: loadPosition уводит слот в in_progress с первой
+    // частичной позиции, отправка не проходит, и заказ больше нельзя ни отправить,
+    // ни обновить (найдено проверкой 08.09).
+    const w = createWarehouse();
+    deposit(w, 'soy', 2); // на складе меньше, чем просит заказ
+    const order = {
+      idx: 0,
+      state: 'active' as const,
+      npc_name: 'тест',
+      positions: [pos('soy', 4)],
+      credits_reward: 250,
+      xp_reward: 30,
+      refresh_at: 0,
+    };
+    loadPosition(order, 0, w);
+    expect(order.state).toBe('in_progress');
+    expect(sendOrder(order, w).ok).toBe(false);
+
+    cancelLoading(order, w);
+    expect(order.state).toBe('active');
+    expect(order.positions[0]!.qty_filled).toBe(0);
+    expect(qtyOf(w, 'soy')).toBe(2); // товар вернулся из резерва
   });
 
   it('недогруженный заказ отправить нельзя', () => {

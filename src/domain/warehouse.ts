@@ -15,6 +15,7 @@
 import {
   WAREHOUSE_MAX_CAPACITY,
   WAREHOUSE_START_CAPACITY,
+  WAREHOUSE_UPGRADE_PRICE_PER_CAPACITY,
   WAREHOUSE_UPGRADE_STEP,
 } from './config/economy';
 import type { GoodId } from './types';
@@ -106,6 +107,12 @@ export function shipReserved(w: WarehouseState, good_id: GoodId, qty: number): b
   c.qty -= qty;
   c.reserved -= qty;
   return true;
+}
+
+/** Цена следующего расширения в кредитах; 0 — потолок достигнут. */
+export function upgradePrice(w: WarehouseState): number {
+  if (w.capacity >= WAREHOUSE_MAX_CAPACITY) return 0;
+  return w.capacity * WAREHOUSE_UPGRADE_PRICE_PER_CAPACITY;
 }
 
 /** Апгрейд склада: +10 к капасити, потолок MVP — 300. */
