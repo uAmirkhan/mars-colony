@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SPEEDUP_FLOOR_ISOTOPES, SPEEDUP_RATE_ISOTOPES_PER_MIN } from '../config/economy';
+import {
+  productionSpeedupCost,
+  SPEEDUP_FLOOR_ISOTOPES,
+  SPEEDUP_RATE_ISOTOPES_PER_MIN,
+} from '../config/economy';
 import { ALL_GOOD_IDS, GOODS } from '../config/goods';
 import {
   buyoutPrice,
@@ -87,9 +91,27 @@ describe('5.2: склад вычитается из цепочки', () => {
 });
 
 describe('5.3: пол применяется на каждое звено, а не на итог', () => {
-  it('дешевое звено стоит не меньше пола', () => {
-    // Водоросли зреют 30 секунд: по ставке это 2.5 изотопа, пол 10.
-    expect(rushCost('algae', 1)).toBe(SPEEDUP_FLOOR_ISOTOPES.crop);
+  it('пол срабатывает, когда остаток по ставке дешевле пола', () => {
+    // Раньше тест брал водоросли: они зрели 120 с, по ставке 5/мин это 10 изотопов,
+    // и пол был виден на живом товаре. После смены лестницы времени роста
+    // (решение Khan'а 08.09) самая быстрая культура — соя, 150 с, то есть 12.5
+    // изотопа. Ни один товар в конфиге больше не опускается ниже пола, и тест,
+    // привязанный к конкретной культуре, перестал охранять механизм.
+    //
+    // Поэтому проверяется сам расчёт: 60 с по ставке 5/мин это 5 изотопов,
+    // что ниже пола 10. Уберите Math.max — тест покраснеет, чего и добиваемся.
+    expect(productionSpeedupCost(60, 'crop')).toBe(SPEEDUP_FLOOR_ISOTOPES.crop);
+    expect(productionSpeedupCost(90, 'factory')).toBe(SPEEDUP_FLOOR_ISOTOPES.factory);
+  });
+
+  it('ни одно звено докупки не стоит меньше своего пола', () => {
+    // Свойство на всём субстрате: переживает любую смену лестницы времени.
+    for (const id of ALL_GOOD_IDS) {
+      const cost = rushCost(id, 1);
+      if (cost === 0) continue;
+      const kind = GOODS[id].kind === 'crop' ? 'crop' : 'factory';
+      expect(cost).toBeGreaterThanOrEqual(SPEEDUP_FLOOR_ISOTOPES[kind]);
+    }
   });
 
   it('цепочка из дешевых звеньев дороже, чем один пол', () => {

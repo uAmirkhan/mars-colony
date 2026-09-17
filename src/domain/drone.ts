@@ -859,6 +859,20 @@ export function releaseReserved(slot: OrderSlot, warehouse: WarehouseState): voi
 }
 
 /**
+ * Снять загрузку и вернуть заказ в `active`.
+ *
+ * `loadPosition` переводит слот в `in_progress` уже с первой частично взятой
+ * позиции. Если после этого отправка не состоялась (товара на складе не
+ * хватило), `releaseReserved` возвращал резерв, но состояние оставалось
+ * `in_progress` — и заказ залипал навсегда: отправить нельзя («не активен»),
+ * обновиться сам он тоже не мог. Найдено проверкой 08.09.
+ */
+export function cancelLoading(slot: OrderSlot, warehouse: WarehouseState): void {
+  releaseReserved(slot, warehouse);
+  if (slot.state === 'in_progress' || slot.state === 'ready') slot.state = 'active';
+}
+
+/**
  * Последствия выброса заказа — то, из чего собирается текст confirm-диалога
  * (ТЗ дрона 7.2, решение консилиума: «один универсальный confirm-диалог...
  * тело собирается из динамической строки о последствиях по фактическому

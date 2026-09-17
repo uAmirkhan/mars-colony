@@ -263,7 +263,12 @@ export const ORDER_GENERATION_DEGRADED_REASONS = [
 ] as const;
 export type OrderGenerationDegradedReason = (typeof ORDER_GENERATION_DEGRADED_REASONS)[number];
 /** Порог «легко произвести». Канон задает его в МИНУТАХ, не в секундах. */
-export const EASY_PRODUCE_MAX_MIN = { drone: 30, shuttle: 30, liner: 30 };
+// Порог «лёгкой» позиции в минутах каркаса. Поднят с 30 для шаттла вместе с новой лестницей
+// времён роста (решение Khan 08.09: соя 15 с, ..., кофе 6 мин реального времени; в каркасе это
+// x10). При 30 отсек капусты перестал считаться лёгким, и генератор вырождал первый рейс до
+// одного-двух отсеков — то есть в мягкий софтлок FTUE. 90 каркас-минут это 9 реальных при
+// ускорении x10: быстрая половина лестницы проходит, хлопок и кофе по-прежнему тяжёлые.
+export const EASY_PRODUCE_MAX_MIN = { drone: 30, shuttle: 90, liner: 30 };
 export const MAX_DEFICIT_SLOTS = 1;
 export const PINCH_MIN = 1;
 export const PINCH_MAX = 3;
@@ -406,6 +411,10 @@ export const FIELD_SLOT_MAX_PURCHASED = 3;
 export const WAREHOUSE_START_CAPACITY = 50;
 export const WAREHOUSE_UPGRADE_STEP = 10;
 export const WAREHOUSE_MAX_CAPACITY = 300;
+// Цена расширения склада в кредитах: 5 x текущая вместимость (50 -> 250, 120 -> 600, 290 -> 1450).
+// Каркас §13 держал склад нерасширяемым; заказчик 07.09 попросил рабочую кнопку «РАСШИРИТЬ».
+// Цена растёт с вместимостью, чтобы продажа на рынке осталась основным ответом на переполнение.
+export const WAREHOUSE_UPGRADE_PRICE_PER_CAPACITY = 5;
 export const MODULE_STOCK_CAP = 100;
 
 export const FACTORY_QUEUE_BASE_SLOTS = 2;

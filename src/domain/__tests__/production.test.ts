@@ -30,6 +30,7 @@ import {
   totalQty,
   unreserve,
   upgradeCapacity,
+  upgradePrice,
   type WarehouseState,
 } from '../warehouse';
 
@@ -100,6 +101,14 @@ describe('Склад: семантика qty / reserved / available', () => {
     for (let i = 0; i < 100; i++) upgradeCapacity(w);
     expect(w.capacity).toBe(WAREHOUSE_MAX_CAPACITY);
     expect(upgradeCapacity(w)).toBe(false);
+    expect(upgradePrice(w)).toBe(0);
+  });
+
+  it('цена расширения растёт с вместимостью: 5 кредитов за единицу', () => {
+    const w = createWarehouse(50);
+    expect(upgradePrice(w)).toBe(250);
+    upgradeCapacity(w);
+    expect(upgradePrice(w)).toBe(300);
   });
 });
 
