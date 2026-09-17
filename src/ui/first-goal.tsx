@@ -73,8 +73,7 @@ function readyBuild(s: Snapshot): BuildKind | null {
 /* --- Цепь показа: рейс уже в воздухе, и он центральная вещь среза. --- */
 
 const FLIGHT: Step = {
-  done: (s) =>
-    s.shuttle === null || s.shuttle.state === 'ARRIVED' || s.shuttle.state === 'COOLDOWN',
+  done: (s) => s.shuttle === null || s.shuttle.state === 'ARRIVED',
   goal: (s) => {
     const trip = s.shuttle;
     if (trip !== null && trip.state === 'IN_TRANSIT') {

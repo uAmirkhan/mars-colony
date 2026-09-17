@@ -84,7 +84,6 @@ import {
   skipFlight,
   skipPrice,
   slotBuyoutPrice,
-  startCooldown,
   tripXp,
 } from '../domain/shuttle';
 import type { BuildingType, GoodId, ModuleId } from '../domain/types';
@@ -698,14 +697,13 @@ export const useGame = create<GameState>()(
             );
           }
 
-          // Шаттл: прибытие по времени и новый заказ после кулдауна. Заказ не
-          // выдается, пока не собран прошлый груз, — иначе контейнеры прошлого
-          // рейса молча исчезли бы вместе с рейсом.
+          // Шаттл: прибытие по времени. Новый заказ выдается сразу по сбору
+          // последнего контейнера (см. collectContainer), паузы между рейсами нет:
+          // таймер рейса уже отработал роль паузы, второй гейт подряд читается как
+          // искусственная задержка. Эталон жанра ее тоже не ставит.
           let shuttle = s.shuttle;
           if (s.level >= MECHANIC_UNLOCK_LEVEL.shuttle) {
             if (shuttle === null) shuttle = makeTrip();
-            else if (shuttle.state === 'COOLDOWN' && now >= shuttle.cooldown_until)
-              shuttle = makeTrip();
             else shuttle = refreshTrip({ ...shuttle }, now);
           }
 
@@ -806,8 +804,8 @@ export const useGame = create<GameState>()(
             return;
           }
 
-          if (allCollected(trip)) startCooldown(trip, s.now);
-          set({ shuttle: trip, construction });
+          // Последний контейнер вынут — сразу новый заказ, без паузы.
+          set({ shuttle: allCollected(trip) ? makeTrip() : trip, construction });
           pushToast(`+1 ${MODULES[module_id].name}`, 'reward');
         },
 

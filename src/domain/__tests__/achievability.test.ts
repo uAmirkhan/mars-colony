@@ -16,7 +16,7 @@ import {
   flightTimerMin,
   ORDER_FEASIBILITY_DEADLINE_SHARE,
 } from '../config/economy';
-import { GOOD_BASE_QTY } from '../config/goods';
+import { ALL_GOOD_IDS, GOOD_BASE_QTY, GOODS } from '../config/goods';
 import { productionTimeMinutes, totalProductionMinutes } from '../rushcost';
 import {
   generateTrip,
@@ -25,6 +25,7 @@ import {
   type ShuttleSlot,
   tripProductionMinutes,
 } from '../shuttle';
+import type { GoodId } from '../types';
 import { createWarehouse, deposit, type WarehouseState } from '../warehouse';
 
 function slot(good_id: ShuttleSlot['good_id'], qty_required: number): ShuttleSlot {
@@ -107,8 +108,8 @@ describe('totalProductionMinutes (канон 1.4, группировка по з
 describe('rebalanceForAchievability (канон 1.4)', () => {
   it('урезает количество до пола, если это укладывает в бюджет', () => {
     const w = createWarehouse(500);
-    // oxygen_tank: 600с = 10мин/шт, вход — водоросли (в избытке на складе).
-    deposit(w, 'algae', 100);
+    // oxygen_tank: 600с = 10мин/шт, вход — железная руда (в избытке на складе).
+    deposit(w, 'iron_ore', 100);
     const slots = [slot('oxygen_tank', 4)]; // 40 минут без ребаланса
     // Бюджет 25: укладывается только на floor = 2 (20 минут), не выше.
     const result = rebalanceForAchievability(slots, w, 25, ['oxygen_tank']);
@@ -129,10 +130,13 @@ describe('rebalanceForAchievability (канон 1.4)', () => {
   it('меняет товар на более быстрый, если пол все равно не укладывается', () => {
     const w = createWarehouse(500);
     const slots = [slot('jumpsuit', 1)]; // уже на полу, чинить нечем количеством
-    const result = rebalanceForAchievability(slots, w, 20, ['jumpsuit', 'algae']);
+    const result = rebalanceForAchievability(slots, w, 20, ['jumpsuit', 'soy']);
     // budget=20 минут: комбинезон с нуля даже на полу — сотни минут, замена
-    // на водоросли (2мин/шт x 5 = 10мин) обязана произойти.
-    expect(result[0]!.good_id).toBe('algae');
+    // обязана произойти. Быстрой культурой здесь стояли водоросли (2 мин/шт),
+    // но после смены лестницы времени роста (решение Khan'а 08.09) они зреют
+    // 15 минут за штуку, то есть 75 минут на полу количества — в бюджет не
+    // влезают сами. Самая быстрая культура теперь соя: 2.5 мин/шт x 4 = 10 мин.
+    expect(result[0]!.good_id).toBe('soy');
     expect(tripProductionMinutes(result, w)).toBeLessThanOrEqual(20);
   });
 
@@ -161,7 +165,10 @@ describe('rebalanceForAchievability (канон 1.4)', () => {
 });
 
 describe('generateTrip и И-10: интеграция', () => {
-  const POOL = ['oxygen_tank', 'algae', 'soy', 'mushrooms'] as const;
+  // Пул настоящей игры на двадцатом уровне, а не четыре товара: тест называется
+  // «на широком пуле», и фикстура обязана этому соответствовать. На узком пуле
+  // И-10 структурно неразрешим — это зафиксировано отдельным тестом ниже.
+  const POOL = ALL_GOOD_IDS.filter((id) => GOODS[id].unlock_level <= 20);
 
   function stocked(per_good = 40): WarehouseState {
     const w = createWarehouse(500);
@@ -190,6 +197,24 @@ describe('generateTrip и И-10: интеграция', () => {
       const budget = flightTimerMin(20) * ORDER_FEASIBILITY_DEADLINE_SHARE;
       expect(tripProductionMinutes(trip.slots, warehouse)).toBeLessThanOrEqual(budget);
     }
+  });
+
+  it('уводит позицию на свободное здание, а не на самый быстрый товар', () => {
+    // Время рейса — максимум по зданиям от суммы внутри здания. Три культуры
+    // делят теплицу и складываются: водоросли x5 (75) + соя x4 (10) +
+    // грибы x3 (30) = 115 при бюджете 54, и резать нечего, всё на полу.
+    //
+    // Правильный ход — увести позицию на здание, которое простаивает.
+    // Кислород-баллон медленнее сои по собственному времени, но живёт в
+    // атмосферном модуле и в теплицу не добавляет ничего. Сортировка по
+    // `prod_time_sec` выбрала бы сою и оставила рейс за бюджетом.
+    const NARROW = ['oxygen_tank', 'algae', 'soy', 'mushrooms'] as GoodId[];
+    const w = createWarehouse(500);
+    const slots = [slot('algae', 5), slot('soy', 4), slot('mushrooms', 3)];
+    const result = rebalanceForAchievability(slots, w, 54, NARROW);
+    expect(result.map((r) => r.good_id)).toContain('oxygen_tank');
+    expect(result.map((r) => r.good_id)).not.toContain('algae');
+    expect(tripProductionMinutes(result, w)).toBeLessThanOrEqual(54);
   });
 
   it('FTUE (is_first_trip) не проверяется на достижимость — решение в реестре 8.24', () => {

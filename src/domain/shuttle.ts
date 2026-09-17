@@ -14,7 +14,6 @@
 
 import {
   ACHIEVABILITY_CHECK,
-  COLLECT_COOLDOWN_MIN,
   COVERAGE_MIN,
   EASY_PRODUCE_MAX_MIN,
   FTUE_FIRST_TRIP_TIMER_MIN,
@@ -23,6 +22,7 @@ import {
   MAX_DEFICIT_SLOTS,
   ORDER_FEASIBILITY_DEADLINE_SHARE,
   type OrderGenerationDegradedReason,
+  PINCH_MIN,
   REPEAT_CAP,
   SLOT_COUNT_MAX,
   SLOT_COUNT_MIN,
@@ -43,7 +43,7 @@ import { buyoutPrice, productionTimeMinutes, totalProductionMinutes } from './ru
 import type { GoodId, ModuleId } from './types';
 import { availableOf, reserve, shipReserved, type WarehouseState } from './warehouse';
 
-export type ShuttleState = 'ORDER' | 'IN_TRANSIT' | 'ARRIVED' | 'COOLDOWN';
+export type ShuttleState = 'ORDER' | 'IN_TRANSIT' | 'ARRIVED';
 
 export interface ShuttleSlot {
   idx: number;
@@ -93,7 +93,6 @@ export interface ShuttleTrip {
   trip_min: number;
   departed_at: number;
   arrives_at: number;
-  cooldown_until: number;
   is_first_trip: boolean;
   /** Порядковый номер прибытия игрока. Вход для FTUE-удачи и И-11. */
   arrival_no: number;
@@ -225,10 +224,18 @@ function fallbackMinimalSlots(
   );
   const candidates =
     easy_pools.find((p) => p.length > 0) ?? pools.find((p) => p.length > 0) ?? ALL_GOOD_IDS;
-  const good_id = [...candidates].sort((a, b) => {
+  // Канон 1.6/1.8 + Khan 06.09: деградированный рейс — не один отсек, а SLOT_COUNT_MIN
+  // самых быстрых разных товаров: сначала кандидаты, потом остальные по времени.
+  const byTime = (a: GoodId, b: GoodId) => {
     const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
     return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
-  })[0]!;
+  };
+  const cand_set = new Set(candidates);
+  const order = [...new Set([...candidates, ...ALL_GOOD_IDS])]
+    .sort((a, b) =>
+      cand_set.has(a) === cand_set.has(b) ? byTime(a, b) : cand_set.has(a) ? -1 : 1,
+    )
+    .slice(0, SLOT_COUNT_MIN);
 
   // Канон 1.6 и 1.8: деградация генератора логируется как алерт, а не глотается
   // молча. Сервера у прототипа нет, поэтому событие уходит в консоль тем же
@@ -239,19 +246,17 @@ function fallbackMinimalSlots(
     player_level: ctx.level,
   });
 
-  return [
-    {
-      idx: 0,
-      good_id,
-      qty_required: GOOD_BASE_QTY[good_id].min,
-      qty_filled: 0,
-      qty_purchased: 0,
-      filled_by: null,
-      reward: null,
-      collected: false,
-      floor_forced: false,
-    },
-  ];
+  return order.map((good_id, idx) => ({
+    idx,
+    good_id,
+    qty_required: GOOD_BASE_QTY[good_id].min,
+    qty_filled: 0,
+    qty_purchased: 0,
+    filled_by: null,
+    reward: null,
+    collected: false,
+    floor_forced: false,
+  }));
 }
 
 /**
@@ -353,8 +358,52 @@ export function rebalanceForAchievability(
     if (slots.length === 0) break;
     if (tripProductionMinutes(slots, warehouse) <= budget) break;
 
-    // Самая долгая по времени позиция — канон: `argmax(positions,
-    // p -> productionTimeMinutes(...))`.
+    // Резать количество нужно там, где срез РЕАЛЬНО уменьшает время рейса, а не
+    // у самой долгой позиции.
+    //
+    // Это разные позиции, и подмена была дефектом. Канон говорит
+    // `argmax(productionTimeMinutes)`, но самая долгая позиция сплошь и рядом
+    // уже стоит на полу количества — резать у неё нечего, функция уходит в
+    // путь замены и начинает менять товар на товар по кругу, пока не выйдет
+    // счётчик. Рядом при этом лежит позиция с запасом над полом, срез которой
+    // снимает нагрузку с того же узкого места.
+    //
+    // Пример из прогона: рейс «кислород x2 + грибы x3 + соя x11» при бюджете 54
+    // весит 57.5. Самая долгая позиция — грибы (30 мин), но их пол равен трём.
+    // Соя весит меньше (27.5), зато её пол равен четырём: два среза сои снимают
+    // 5 минут и укладывают рейс в бюджет.
+    const current_minutes = tripProductionMinutes(slots, warehouse);
+    let cut_idx = -1;
+    let cut_gain = 0;
+    for (let i = 0; i < slots.length; i++) {
+      const slot_i = slots[i]!;
+      // Пол среза зависит от того, откуда взялось количество. Обычный отсек
+      // режется до GOOD_BASE_QTY.min. Дефицитный отсек уже урезан правилом
+      // анти-фрустрации (`applyPinch`) НИЖЕ этого пола — просить пять того,
+      // чего у игрока нет совсем, нельзя. Сравнение с номинальным полом
+      // объявляло такой отсек «резать нечего» и запирало ребаланс.
+      const base_min = GOOD_BASE_QTY[slot_i.good_id].min;
+      // Строго «меньше»: отсек, стоящий РОВНО на номинальном полу, не режется.
+      // Ниже пола количество могло оказаться только через `applyPinch`, и такой
+      // отсек разрешено уменьшать до PINCH_MIN — просить меньше не обидно.
+      const floor_i = slot_i.qty_required < base_min ? PINCH_MIN : base_min;
+      if (slot_i.qty_required <= floor_i) continue;
+      const proba = slots.map((x, j) =>
+        j === i ? { ...x, qty_required: x.qty_required - 1 } : { ...x },
+      );
+      const gain = current_minutes - tripProductionMinutes(proba, warehouse);
+      if (gain > cut_gain) {
+        cut_gain = gain;
+        cut_idx = i;
+      }
+    }
+    if (cut_idx >= 0) {
+      slots[cut_idx]!.qty_required -= 1;
+      continue;
+    }
+
+    // Резать больше нечего: все позиции на полу либо срез не даёт выигрыша.
+    // Цель замены — самая долгая позиция, как и предписывает канон.
     let target_idx = 0;
     let target_minutes = -1;
     for (let i = 0; i < slots.length; i++) {
@@ -369,12 +418,6 @@ export function rebalanceForAchievability(
       }
     }
     const target = slots[target_idx]!;
-    const floor_qty = GOOD_BASE_QTY[target.good_id].min;
-
-    if (target.qty_required > floor_qty) {
-      target.qty_required -= 1;
-      continue;
-    }
 
     // Дальше некуда резать количество — меняем сам товар на самую быструю
     // доступную альтернативу пула, которой еще нет в рейсе. И-13: кандидат,
@@ -388,10 +431,30 @@ export function rebalanceForAchievability(
     });
     if (candidates.length === 0) break; // пул не дает альтернативы — решает реестр 8.24/8.25
 
-    const replacement = [...candidates].sort((a, b) => {
-      const by_time = GOODS[a].prod_time_sec - GOODS[b].prod_time_sec;
-      return by_time !== 0 ? by_time : GOODS[a].price - GOODS[b].price;
-    })[0]!;
+    // Замена выбирается по ВРЕМЕНИ РЕЙСА, а не по скорости самого товара.
+    //
+    // Это разные величины, и подмена одной другой была дефектом. Время рейса
+    // считается как максимум по зданиям от суммы внутри здания
+    // (`totalProductionMinutes`): позиции, которым нужно одно и то же здание,
+    // выстраиваются в очередь, а разные здания работают параллельно. Поэтому
+    // быстрый товар с уже загруженного узкого места хуже медленного со
+    // свободного — а сортировка по `prod_time_sec` этого не видит и добивает
+    // перегруженное здание. На лестнице времён до 08.09 суммы были маленькие,
+    // расхождение ни разу не вылезло за бюджет и дефект жил незамеченным.
+    const scored = candidates.map((id) => {
+      const proba = slots.map((s, i) =>
+        i === target_idx
+          ? { ...s, good_id: id, qty_required: GOOD_BASE_QTY[id].min }
+          : { ...s },
+      );
+      return { id, trip_min: tripProductionMinutes(proba, warehouse) };
+    });
+    scored.sort((a, b) => {
+      if (a.trip_min !== b.trip_min) return a.trip_min - b.trip_min;
+      const by_time = GOODS[a.id].prod_time_sec - GOODS[b.id].prod_time_sec;
+      return by_time !== 0 ? by_time : GOODS[a.id].price - GOODS[b.id].price;
+    });
+    const replacement = scored[0]!.id;
 
     used.delete(target.good_id);
     used.add(replacement);
@@ -600,7 +663,6 @@ export function generateTrip(ctx: ShuttleGenContext): ShuttleTrip {
     trip_min,
     departed_at: 0,
     arrives_at: 0,
-    cooldown_until: 0,
     is_first_trip: ctx.is_first_trip,
     arrival_no: ctx.arrival_no,
   };
@@ -812,10 +874,4 @@ export function collectContainer(trip: ShuttleTrip, idx: number): ModuleId | nul
 
 export function allCollected(trip: ShuttleTrip): boolean {
   return trip.slots.every((s) => s.collected);
-}
-
-/** Все контейнеры вскрыты — станция уходит в кулдаун перед новым заказом. */
-export function startCooldown(trip: ShuttleTrip, now: number): void {
-  trip.state = 'COOLDOWN';
-  trip.cooldown_until = now + COLLECT_COOLDOWN_MIN * 60;
 }

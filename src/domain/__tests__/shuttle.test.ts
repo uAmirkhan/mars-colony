@@ -10,7 +10,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeRng } from '../../sim/rng';
 import {
-  COLLECT_COOLDOWN_MIN,
   EASY_PRODUCE_MAX_MIN,
   FTUE_FIRST_TRIP_TIMER_MIN,
   flightTimerMin,
@@ -25,6 +24,7 @@ import {
 import { GOOD_BASE_QTY, GOODS, slotQuantity } from '../config/goods';
 import { applyPinch, availableGoodsFor } from '../drone';
 import type { DropContext } from '../droproller';
+import type { ShuttleState } from '../shuttle';
 import {
   allCollected,
   allSlotsLoaded,
@@ -38,7 +38,6 @@ import {
   skipFlight,
   skipPrice,
   slotXp,
-  startCooldown,
   tripXp,
 } from '../shuttle';
 import { availableOf, createWarehouse, deposit, qtyOf } from '../warehouse';
@@ -145,9 +144,10 @@ describe('Генератор рейса', () => {
    * пустой заказ»). Рейс из нуля отсеков нельзя ни закрыть, ни отменить, а
    * новый выдается только из кулдауна — прогрессия умирает вместе с ним.
    */
-  it('пустой пул товаров дает деградированный рейс из одного отсека, а не пустой', () => {
+  it('пустой пул товаров дает деградированный рейс из SLOT_COUNT_MIN отсеков, а не пустой', () => {
     const trip = generateTrip(genCtx({ available_goods: [] }));
-    expect(trip.slots).toHaveLength(1);
+    expect(trip.slots).toHaveLength(SLOT_COUNT_MIN);
+    expect(new Set(trip.slots.map((s) => s.good_id)).size).toBe(SLOT_COUNT_MIN);
     expect(allSlotsLoaded(trip)).toBe(false);
 
     // Канон 1.6: самый быстрый доступный товар в количестве GOOD_BASE_QTY.min.
@@ -205,7 +205,6 @@ describe('Погрузка и авто-старт', () => {
       trip_min: 60,
       departed_at: 0,
       arrives_at: 0,
-      cooldown_until: 0,
       is_first_trip: false,
       arrival_no: 1,
     };
@@ -300,7 +299,6 @@ describe('И-12: докупка минует склад', () => {
       trip_min: 60,
       departed_at: 0,
       arrives_at: 0,
-      cooldown_until: 0,
       is_first_trip: false,
       arrival_no: 1,
     };
@@ -393,14 +391,19 @@ describe('Прибытие и сбор', () => {
     expect(collectContainer(trip, 0)).toBeNull();
   });
 
-  it('после сбора всех контейнеров станция уходит в кулдаун', () => {
+  it('после сбора всех контейнеров паузы нет: состояние остается ARRIVED до нового заказа', () => {
+    // Кулдаун убран 11.09 решением владельца. Таймер рейса уже отработал роль
+    // паузы, второй гейт подряд читается игроком как искусственная задержка, и
+    // эталон жанра его не ставит: поезд в Township принимает груз сразу.
+    // Сторож держит отсутствие: если состояние COOLDOWN вернется в домен,
+    // строчка ниже перестанет компилироваться, а этот тест покраснеет.
     const trip = arrived();
     for (let i = 0; i < trip.slots.length; i++) collectContainer(trip, i);
     expect(allCollected(trip)).toBe(true);
+    expect(trip.state).toBe('ARRIVED');
 
-    startCooldown(trip, NOW);
-    expect(trip.state).toBe('COOLDOWN');
-    expect(trip.cooldown_until).toBe(NOW + COLLECT_COOLDOWN_MIN * 60);
+    const sostoyaniya: ShuttleState[] = ['ORDER', 'IN_TRANSIT', 'ARRIVED'];
+    expect(sostoyaniya).toHaveLength(3);
   });
 });
 

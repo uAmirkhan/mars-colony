@@ -65,7 +65,6 @@ function tripWithSlot(good_id: GoodId, qty: number): ShuttleTrip {
     trip_min: 60,
     departed_at: 0,
     arrives_at: 0,
-    cooldown_until: 0,
     is_first_trip: false,
     arrival_no: 1,
   };
@@ -197,12 +196,19 @@ describe('Д-9: причина деградации генератора заш�
   it('непустой пул, из которого никто не прошел отбор, не называется empty_pool', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // Пул из одного медленного товара (томаты, 3600 с > EASY_PRODUCE_MAX_MIN),
-    // склад пуст: FTUE-ветка отбраковывает единственного кандидата.
+    // Пул из одного медленного товара, склад пуст: FTUE-ветка отбраковывает
+    // единственного кандидата.
+    //
+    // Здесь стояли томаты: они зрели 3600 с и в порог лёгкости не влезали.
+    // После смены лестницы времени роста (решение Khan'а 08.09) томаты зреют
+    // 1200 с, то есть 20 минут за штуку, 40 на полу количества — при пороге
+    // в 90 минут они проходят отбор, деградации не происходит, и тест
+    // перестал воспроизводить дефект. Самый медленный товар теперь кофе-бобы:
+    // 3600 с = 60 минут за штуку, 120 на полу.
     const trip = generateTrip({
-      level: 7,
+      level: 12,
       warehouse: createWarehouse(500),
-      available_goods: ['tomatoes'],
+      available_goods: ['coffee_beans'],
       previous: null,
       is_first_trip: true,
       arrival_no: 1,
