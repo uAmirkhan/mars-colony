@@ -1,0 +1,10 @@
+# Unity пересоздает эти папки при открытии проекта
+/Library/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+/Logs/
+/UserSettings/
+*.csproj
+*.sln

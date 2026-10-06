@@ -1,0 +1,7 @@
+Smoke Sprite Sheet
+Author: ohyhei
+License: CC0 1.0 Universal (Public Domain Dedication)
+https://creativecommons.org/publicdomain/zero/1.0/
+Source page: https://opengameart.org/content/smoke-sprite-sheet
+Direct file: https://opengameart.org/sites/default/files/smoke_sheet.png
+Downloaded: 2026-09-05

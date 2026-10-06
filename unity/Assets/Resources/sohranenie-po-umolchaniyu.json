@@ -1,0 +1,983 @@
+{
+ "credits": 6702,
+ "xp": 1853,
+ "level": 1,
+ "capacity": 140,
+ "izotopy": 10000,
+ "prilyotov": 17,
+ "energiya": 149.27442542645846,
+ "energiyaObnovlena": 1788824698.7821043,
+ "startVydan": true,
+ "sklad": [
+  {
+   "id": "cotton",
+   "qty": 12,
+   "reserved": 0
+  },
+  {
+   "id": "potato",
+   "qty": 39,
+   "reserved": 0
+  },
+  {
+   "id": "coffee_beans",
+   "qty": 2,
+   "reserved": 0
+  },
+  {
+   "id": "water_ice",
+   "qty": 8,
+   "reserved": 0
+  },
+  {
+   "id": "water",
+   "qty": 12,
+   "reserved": 0
+  },
+  {
+   "id": "protein_bar",
+   "qty": 3,
+   "reserved": 0
+  },
+  {
+   "id": "mushroom_soup",
+   "qty": 2,
+   "reserved": 0
+  },
+  {
+   "id": "iron_ore",
+   "qty": 1,
+   "reserved": 0
+  },
+  {
+   "id": "tomatoes",
+   "qty": 10,
+   "reserved": 0
+  },
+  {
+   "id": "algae",
+   "qty": 9,
+   "reserved": 0
+  },
+  {
+   "id": "methane",
+   "qty": 2,
+   "reserved": 0
+  },
+  {
+   "id": "regolith",
+   "qty": 12,
+   "reserved": 0
+  }
+ ],
+ "gryadki": [
+  {
+   "idx": 0,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 1,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 2,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 3,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 4,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 5,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 6,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 7,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 8,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 9,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 10,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 11,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 12,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 13,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 14,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 15,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 16,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 17,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 18,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 19,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 20,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 21,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 22,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 23,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 24,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 25,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 26,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 27,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 28,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 29,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 30,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 31,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 32,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 33,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 34,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 35,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 36,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 37,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 38,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 39,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 40,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 41,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 42,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 43,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 44,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 45,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 46,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 47,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 48,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 49,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  },
+  {
+   "idx": 50,
+   "state": 0,
+   "good": null,
+   "ends_at": 0.0
+  }
+ ],
+ "teplitsy": [
+  {
+   "uroven": 3,
+   "gorshki": [
+    0,
+    4,
+    5,
+    12,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    36,
+    37
+   ]
+  },
+  {
+   "uroven": 3,
+   "gorshki": [
+    1,
+    6,
+    7,
+    34,
+    35,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50
+   ]
+  },
+  {
+   "uroven": 2,
+   "gorshki": [
+    2,
+    8,
+    9,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21
+   ]
+  }
+ ],
+ "fabriki": {
+  "zavod-pishchevoy": [
+   {
+    "idx": 0,
+    "building_type": 2,
+    "state": 3,
+    "good_id": "protein_bar",
+    "queued_at": 1788733519.2662904,
+    "ends_at": 1788733549.2662904
+   },
+   {
+    "idx": 1,
+    "building_type": 2,
+    "state": 0,
+    "good_id": null,
+    "queued_at": 0.0,
+    "ends_at": 0.0
+   }
+  ],
+  "stantsiya-plavilnya-lda": [
+   {
+    "idx": 0,
+    "building_type": 7,
+    "state": 3,
+    "good_id": "water",
+    "queued_at": 1788694076.3127117,
+    "ends_at": 1788694116.3127117
+   },
+   {
+    "idx": 1,
+    "building_type": 7,
+    "state": 0,
+    "good_id": null,
+    "queued_at": 0.0,
+    "ends_at": 0.0
+   }
+  ],
+  "o2-skvazhina": [
+   {
+    "idx": 0,
+    "building_type": 3,
+    "state": 3,
+    "good_id": "oxygen_tank",
+    "queued_at": 1788815349.6370392,
+    "ends_at": 1788815409.6370392
+   },
+   {
+    "idx": 1,
+    "building_type": 3,
+    "state": 3,
+    "good_id": "oxygen_tank",
+    "queued_at": 1788815356.8226972,
+    "ends_at": 1788815416.8226972
+   }
+  ]
+ },
+ "dobycha": {
+  "water_ice": {
+   "good_id": "water_ice",
+   "state": 2,
+   "machines": 3,
+   "started_at": 1788818719.9909222,
+   "ends_at": 1788818739.9909222
+  },
+  "regolith": {
+   "good_id": "regolith",
+   "state": 2,
+   "machines": 1,
+   "started_at": 1788818709.5876312,
+   "ends_at": 1788818733.5876312
+  },
+  "methane": {
+   "good_id": "methane",
+   "state": 0,
+   "machines": 1,
+   "started_at": 0.0,
+   "ends_at": 0.0
+  },
+  "iron_ore": {
+   "good_id": "iron_ore",
+   "state": 2,
+   "machines": 1,
+   "started_at": 1788733519.2668252,
+   "ends_at": 1788729919.2598226
+  }
+ },
+ "shattl": {
+  "state": 0,
+  "slots": [
+   {
+    "idx": 0,
+    "good_id": "algae",
+    "qty_required": 5,
+    "qty_filled": 0,
+    "filled_by": 0,
+    "qty_purchased": 0,
+    "reward": null,
+    "collected": false,
+    "floor_forced": false
+   },
+   {
+    "idx": 1,
+    "good_id": "potato",
+    "qty_required": 8,
+    "qty_filled": 0,
+    "filled_by": 0,
+    "qty_purchased": 0,
+    "reward": null,
+    "collected": false,
+    "floor_forced": false
+   },
+   {
+    "idx": 2,
+    "good_id": "soy",
+    "qty_required": 9,
+    "qty_filled": 0,
+    "filled_by": 0,
+    "qty_purchased": 0,
+    "reward": null,
+    "collected": false,
+    "floor_forced": false
+   }
+  ],
+  "trip_min": 75.0,
+  "departed_at": 0.0,
+  "arrives_at": 0.0,
+  "cooldown_until": 0.0,
+  "is_first_trip": false,
+  "arrival_no": 17
+ },
+ "plavilnya": {
+  "vhod": 0,
+  "vyhod": 0,
+  "gotovoV": 0.0,
+  "Rabotaet": false
+ },
+ "drony": [
+  {
+   "idx": 0,
+   "state": 0,
+   "npc_name": "Ирина, гидропоника",
+   "positions": [
+    {
+     "good_id": "regolith",
+     "qty": 13,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "protein_bar",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "coffee_ration",
+     "qty": 2,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "water_ice",
+     "qty": 7,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 450,
+   "xp_reward": 238,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 1,
+   "state": 0,
+   "npc_name": "Марк, столовая",
+   "positions": [
+    {
+     "good_id": "regolith",
+     "qty": 6,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "iron_ore",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "water",
+     "qty": 2,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 180,
+   "xp_reward": 96,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 2,
+   "state": 0,
+   "npc_name": "Лу, мастерская",
+   "positions": [
+    {
+     "good_id": "water",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "coffee_ration",
+     "qty": 2,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "algae",
+     "qty": 10,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "methane",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "soy",
+     "qty": 8,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 550,
+   "xp_reward": 318,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 3,
+   "state": 0,
+   "npc_name": "Дана, медблок",
+   "positions": [
+    {
+     "good_id": "methane",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "cotton",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "mushrooms",
+     "qty": 8,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "regolith",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 250,
+   "xp_reward": 158,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 4,
+   "state": 0,
+   "npc_name": "Петр, склад",
+   "positions": [
+    {
+     "good_id": "regolith",
+     "qty": 13,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "coffee_beans",
+     "qty": 7,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "potato",
+     "qty": 14,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "soy",
+     "qty": 15,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 300,
+   "xp_reward": 222,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 5,
+   "state": 0,
+   "npc_name": "Сати, оранжерея",
+   "positions": [
+    {
+     "good_id": "regolith",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "mushroom_soup",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "oxygen_tank",
+     "qty": 4,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 250,
+   "xp_reward": 134,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 6,
+   "state": 0,
+   "npc_name": "Олаф, энергоузел",
+   "positions": [
+    {
+     "good_id": "water_ice",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "mushrooms",
+     "qty": 7,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "soy",
+     "qty": 6,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "mushroom_soup",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 250,
+   "xp_reward": 142,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 7,
+   "state": 0,
+   "npc_name": "Ева, лаборатория",
+   "positions": [
+    {
+     "good_id": "mushroom_soup",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "tomatoes",
+     "qty": 3,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "coffee_beans",
+     "qty": 5,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "cotton",
+     "qty": 7,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "protein_bar",
+     "qty": 4,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 300,
+   "xp_reward": 278,
+   "refresh_at": 0.0
+  },
+  {
+   "idx": 8,
+   "state": 0,
+   "npc_name": "Ким, шлюз",
+   "positions": [
+    {
+     "good_id": "coffee_beans",
+     "qty": 4,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "mushrooms",
+     "qty": 8,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "algae",
+     "qty": 13,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "iron_ore",
+     "qty": 7,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    },
+    {
+     "good_id": "oxygen_tank",
+     "qty": 4,
+     "qty_filled": 0,
+     "filled_by": 0,
+     "qty_purchased": 0,
+     "easy": true
+    }
+   ],
+   "credits_reward": 350,
+   "xp_reward": 226,
+   "refresh_at": 0.0
+  }
+ ],
+ "moduli": {
+  "panel": 2,
+  "filter": 1
+ },
+ "schetchiki": {
+  "posevov": 62,
+  "plavki": 10,
+  "gorshkov": 39,
+  "sborov": 76,
+  "dobychi": 18,
+  "zagruzok": 47,
+  "dronov": 12
+ }
+}
