@@ -1,32 +1,129 @@
-# React + TypeScript + Vite
+<h1 align="center">Mars Colony</h1>
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+<p align="center">
+Казуальный сити-билдер про колонию на Марсе. Unity 6, играется в браузере.
+</p>
 
-Currently, two official plugins are available:
+<p align="center">
+  <a href="https://amirkhan06.itch.io/mars-colony"><img alt="Играть в браузере" src="https://img.shields.io/badge/%D0%98%D0%B3%D1%80%D0%B0%D1%82%D1%8C-%D0%B2%20%D0%B1%D1%80%D0%B0%D1%83%D0%B7%D0%B5%D1%80%D0%B5-e2552c?style=for-the-badge"></a>
+  <img alt="Unity 6" src="https://img.shields.io/badge/Unity-6-222222?style=for-the-badge&logo=unity">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-%D1%81%D0%B8%D0%BC%D1%83%D0%BB%D1%8F%D1%82%D0%BE%D1%80-3178c6?style=for-the-badge&logo=typescript&logoColor=white">
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+<p align="center">
+  <img src="docs/img/kolonia.jpg" alt="Колония: купола, теплицы, шаттл на площадке, буровая и ледяное поле" width="900">
+</p>
 
-## React Compiler
+<table>
+  <tr>
+    <td><img src="docs/img/igra-tsel.jpg" alt="Экран игры: уровень, валюты, карточка цели"></td>
+    <td><img src="docs/img/igra-proizvodstvo.jpg" alt="Панель пищевого завода: очередь производства"></td>
+  </tr>
+</table>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Грядки, переработка, склад, дрон-курьер и грузовой шаттл. Жанр и петля взяты у
+Township намеренно, свое здесь в связке трех транспортных механик и в экономике
+под нее.
 
-## Expanding the Oxlint configuration
+Проект собран одним человеком с конца июля 2026 года. Я не программист и не
+художник: код, модели и иконки сделаны ИИ-инструментами. Моя часть работы это
+ТЗ, числа экономики, критерии приемки и отбраковка того, что им не прошло.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+| Что | Сколько |
+|---|---|
+| ТЗ механик и каркас экономики | 9 документов, около 5 000 строк |
+| Код игры на C# | около 15 700 строк |
+| Доменная логика и симулятор на TypeScript | около 11 200 строк |
+| Автотесты, гейт на каждом коммите | 642 |
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Что где лежит
+
+| Папка | Что внутри |
+|---|---|
+| `unity/` | Игра на Unity 6: сцена, код, интерфейс, модели. Это то, что открывается по ссылке выше |
+| `src/` | Веб-прототип на TypeScript: доменная логика, балансный симулятор, тесты |
+| `docs/specs/` | ТЗ механик и каркас экономики |
+| `design/` | Референсы, промпты генерации, модели, ТЗ шаттла в .docx |
+| `loop/` | Журнал работы: отчеты витков, вердикты критиков, разборы ошибок |
+| `orchestrator/` | Текущий план: видение и спека выхода на Яндекс Игры |
+
+## ТЗ
+
+Начинать с `docs/specs/mars-colony-frame.md`. Это каркас: валюты, инварианты,
+роли механик. Все остальные ТЗ ссылаются на него, а при противоречии прав каркас.
+
+- `mini-tz-shattl-v2.md` разворачивает шаттл до реализуемой спеки: состояния,
+  экраны, числа, открытые вопросы с владельцем и датой.
+- `tz-production-mars.md`, `tz-drone-mars.md`, `tz-liner-mars.md` описывают
+  остальные механики, `tz-common-systems-mars.md` общие системы: генератор
+  заказов, ускорение, события аналитики.
+- `tz-rebalans-ekonomiki.md` появился после замера живой сборки. Выяснилось,
+  что выгоднее всего засеять все соей и ничего не строить. ТЗ чинит числа и
+  ставит тест, который ловит возврат этой стратегии.
+
+Это копия от 6 октября 2026 года. Рабочие версии ведутся в личной базе знаний,
+ссылки вида `[[имя]]` указывают на соседние документы оттуда.
+
+## Как устроен код
+
+Доменный слой не знает об интерфейсе. Игровые числа живут в одном месте,
+`src/domain/config/`, и приходят туда из каркаса. Симулятор вызывает те же
+функции, что и игра, поэтому баланс проверяется на настоящей логике, а не на
+таблице рядом с ней.
+
+Unity-версия повторяет домен на C# (`unity/Assets/Scripts/Domain`). Тест
+`cs-mirror-drift` сверяет числа C# с TypeScript, чтобы две версии не считали
+разные игры.
+
+Тесты, которые стоит открыть первыми:
+
+- `src/domain/__tests__/invariants.test.ts`: инварианты каркаса, каждый тест
+  ссылается на номер инварианта;
+- `generator-shape.property.test.ts`: тест-свойство на `fast-check`, перебирает
+  уровни, наборы построек и наполнение склада;
+- `spec-drift.test.ts`: падает, если параметр из ТЗ не найден в коде и не
+  записан в отложенное с причиной;
+- `balance-metric.test.ts`: тот самый сторож из ТЗ ребаланса.
+
+Хук на коммит гоняет формат, типы и тесты, красное не коммитится. Тесты, которые
+доказывают еще не починенный дефект, называются `defects-*` и в гейт не входят.
+
+## Запуск
+
+Веб-прототип, нужен Node 22+:
+
+```
+npm install
+npm run dev      # прототип в браузере
+npm run sim      # симулятор: три профиля игрока, 30 дней игры
+npm run check    # формат, типы, тесты с покрытием
+npm run e2e      # браузерные проверки, Playwright
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+На чистой машине `check` пропустит две сверки: с рабочими ТЗ и с Unity-кодом.
+Они читают соседние папки, которых в клоне нет, и печатают об этом
+предупреждение. Остальные тесты идут как обычно.
+
+Unity-версия: открыть папку `unity/` в Unity Hub, редактор 6000.0.64f1, сцена
+`Assets/Scenes/MAIN.unity`. Первое открытие пересобирает кэш, это несколько
+минут. Сборка для браузера из командной строки:
+
+```
+Unity.exe -batchmode -quit -projectPath unity -executeMethod MarsColony.EditorTools.SborkaWeb.Sobrat -logFile build.log
+```
+
+Тесты домена на C# лежат в `unity/Assets/Editor/Tests/Domain`, запускаются из
+Test Runner в режиме EditMode.
+
+Папка `unity/` это снимок рабочего Unity-проекта на 6 октября 2026 года. Историю
+коммитов Unity-проекта сюда не перенес: в ней резервные копии сцен по 300-400 МБ,
+GitHub такие файлы не принимает.
+
+## Чужие ассеты
+
+- Модели: [KayKit Space Base Bits](https://kaylousberg.itch.io/space-base-bits)
+  и [Kenney Space Kit](https://kenney.nl/assets/space-kit), обе CC0.
+- Шрифты: Nunito (SIL OFL), Roboto Mono (Apache 2.0).
+- Музыка: Space Ambient, автор SolarFLEX, Pixabay Content License.
+
+Лицензии лежат рядом с файлами в `unity/Assets`.
