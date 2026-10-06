@@ -61,3 +61,10 @@ rezerv/
 loop/scene-v2/rezerv/
 loop/scene-v2/billd/
 *.blend1
+
+# Настройки агентов и пробы аудита: локальные, в репозитории шум
+.agents/
+.claude/
+.codex/
+.cursor/
+.probe/
