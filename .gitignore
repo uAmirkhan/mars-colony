@@ -53,3 +53,11 @@ design/models/osmotr/**/*.blender.log
 *.gate.lock*
 # серии кадров изнутри Play: десятки МБ на серию, монтажи описаны в OTCHET
 loop/ui/anim/
+
+# Собранный рантайм Unity: артефакт сборки, не исходник
+loop/scene-v2/build/
+# Резервные копии сцен и собранный WebGL: артефакты, не исходники
+rezerv/
+loop/scene-v2/rezerv/
+loop/scene-v2/billd/
+*.blend1
